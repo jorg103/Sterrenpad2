@@ -277,6 +277,10 @@
   .shop-item-price { display:inline-flex; align-items:center; gap:3px; background:#FFF3CD; border-radius:20px; padding:3px 8px; font-family:'Fredoka One',cursive; color:var(--coin); font-size:0.8rem; }
   .shop-item-price.owned-tag { background:#d4edda; color:#2e7d32; font-size:0.7rem; }
 
+  @keyframes fadeOut { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(1.05)} }
+  @keyframes tt-bounce { from{transform:scale(0) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+  @keyframes star-fall { from{transform:translateY(-20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
   /* ===== WALLET ===== */
   .wallet-card {
     background: white; border-radius: 20px; padding: 16px;
@@ -661,6 +665,8 @@ function addCoins(n) {
   updateCoinDisplay();
   saveState();
   setTimeout(() => sfxCoins(n), 100);
+  // Check of 1000-coins milestone bereikt is
+  setTimeout(() => checkDreamGoalMilestone(), 600);
 }
 // ===== 🎵 GELUID SYSTEEM =====
 // iOS Safari vereist: AudioContext.resume() direct in onclick handler
@@ -1972,7 +1978,7 @@ function shuffleArr(arr) {
 // ===== COMPLETE CHALLENGE =====
 function completeChallenge(coins, perfect) {
   const p = getPlayer();
-  const absLevel = currentWorldIdx * 8 + currentLevelIdx;
+  const absLevel = currentWorldIdx * 5 + currentLevelIdx;
   const wasCompleted = absLevel < (p.level||0);
 
   if (!wasCompleted) {
@@ -2295,20 +2301,33 @@ function showToast(msg, bad=false) {
 // ===== 💰 PORTEMONNEE / WALLET SYSTEEM =====
 
 const SAVING_GOALS = {
-  limousine: { name:'Titans Limousine', emoji:'🚗⚡', target:500, desc:'De coolste auto ooit!', milestones:[
-    {at:100,msg:'🎉 Je hebt je eerste 100 gespaard!'},
-    {at:250,msg:'⭐ Halverwege! Super goed!'},
-    {at:400,msg:'🚀 Bijna daar!'},
-    {at:500,msg:'🏆 JE HEBT EEN LIMOUSINE!'}
+  limousine: { name:'Titans Limousine', emoji:'🚗⚡', target:5000, desc:'De coolste Titans limo ooit!', milestones:[
+    {at:500,  msg:'⚡ 500 Titan Coins! BOOYAH!'},
+    {at:1000, msg:'🦸 1000! Robin is onder de indruk!'},
+    {at:2000, msg:'🐯 2000! Beast Boy zegt: DUDE!'},
+    {at:3000, msg:'🌀 3000! Raven knikt goedkeurend...'},
+    {at:4000, msg:'🌟 4000! Starfire is zo blij!'},
+    {at:5000, msg:'🚗⚡ TITANS LIMO IS VAN JOU! BOOYAH!'}
   ]},
-  unicorn: { name:'Titans Eenhoorn', emoji:'🦄⚡', target:500, desc:'Het mooiste dier ter wereld!', milestones:[
-    {at:100,msg:'🌸 100 muntjes gespaard! Wow!'},
-    {at:250,msg:'🌈 Halverwege naar je eenhoorn!'},
-    {at:400,msg:'✨ Nog maar 100 te gaan!'},
-    {at:500,msg:'🦄 JE HEBT EEN EENHOORN!'}
+  unicorn: { name:'Titans Eenhoorn', emoji:'🦄⚡', target:5000, desc:'Het magischste dier ter wereld!', milestones:[
+    {at:500,  msg:'🌸 500 coins! Starfire is trots!'},
+    {at:1000, msg:'✨ 1000! De eenhoorn voelt je naderen!'},
+    {at:2000, msg:'🌈 2000! Halverwege het magische pad!'},
+    {at:3000, msg:'💜 3000! Raven gebruikt haar krachten!'},
+    {at:4000, msg:'🦄 4000! Nog even dan is hij van jou!'},
+    {at:5000, msg:'🦄⚡ TITANS EENHOORN! AZARATH POWER!'}
   ]},
-  house: { name:'Titans Tower', emoji:'🏰⚡', target:800, desc:'Een huis met tuin!', milestones:[]},
-  rocket: { name:'Titans Raket', emoji:'🚀⚡', target:600, desc:'Naar de maan!', milestones:[]},
+  house: { name:'Titans Tower', emoji:'🏰⚡', target:8000, desc:'De echte Titans Tower!', milestones:[
+    {at:1000, msg:'🏗️ Fundament gelegd!'},
+    {at:3000, msg:'🏢 Eerste verdieping klaar!'},
+    {at:5000, msg:'🏰 Bijna een echte Titan!'},
+    {at:8000, msg:'🏰⚡ TITANS TOWER GEBOUWD! BOOYAH!'}
+  ]},
+  rocket: { name:'Titans Raket', emoji:'🚀⚡', target:6000, desc:'Naar de maan met de Titans!', milestones:[
+    {at:1000, msg:'🔧 Raket in aanbouw!'},
+    {at:3000, msg:'🚀 Halve tank vol!'},
+    {at:6000, msg:'🚀⚡ TITANS RAKET GELANCEERD! BOOYAH!'}
+  ]},
 };
 
 // Beleggingen: elk type heeft eigen volatiliteit + trend
@@ -2616,12 +2635,31 @@ function renderWalletGoal(p, w, goal) {
     <div class="wallet-card">
       <div class="wallet-card-title">🔄 Kies ander doel</div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        ${other.map(([k,g])=>`<button onclick="setGoal('${k}')" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;border:2px solid #eee;background:white;cursor:pointer;font-family:'Fredoka One',cursive;font-size:0.95rem;color:var(--dark)">
+        ${other.map(([k,g])=>`<button onclick="setGoal('${k}')" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;border:2px solid rgba(245,166,35,0.3);background:#1a2744;cursor:pointer;font-family:'Fredoka One',cursive;font-size:0.95rem;color:#e0e0e0">
           <span style="font-size:1.8rem">${g.emoji}</span>
           <div style="text-align:left"><div>${g.name}</div><div style="font-size:0.75rem;color:#888;font-family:Nunito">${g.desc} · 🎯 ${g.target} muntjes</div></div>
         </button>`).join('')}
       </div>
     </div>
+
+    ${(w.dreamGoals||[]).length > 0 ? `
+    <div class="wallet-card" style="background:#1a1a2e;border:1px solid rgba(245,166,35,0.3)">
+      <div class="wallet-card-title" style="color:#f5a623">🏆 Jouw Top Droomdoelen</div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:8px">Elke 1000 Titan Coins gevraagd!</div>
+      ${(w.dreamGoals||[]).slice(-5).reverse().map((d,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <span style="font-size:1.4rem">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+          <div style="flex:1">
+            <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem">${d.text}</div>
+            <div style="font-size:0.7rem;color:rgba(255,255,255,0.4)">bij ${d.at} 🪙 · ${d.date||''}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : `
+    <div class="wallet-card" style="background:#1a1a2e;border:1px dashed rgba(245,166,35,0.3);text-align:center;padding:20px">
+      <div style="font-size:2rem;margin-bottom:6px">🏆</div>
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem">Nog geen droomdoelen!</div>
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-top:4px">Verdien 1000 Titan Coins om je eerste droomdoel te kiezen!</div>
+    </div>`}
   `;
 }
 
@@ -2670,17 +2708,475 @@ function doSaveToGoal(amt) {
 }
 
 function showGoalReached(goal) {
-  const box = document.getElementById('challenge-content');
-  box.innerHTML = `
-    <div style="text-align:center;padding:10px">
-      <div style="font-size:5rem">${goal.emoji}</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--purple)">GELUKT! 🎉</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:#555;margin:10px 0">Je hebt een ${goal.name} gespaard!</div>
-      <div style="font-size:0.9rem;color:#888;margin-bottom:20px">Wat een geweldige spaarder ben jij!</div>
-      <button class="btn-primary" onclick="closeChallenge()">Super! 🌟</button>
-    </div>`;
-  document.getElementById('challenge-modal').classList.add('open');
+  sfxPerfect();
+  // Maak een feestelijk overlay scherm
+  const overlay = document.createElement('div');
+  overlay.id = 'goal-celebration';
+  overlay.style.cssText = `
+    position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;
+    background:#0d0d1a;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;overflow:hidden;
+  `;
+
+  const isLimo    = goal.name.toLowerCase().includes('limo');
+  const isUnicorn = goal.name.toLowerCase().includes('eenhoorn') || goal.name.toLowerCase().includes('unicorn');
+  const isCustom  = goal.customSvg; // voor toekomstige eigen doelen
+
+  overlay.innerHTML = `
+    <!-- Confetti canvas -->
+    <canvas id="confetti-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none"></canvas>
+
+    <!-- Content -->
+    <div style="position:relative;z-index:2;text-align:center;padding:20px;max-width:380px">
+
+      <!-- Sterren regen boven -->
+      <div style="font-size:2rem;animation:star-fall 0.5s ease-out" id="cel-stars">⭐⚡🌟</div>
+
+      <!-- BOOYAH tekst -->
+      <div style="font-family:'Fredoka One',cursive;font-size:3.5rem;color:#f5a623;
+        text-shadow:0 0 30px rgba(245,166,35,0.8), 0 0 60px rgba(245,166,35,0.4);
+        animation:tt-bounce 0.6s cubic-bezier(0.34,1.56,0.64,1);margin-bottom:8px">
+        BOOYAH!
+      </div>
+
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#57c785;margin-bottom:16px">
+        Titans Doel Bereikt!
+      </div>
+
+      <!-- Doel afbeelding -->
+      <div style="margin:10px auto;animation:tt-bounce 0.8s 0.2s cubic-bezier(0.34,1.56,0.64,1) both">
+        ${isLimo ? buildLimoSVG() : isUnicorn ? buildUnicornSVG() : `<div style="font-size:8rem">${goal.emoji}</div>`}
+      </div>
+
+      <div style="font-family:'Fredoka One',cursine;font-size:1.2rem;color:#f5a623;margin:12px 0">
+        🏆 ${goal.name} 🏆
+      </div>
+
+      <!-- Titans reageren -->
+      <div style="display:flex;justify-content:center;gap:12px;margin:12px 0;font-size:2.5rem;
+        animation:tt-bounce 0.6s 0.4s both">
+        <span title="Robin">🐦</span>
+        <span title="Starfire">⭐</span>
+        <span title="Beast Boy">🐸</span>
+        <span title="Raven">🌀</span>
+        <span title="Cyborg">🤖</span>
+      </div>
+
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:rgba(255,255,255,0.7);margin-bottom:20px">
+        Alle Titans zijn trots op jou!
+      </div>
+
+      <button onclick="closeCelebration()" style="
+        background:linear-gradient(135deg,#f5a623,#e94560);
+        color:white;border:none;border-radius:30px;
+        padding:16px 40px;font-family:'Fredoka One',cursive;
+        font-size:1.3rem;cursor:pointer;
+        box-shadow:0 6px 20px rgba(245,166,35,0.5), 0 0 30px rgba(245,166,35,0.3);
+        animation:pulse 1.5s ease-in-out infinite">
+        ⚡ TITANS GO! ⚡
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  startConfetti();
+  // Speel meerdere geluidjes na elkaar
+  sfxLevelUp();
+  setTimeout(() => sfxPerfect(), 400);
+  setTimeout(() => sfxCoins(50), 800);
+  setTimeout(() => sfxBonus(), 1200);
 }
+
+function buildUnicornSVG() {
+  return `<svg viewBox="0 0 280 200" xmlns="http://www.w3.org/2000/svg" width="260" height="186" style="display:block;margin:0 auto;filter:drop-shadow(0 0 20px rgba(206,147,216,0.7))">
+    <defs>
+      <linearGradient id="uBody" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f8f0ff"/>
+        <stop offset="100%" stop-color="#e1bee7"/>
+      </linearGradient>
+      <linearGradient id="uMane" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f48fb1"/>
+        <stop offset="33%" stop-color="#ce93d8"/>
+        <stop offset="66%" stop-color="#90caf9"/>
+        <stop offset="100%" stop-color="#80cbc4"/>
+      </linearGradient>
+      <linearGradient id="uHorn" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fff9c4"/>
+        <stop offset="100%" stop-color="#f5a623"/>
+      </linearGradient>
+      <radialGradient id="uGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ce93d8" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#ce93d8" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Magische gloed -->
+    <ellipse cx="140" cy="120" rx="120" ry="70" fill="url(#uGlow)"/>
+
+    <!-- Staart — regenboog -->
+    <path d="M 60 130 Q 20 110 25 85 Q 30 60 50 70 Q 35 90 45 110 Q 55 125 60 130" fill="url(#uMane)" opacity="0.9"/>
+    <path d="M 58 128 Q 15 105 22 80 Q 28 55 55 68" fill="none" stroke="#f48fb1" stroke-width="3" opacity="0.6"/>
+
+    <!-- Lichaam -->
+    <ellipse cx="135" cy="138" rx="78" ry="48" fill="url(#uBody)"/>
+
+    <!-- Buik glans -->
+    <ellipse cx="125" cy="148" rx="45" ry="28" fill="white" opacity="0.4"/>
+
+    <!-- Benen -->
+    <rect x="85"  y="172" width="18" height="28" rx="9" fill="url(#uBody)"/>
+    <rect x="110" y="175" width="18" height="25" rx="9" fill="url(#uBody)"/>
+    <rect x="148" y="175" width="18" height="25" rx="9" fill="url(#uBody)"/>
+    <rect x="173" y="172" width="18" height="28" rx="9" fill="url(#uBody)"/>
+    <!-- Hoeven -->
+    <ellipse cx="94"  cy="200" rx="11" ry="5" fill="#ce93d8"/>
+    <ellipse cx="119" cy="200" rx="11" ry="5" fill="#ce93d8"/>
+    <ellipse cx="157" cy="200" rx="11" ry="5" fill="#ce93d8"/>
+    <ellipse cx="182" cy="200" rx="11" ry="5" fill="#ce93d8"/>
+
+    <!-- Nek -->
+    <path d="M 175 110 Q 185 125 190 138 Q 175 130 165 138 Q 168 122 165 110 Z" fill="url(#uBody)"/>
+
+    <!-- Hoofd -->
+    <ellipse cx="200" cy="92" rx="42" ry="36" fill="url(#uBody)"/>
+
+    <!-- Hoofd glans -->
+    <ellipse cx="195" cy="82" rx="20" ry="14" fill="white" opacity="0.4"/>
+
+    <!-- Manen op hoofd -->
+    <path d="M 175 72 Q 165 55 170 40 Q 175 25 185 35 Q 180 48 182 62 Q 184 68 178 72 Z" fill="url(#uMane)"/>
+    <path d="M 182 70 Q 172 52 178 38 Q 183 24 193 34" fill="none" stroke="#90caf9" stroke-width="2" opacity="0.7"/>
+
+    <!-- Oor -->
+    <path d="M 175 68 L 168 50 L 180 58 Z" fill="url(#uBody)"/>
+    <path d="M 175 68 L 170 54 L 178 60 Z" fill="#f48fb1" opacity="0.7"/>
+
+    <!-- Oog -->
+    <ellipse cx="212" cy="90" rx="10" ry="11" fill="white"/>
+    <ellipse cx="212" cy="91" rx="7" ry="8" fill="#4a148c"/>
+    <ellipse cx="212" cy="91" rx="4" ry="5" fill="#1a1a2e"/>
+    <circle cx="215" cy="88" r="2.5" fill="white"/>
+    <circle cx="210" cy="94" r="1.5" fill="white" opacity="0.7"/>
+    <!-- Wimpers -->
+    <line x1="204" y1="82" x2="202" y2="76" stroke="#4a148c" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="209" y1="80" x2="208" y2="74" stroke="#4a148c" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="215" y1="80" x2="215" y2="74" stroke="#4a148c" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="220" y1="81" x2="221" y2="75" stroke="#4a148c" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Neus / neusgaten -->
+    <ellipse cx="228" cy="103" rx="8" ry="5" fill="#f8bbd0" opacity="0.7"/>
+    <ellipse cx="225" cy="103" rx="3" ry="2" fill="#f06292" opacity="0.6"/>
+    <ellipse cx="231" cy="103" rx="3" ry="2" fill="#f06292" opacity="0.6"/>
+
+    <!-- Mond — lachend -->
+    <path d="M 220 110 Q 228 116 236 110" stroke="#ce93d8" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+    <!-- HOORN — goud/regenboog -->
+    <path d="M 185 66 L 200 20 L 215 66 Z" fill="url(#uHorn)"/>
+    <!-- Hoorn spiraal lijnen -->
+    <line x1="189" y1="62" x2="202" y2="28" stroke="white" stroke-width="1" opacity="0.6"/>
+    <line x1="211" y1="62" x2="202" y2="28" stroke="#f5a623" stroke-width="1" opacity="0.4"/>
+    <!-- Hoorn glinstering -->
+    <circle cx="200" cy="22" r="4" fill="white" opacity="0.9"/>
+    <circle cx="200" cy="22" r="2" fill="#fff9c4"/>
+
+    <!-- Magische sterretjes rondom hoorn -->
+    <text x="165" y="25" font-size="14" opacity="0.8">✨</text>
+    <text x="218" y="30" font-size="12" opacity="0.7">⭐</text>
+    <text x="155" y="45" font-size="10" opacity="0.6">💫</text>
+
+    <!-- Vleugels (Alicorn!) -->
+    <path d="M 195 120 Q 155 100 130 88 Q 150 95 165 108 Q 175 100 195 120" fill="url(#uMane)" opacity="0.8"/>
+    <path d="M 195 120 Q 160 98 138 84" fill="none" stroke="#f48fb1" stroke-width="1.5" opacity="0.5"/>
+
+    <!-- Regenboog spoor onder -->
+    <path d="M 40 190 Q 80 175 130 185" stroke="url(#uMane)" stroke-width="4" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+    <!-- Titans logo -->
+    <text x="100" y="155" font-family="Arial Black" font-size="9" fill="#ce93d8" font-weight="bold" opacity="0.6">⚡ TITANS ⚡</text>
+  </svg>`;
+}
+
+// ===== 🏆 TOP 5 DROOMDOELEN SYSTEEM =====
+// Elke 1000 coins wordt gevraagd om een droomdoel in te voeren
+
+function checkDreamGoalMilestone() {
+  const p = getPlayer();
+  const w = getWallet();
+  const totalEarned = (p.coins || 0) + (w.savings || 0) + Math.round(getTotalInvestmentValue());
+  const lastMilestone = w.lastDreamMilestone || 0;
+  const nextMilestone = (Math.floor(lastMilestone / 1000) + 1) * 1000;
+
+  if (totalEarned >= nextMilestone && nextMilestone > lastMilestone) {
+    w.lastDreamMilestone = nextMilestone;
+    saveState();
+    setTimeout(() => showDreamGoalPrompt(nextMilestone), 500);
+  }
+}
+
+function showDreamGoalPrompt(milestone) {
+  sfxBonus();
+  const p = getPlayer();
+  const w = getWallet();
+  const dreams = w.dreamGoals || [];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'dream-overlay';
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:998;
+    background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(4px)`;
+
+  overlay.innerHTML = `
+    <div style="background:#1a1a2e;border-radius:24px;padding:24px 20px;max-width:360px;width:92%;
+      border:2px solid #f5a623;box-shadow:0 0 40px rgba(245,166,35,0.3);text-align:center">
+
+      <div style="font-size:3rem;margin-bottom:6px">🏆</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#f5a623;
+        text-shadow:0 0 15px rgba(245,166,35,0.5)">
+        ${milestone} Titan Coins!
+      </div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#57c785;margin:8px 0">
+        BOOYAH ${p.name}! Mega milestone! ⚡
+      </div>
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:16px">
+        Wat is jouw grote droomdoel?<br>
+        <span style="font-size:0.8rem;opacity:0.6">Typ wat jij heel graag wilt!</span>
+      </div>
+
+      <input type="text" id="dream-input" placeholder="bijv. Nintendo Switch, vakantie..."
+        maxlength="40"
+        style="width:100%;padding:12px;border-radius:12px;border:2px solid rgba(245,166,35,0.4);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;font-size:1rem;
+          text-align:center;outline:none;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')saveDreamGoal(${milestone})">
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button onclick="saveDreamGoal(${milestone})"
+          style="flex:1;padding:14px;background:linear-gradient(135deg,#f5a623,#e94560);
+          color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;
+          font-size:1rem;cursor:pointer;box-shadow:0 4px 15px rgba(245,166,35,0.3)">
+          Toevoegen! ✅
+        </button>
+        <button onclick="closeDreamPrompt()"
+          style="padding:14px 20px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);
+          border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+          Later
+        </button>
+      </div>
+
+      ${dreams.length > 0 ? `
+        <div style="margin-top:14px;border-top:1px solid rgba(245,166,35,0.2);padding-top:12px">
+          <div style="font-family:'Fredoka One',cursive;font-size:0.85rem;color:#f5a623;margin-bottom:8px">
+            🌟 Top ${Math.min(dreams.length,5)} Droomdoelen van ${p.name}
+          </div>
+          ${dreams.slice(-5).reverse().map((d,i) => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;
+              border-bottom:1px solid rgba(255,255,255,0.05)">
+              <span style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem">
+                ${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}
+              </span>
+              <span style="flex:1;text-align:left;color:white;font-size:0.85rem">${d.text}</span>
+              <span style="font-size:0.7rem;color:rgba(255,255,255,0.4)">bij ${d.at}🪙</span>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>`;
+
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('dream-input')?.focus(), 100);
+}
+
+function saveDreamGoal(milestone) {
+  const input = document.getElementById('dream-input');
+  const text = input?.value?.trim();
+  if (!text) { showToast('Typ eerst je droomdoel!', true); return; }
+
+  const w = getWallet();
+  if (!w.dreamGoals) w.dreamGoals = [];
+  w.dreamGoals.push({ text, at: milestone, date: new Date().toLocaleDateString('nl-NL') });
+  // Max 20 bewaren
+  if (w.dreamGoals.length > 20) w.dreamGoals = w.dreamGoals.slice(-20);
+  saveState();
+
+  closeDreamPrompt();
+  showToast(`🏆 Droomdoel opgeslagen: ${text}!`);
+  sfxCorrect();
+}
+
+function closeDreamPrompt() {
+  const el = document.getElementById('dream-overlay');
+  if (el) el.parentNode?.removeChild(el);
+}
+
+function buildLimoSVG() {
+  return `<svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg" width="280" height="112" style="display:block;margin:0 auto;filter:drop-shadow(0 0 15px rgba(245,166,35,0.6))">
+    <!-- Glow effect -->
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="80%" r="50%">
+        <stop offset="0%" stop-color="#f5a623" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#f5a623" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="body" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#2a2a2a"/>
+        <stop offset="40%" stop-color="#1a1a1a"/>
+        <stop offset="100%" stop-color="#0a0a0a"/>
+      </linearGradient>
+      <linearGradient id="roof" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#222"/>
+        <stop offset="100%" stop-color="#111"/>
+      </linearGradient>
+      <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#888"/>
+        <stop offset="50%" stop-color="#eee"/>
+        <stop offset="100%" stop-color="#888"/>
+      </linearGradient>
+    </defs>
+
+    <!-- Glow onder auto -->
+    <ellipse cx="150" cy="105" rx="140" ry="12" fill="url(#glow)"/>
+
+    <!-- Carrosserie hoofd -->
+    <rect x="15" y="60" width="270" height="42" rx="8" fill="url(#body)"/>
+
+    <!-- Dak (lang voor limousine) -->
+    <path d="M 55 60 L 70 28 L 220 28 L 240 60 Z" fill="url(#roof)" rx="4"/>
+
+    <!-- Ramen -->
+    <rect x="78" y="33" width="38" height="22" rx="3" fill="#1a3a5c" opacity="0.9"/>
+    <rect x="122" y="33" width="38" height="22" rx="3" fill="#1a3a5c" opacity="0.9"/>
+    <rect x="166" y="33" width="38" height="22" rx="3" fill="#1a3a5c" opacity="0.9"/>
+
+    <!-- Raam glinstering -->
+    <line x1="82" y1="35" x2="88" y2="52" stroke="white" stroke-width="1.5" opacity="0.3"/>
+    <line x1="126" y1="35" x2="132" y2="52" stroke="white" stroke-width="1.5" opacity="0.3"/>
+    <line x1="170" y1="35" x2="176" y2="52" stroke="white" stroke-width="1.5" opacity="0.3"/>
+
+    <!-- Chrome strip -->
+    <rect x="15" y="74" width="270" height="4" rx="2" fill="url(#chrome)"/>
+
+    <!-- Portieren lijnen -->
+    <line x1="115" y1="62" x2="115" y2="100" stroke="#333" stroke-width="1.5"/>
+    <line x1="160" y1="62" x2="160" y2="100" stroke="#333" stroke-width="1.5"/>
+    <line x1="205" y1="62" x2="205" y2="100" stroke="#333" stroke-width="1.5"/>
+
+    <!-- Wielbakken -->
+    <path d="M 28 102 Q 28 88 55 88 Q 82 88 82 102" fill="#111"/>
+    <path d="M 215 102 Q 215 88 242 88 Q 269 88 269 102" fill="#111"/>
+
+    <!-- Wielen -->
+    <circle cx="55" cy="102" r="16" fill="#1a1a1a" stroke="#555" stroke-width="2"/>
+    <circle cx="55" cy="102" r="10" fill="#222"/>
+    <circle cx="55" cy="102" r="5" fill="url(#chrome)"/>
+    <!-- Spaak patroon -->
+    <line x1="55" y1="92" x2="55" y2="112" stroke="#666" stroke-width="1.5"/>
+    <line x1="45" y1="102" x2="65" y2="102" stroke="#666" stroke-width="1.5"/>
+    <line x1="48" y1="95" x2="62" y2="109" stroke="#666" stroke-width="1.5"/>
+    <line x1="62" y1="95" x2="48" y2="109" stroke="#666" stroke-width="1.5"/>
+
+    <circle cx="242" cy="102" r="16" fill="#1a1a1a" stroke="#555" stroke-width="2"/>
+    <circle cx="242" cy="102" r="10" fill="#222"/>
+    <circle cx="242" cy="102" r="5" fill="url(#chrome)"/>
+    <line x1="242" y1="92" x2="242" y2="112" stroke="#666" stroke-width="1.5"/>
+    <line x1="232" y1="102" x2="252" y2="102" stroke="#666" stroke-width="1.5"/>
+    <line x1="235" y1="95" x2="249" y2="109" stroke="#666" stroke-width="1.5"/>
+    <line x1="249" y1="95" x2="235" y2="109" stroke="#666" stroke-width="1.5"/>
+
+    <!-- Koplampen -->
+    <ellipse cx="272" cy="70" rx="8" ry="6" fill="#fffde7" opacity="0.95"/>
+    <ellipse cx="272" cy="70" rx="5" ry="4" fill="white"/>
+    <!-- Lichtbundel -->
+    <path d="M 280 67 L 300 62 M 280 70 L 300 70 M 280 73 L 300 78" stroke="#fffde7" stroke-width="1" opacity="0.5"/>
+
+    <!-- Achterlichten -->
+    <ellipse cx="17" cy="70" rx="6" ry="5" fill="#e94560" opacity="0.9"/>
+    <ellipse cx="17" cy="70" rx="3" ry="3" fill="#ff6b6b"/>
+
+    <!-- TT logo op de motorkap -->
+    <text x="250" y="72" font-family="Arial Black" font-size="9" fill="#f5a623" font-weight="bold" opacity="0.8">TT</text>
+
+    <!-- Titanium nummerbord -->
+    <rect x="115" y="90" width="70" height="18" rx="3" fill="#f5a623"/>
+    <text x="150" y="103" text-anchor="middle" font-family="Arial Black" font-size="9" fill="#0d0d1a" font-weight="bold">TITANS</text>
+
+    <!-- Vlammen onder de auto (turbo boost) -->
+    <path d="M 60 108 Q 70 118 80 108 Q 90 118 100 108" stroke="#f5a623" stroke-width="2" fill="none" opacity="0.6"/>
+    <path d="M 200 108 Q 210 118 220 108 Q 230 118 240 108" stroke="#f5a623" stroke-width="2" fill="none" opacity="0.6"/>
+
+    <!-- Antenne met vlag -->
+    <line x1="225" y1="28" x2="225" y2="10" stroke="#888" stroke-width="1.5"/>
+    <polygon points="225,10 237,14 225,18" fill="#f5a623"/>
+
+    <!-- Lightning bolt decoratie -->
+    <text x="135" y="90" font-size="14" opacity="0.3">⚡</text>
+  </svg>`;
+}
+
+function startConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const pieces = [];
+  const colors = ['#f5a623','#e94560','#57c785','#0f3460','#ffffff','#ffd700'];
+
+  // Maak 150 confetti stukjes
+  for (let i = 0; i < 150; i++) {
+    pieces.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      w: Math.random() * 12 + 4,
+      h: Math.random() * 6 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 4 + 2,
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 8,
+      shape: Math.random() < 0.3 ? 'circle' : 'rect',
+    });
+  }
+
+  let frame = 0;
+  function draw() {
+    if (!document.getElementById('confetti-canvas')) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w/2, 0, Math.PI*2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      }
+      ctx.restore();
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rotation += p.rotSpeed;
+      p.vy += 0.05; // zwaartekracht
+      // Wrap terug naar boven
+      if (p.y > canvas.height + 20) {
+        p.y = -20;
+        p.x = Math.random() * canvas.width;
+      }
+    });
+    frame++;
+    if (frame < 300) requestAnimationFrame(draw); // 5 seconden
+  }
+  draw();
+}
+
+function closeCelebration() {
+  const el = document.getElementById('goal-celebration');
+  if (el) {
+    el.style.animation = 'fadeOut 0.5s forwards';
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+  }
+  renderWallet();
+}
+
 
 function setGoal(goalId) {
   getWallet().goal = goalId;
@@ -3471,6 +3967,19 @@ function renderPlayerReport(p, idx) {
             <div style="font-size:0.75rem;color:#7b1fa2">🪙 ${wallet.goalSaved||0} van ${goal.target} gespaard (${pct}%)</div>
           </div>` : '';
         })() : ''}
+
+        ${ (wallet.dreamGoals||[]).length > 0 ? `
+        <div style="background:#1a1a2e;border-radius:12px;padding:10px 12px;border:1px solid rgba(245,166,35,0.3)">
+          <div style="font-family:'Fredoka One',cursive;font-size:0.85rem;color:#f5a623;margin-bottom:6px">
+            🏆 Top Droomdoelen van ${p.name}
+          </div>
+          ${(wallet.dreamGoals||[]).slice(-5).reverse().map((d,i)=>`
+            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+              <span>${['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+              <span style="flex:1;color:white;font-size:0.82rem">${d.text}</span>
+              <span style="font-size:0.68rem;color:rgba(255,255,255,0.35)">🪙${d.at}</span>
+            </div>`).join('')}
+        </div>` : ''}
 
       </div>
     </div>`;
