@@ -807,41 +807,42 @@ function updateCoinDisplay() {
 
 // ===== 10 WERELDEN =====
 const WORLDS = [
-  { id:0, name:'Bloemenveld',   icon:'🌸', color:'#FF9EBC', bg:'linear-gradient(180deg,#FFD6E8,#FFF0F5)', unlockLevel:0  },
-  { id:1, name:'Jungle',        icon:'🌴', color:'#4CAF50', bg:'linear-gradient(180deg,#C8F0A0,#E8FFD0)', unlockLevel:8  },
-  { id:2, name:'Oceaan',        icon:'🌊', color:'#2196F3', bg:'linear-gradient(180deg,#B3E5FC,#E3F2FD)', unlockLevel:16 },
-  { id:3, name:'Woestijn',      icon:'🏜️', color:'#FF9800', bg:'linear-gradient(180deg,#FFE0B2,#FFF3E0)', unlockLevel:24 },
-  { id:4, name:'Sneeuwland',    icon:'❄️', color:'#90CAF9', bg:'linear-gradient(180deg,#E3F2FD,#F5FBFF)', unlockLevel:32 },
-  { id:5, name:'Vulkaan',       icon:'🌋', color:'#F44336', bg:'linear-gradient(180deg,#FFCCBC,#FFF3F0)', unlockLevel:40 },
-  { id:6, name:'Ruimte',        icon:'🚀', color:'#673AB7', bg:'linear-gradient(180deg,#D1C4E9,#EDE7F6)', unlockLevel:48 },
-  { id:7, name:'Sprookjesland', icon:'🏰', color:'#E91E63', bg:'linear-gradient(180deg,#F8BBD9,#FCE4EC)', unlockLevel:56 },
-  { id:8, name:'Onderwaterstad',icon:'🐙', color:'#009688', bg:'linear-gradient(180deg,#B2DFDB,#E0F2F1)', unlockLevel:64 },
-  { id:9, name:'Regenboogberg', icon:'🌈', color:'#9C27B0', bg:'linear-gradient(180deg,#E1BEE7,#F3E5F5)', unlockLevel:72 },
+  { id:0,  name:'Bloemenveld',    icon:'🌸', color:'#FF9EBC', unlockLevel:0  },
+  { id:1,  name:'Jungle',         icon:'🌴', color:'#4CAF50', unlockLevel:5  },
+  { id:2,  name:'Oceaan',         icon:'🌊', color:'#2196F3', unlockLevel:10 },
+  { id:3,  name:'Woestijn',       icon:'🏜️', color:'#FF9800', unlockLevel:15 },
+  { id:4,  name:'Sneeuwland',     icon:'❄️', color:'#90CAF9', unlockLevel:20 },
+  { id:5,  name:'Vulkaan',        icon:'🌋', color:'#F44336', unlockLevel:25 },
+  { id:6,  name:'Ruimte',         icon:'🚀', color:'#673AB7', unlockLevel:30 },
+  { id:7,  name:'Sprookjesland',  icon:'🏰', color:'#E91E63', unlockLevel:35 },
+  { id:8,  name:'Onderwaterstad', icon:'🐙', color:'#009688', unlockLevel:40 },
+  { id:9,  name:'Regenboogberg',  icon:'🌈', color:'#9C27B0', unlockLevel:45 },
 ];
 
-// Levels per wereld (8 per wereld = 80 totaal)
+// 5 levels per wereld = 50 totaal
+// Types per wereld: parcour → spell → math → verrassing → finish
 function getLevelsForWorld(worldId) {
-  const rewards = [
-    [5,10,10,5,20,20,30,10],   // wereld 0
-    [5,12,12,5,24,24,36,12],   // wereld 1
-    [5,14,14,5,28,28,42,14],   // wereld 2
-    [5,16,16,5,32,32,48,16],   // wereld 3
-    [5,18,18,5,36,36,54,18],   // wereld 4
-    [5,20,20,5,40,40,60,20],   // wereld 5
-    [5,22,22,5,44,44,66,22],   // wereld 6
-    [5,24,24,5,48,48,72,24],   // wereld 7
-    [5,26,26,5,52,52,78,26],   // wereld 8
-    [5,28,28,5,56,56,84,28],   // wereld 9
-  ][worldId];
+  const base = 5 + worldId * 2;
+  const r = [base, base*2, base*2, base*3, base*2]; // rewards
+  const SURPRISES = [
+    {icon:'🎁',label:'Verrassing!',type:'surprise',desc:'Mysterieuze bonus!'},
+    {icon:'⚡',label:'Razendnel!', type:'speed',   desc:'Antwoord zo snel mogelijk!'},
+    {icon:'🧩',label:'Puzzel!',    type:'memory',  desc:'Onthoud de volgorde!'},
+    {icon:'🎯',label:'Bullseye!',  type:'surprise',desc:'Raap alle sterren!'},
+    {icon:'🌟',label:'Superronde!',type:'surprise',desc:'Dubbele muntjes!'},
+    {icon:'🎪',label:'Circus!',    type:'surprise',desc:'Drie vragen in één!'},
+    {icon:'⭐',label:'Stervonk!',  type:'surprise',desc:'Bonus challenge!'},
+    {icon:'🔥',label:'Vuurproef!', type:'surprise',desc:'Moeilijke bonus!'},
+    {icon:'💎',label:'Diamant!',   type:'surprise',desc:'Zeldzame beloning!'},
+    {icon:'🪄',label:'Magie!',     type:'surprise',desc:'Magische verrassing!'},
+  ];
+  const surprise = SURPRISES[worldId % SURPRISES.length];
   return [
-    { icon:'🗺️', label:'Avontuur', type:'parcour', reward:rewards[0], desc:'Pak zoveel mogelijk ballonnen!' },
-    { icon:'📝', label:'Spellen',  type:'spell',   reward:rewards[1], desc:'Spel het woord goed!' },
-    { icon:'🔢', label:'Rekenen',  type:'math',    reward:rewards[2], desc:'Los de som op!' },
-    { icon:'🗺️', label:'Avontuur', type:'parcour', reward:rewards[3], desc:'Pak zoveel mogelijk ballonnen!' },
-    { icon:'📝', label:'Spellen',  type:'spell',   reward:rewards[4], desc:'Moeilijker woord!' },
-    { icon:'🔢', label:'Rekenen',  type:'math',    reward:rewards[5], desc:'Moeilijkere som!' },
-    { icon:'📝', label:'Spellen',  type:'spell',   reward:rewards[6], desc:'Supermoeilijk woord!' },
-    { icon:'🏁', label:'Finish!',  type:'finish',  reward:rewards[7], desc:'De finish! Pak je muntjes!' },
+    { icon:'🗺️', label:'Avontuur', type:'parcour',          reward:r[0], desc:'Pak zoveel mogelijk ballonnen!' },
+    { icon:'📝', label:'Spellen',  type:'spell',             reward:r[1], desc:'Spel het woord goed!' },
+    { icon:'🔢', label:'Rekenen',  type:'math',              reward:r[2], desc:'Los de som op!' },
+    { icon:surprise.icon, label:surprise.label, type:surprise.type, reward:r[3], desc:surprise.desc },
+    { icon:'🏁', label:'Finish!',  type:'finish',            reward:r[4], desc:'Wereld voltooid! 🎉' },
   ];
 }
 let LEVELS = getLevelsForWorld(0);
@@ -913,67 +914,108 @@ let MATH  = MATH_BY_WORLD[0];
 // ===== SHOP ITEMS PER WERELD =====
 // Wereld 0: prijs 5, wereld 1: 10, etc.
 const WORLD_SHOP = [
-  { world:0, price:5,  items:[
-    {id:'w0_1',name:'Bloem',emoji:'🌸',cat:'Wereld 1'},{id:'w0_2',name:'Vlinder',emoji:'🦋',cat:'Wereld 1'},
-    {id:'w0_3',name:'Regenboog',emoji:'🌈',cat:'Wereld 1'},{id:'w0_4',name:'Eenhoorn',emoji:'🦄',cat:'Wereld 1'},
-    {id:'w0_5',name:'Roze hart',emoji:'🩷',cat:'Wereld 1'},{id:'w0_6',name:'T-Rex',emoji:'🦖',cat:'Wereld 1'},
-    {id:'w0_7',name:'Leeuw',emoji:'🦁',cat:'Wereld 1'},{id:'w0_8',name:'Tijger',emoji:'🐯',cat:'Wereld 1'},
+  { world:0, items:[
+    {id:'w0_1',name:'Bloem',emoji:'🌸',price:3,cat:'🌸 Bloemenveld'},
+    {id:'w0_2',name:'Vlinder',emoji:'🦋',price:5,cat:'🌸 Bloemenveld'},
+    {id:'w0_3',name:'Eenhoorn',emoji:'🦄',price:8,cat:'🌸 Bloemenveld'},
+    {id:'w0_4',name:'Regenboog',emoji:'🌈',price:6,cat:'🌸 Bloemenveld'},
+    {id:'w0_5',name:'Roze Hart',emoji:'🩷',price:4,cat:'🌸 Bloemenveld'},
+    {id:'w0_6',name:'Leeuw',emoji:'🦁',price:7,cat:'🌸 Bloemenveld'},
+    {id:'w0_7',name:'Tijger',emoji:'🐯',price:7,cat:'🌸 Bloemenveld'},
+    {id:'w0_8',name:'Gouden Ster',emoji:'⭐',price:12,cat:'🌸 Bloemenveld'},
   ]},
-  { world:1, price:10, items:[
-    {id:'w1_1',name:'Palmboom',emoji:'🌴',cat:'Wereld 2'},{id:'w1_2',name:'Papegaai',emoji:'🦜',cat:'Wereld 2'},
-    {id:'w1_3',name:'Aap',emoji:'🐒',cat:'Wereld 2'},{id:'w1_4',name:'Tijger',emoji:'🐅',cat:'Wereld 2'},
-    {id:'w1_5',name:'Toekan',emoji:'🦅',cat:'Wereld 2'},{id:'w1_6',name:'Banaan',emoji:'🍌',cat:'Wereld 2'},
-    {id:'w1_7',name:'Luiaard',emoji:'🦥',cat:'Wereld 2'},{id:'w1_8',name:'Ananas',emoji:'🍍',cat:'Wereld 2'},
+  { world:1, items:[
+    {id:'w1_1',name:'Palmboom',emoji:'🌴',price:5,cat:'🌴 Jungle'},
+    {id:'w1_2',name:'Aap',emoji:'🐒',price:8,cat:'🌴 Jungle'},
+    {id:'w1_3',name:'Papegaai',emoji:'🦜',price:6,cat:'🌴 Jungle'},
+    {id:'w1_4',name:'Tijger',emoji:'🐅',price:12,cat:'🌴 Jungle'},
+    {id:'w1_5',name:'Banaan',emoji:'🍌',price:4,cat:'🌴 Jungle'},
+    {id:'w1_6',name:'Toekan',emoji:'🦅',price:10,cat:'🌴 Jungle'},
+    {id:'w1_7',name:'Luiaard',emoji:'🦥',price:9,cat:'🌴 Jungle'},
+    {id:'w1_8',name:'Jungle Kroon',emoji:'👑',price:18,cat:'🌴 Jungle'},
   ]},
-  { world:2, price:15, items:[
-    {id:'w2_1',name:'Dolfijn',emoji:'🐬',cat:'Wereld 3'},{id:'w2_2',name:'Zeester',emoji:'⭐',cat:'Wereld 3'},
-    {id:'w2_3',name:'Octopus',emoji:'🐙',cat:'Wereld 3'},{id:'w2_4',name:'Haai',emoji:'🦈',cat:'Wereld 3'},
-    {id:'w2_5',name:'Walvis',emoji:'🐳',cat:'Wereld 3'},{id:'w2_6',name:'Zeemeermin',emoji:'🧜',cat:'Wereld 3'},
-    {id:'w2_7',name:'Koraal',emoji:'🪸',cat:'Wereld 3'},{id:'w2_8',name:'Schildpad',emoji:'🐢',cat:'Wereld 3'},
+  { world:2, items:[
+    {id:'w2_1',name:'Dolfijn',emoji:'🐬',price:6,cat:'🌊 Oceaan'},
+    {id:'w2_2',name:'Zeester',emoji:'⭐',price:5,cat:'🌊 Oceaan'},
+    {id:'w2_3',name:'Octopus',emoji:'🐙',price:10,cat:'🌊 Oceaan'},
+    {id:'w2_4',name:'Haai',emoji:'🦈',price:15,cat:'🌊 Oceaan'},
+    {id:'w2_5',name:'Walvis',emoji:'🐳',price:8,cat:'🌊 Oceaan'},
+    {id:'w2_6',name:'Zeemeermin',emoji:'🧜',price:20,cat:'🌊 Oceaan'},
+    {id:'w2_7',name:'Koraal',emoji:'🪸',price:7,cat:'🌊 Oceaan'},
+    {id:'w2_8',name:'Parel',emoji:'💎',price:22,cat:'🌊 Oceaan'},
   ]},
-  { world:3, price:20, items:[
-    {id:'w3_1',name:'Kameel',emoji:'🐪',cat:'Wereld 4'},{id:'w3_2',name:'Schorpioen',emoji:'🦂',cat:'Wereld 4'},
-    {id:'w3_3',name:'Cactus',emoji:'🌵',cat:'Wereld 4'},{id:'w3_4',name:'Cobra',emoji:'🐍',cat:'Wereld 4'},
-    {id:'w3_5',name:'Gouden zon',emoji:'☀️',cat:'Wereld 4'},{id:'w3_6',name:'Adelaar',emoji:'🦅',cat:'Wereld 4'},
-    {id:'w3_7',name:'Vos',emoji:'🦊',cat:'Wereld 4'},{id:'w3_8',name:'Paard',emoji:'🐎',cat:'Wereld 4'},
+  { world:3, items:[
+    {id:'w3_1',name:'Kameel',emoji:'🐪',price:7,cat:'🏜️ Woestijn'},
+    {id:'w3_2',name:'Cactus',emoji:'🌵',price:5,cat:'🏜️ Woestijn'},
+    {id:'w3_3',name:'Cobra',emoji:'🐍',price:12,cat:'🏜️ Woestijn'},
+    {id:'w3_4',name:'Adelaar',emoji:'🦅',price:10,cat:'🏜️ Woestijn'},
+    {id:'w3_5',name:'Gouden Zon',emoji:'☀️',price:8,cat:'🏜️ Woestijn'},
+    {id:'w3_6',name:'Paard',emoji:'🐎',price:15,cat:'🏜️ Woestijn'},
+    {id:'w3_7',name:'Schorpioen',emoji:'🦂',price:18,cat:'🏜️ Woestijn'},
+    {id:'w3_8',name:'Farao Masker',emoji:'🏺',price:25,cat:'🏜️ Woestijn'},
   ]},
-  { world:4, price:25, items:[
-    {id:'w4_1',name:'IJsbeer',emoji:'🐻‍❄️',cat:'Wereld 5'},{id:'w4_2',name:'Pinguin',emoji:'🐧',cat:'Wereld 5'},
-    {id:'w4_3',name:'Sneeuwpop',emoji:'⛄',cat:'Wereld 5'},{id:'w4_4',name:'Rendier',emoji:'🦌',cat:'Wereld 5'},
-    {id:'w4_5',name:'Ski',emoji:'⛷️',cat:'Wereld 5'},{id:'w4_6',name:'Sneeuwvlok',emoji:'❄️',cat:'Wereld 5'},
-    {id:'w4_7',name:'Wolf',emoji:'🐺',cat:'Wereld 5'},{id:'w4_8',name:'Sneeuwbril',emoji:'🥽',cat:'Wereld 5'},
+  { world:4, items:[
+    {id:'w4_1',name:'Sneeuwvlok',emoji:'❄️',price:5,cat:'❄️ Sneeuwland'},
+    {id:'w4_2',name:'Pinguin',emoji:'🐧',price:7,cat:'❄️ Sneeuwland'},
+    {id:'w4_3',name:'IJsbeer',emoji:'🐻‍❄️',price:12,cat:'❄️ Sneeuwland'},
+    {id:'w4_4',name:'Sneeuwpop',emoji:'⛄',price:8,cat:'❄️ Sneeuwland'},
+    {id:'w4_5',name:'Rendier',emoji:'🦌',price:10,cat:'❄️ Sneeuwland'},
+    {id:'w4_6',name:'Ski',emoji:'⛷️',price:9,cat:'❄️ Sneeuwland'},
+    {id:'w4_7',name:'Wolf',emoji:'🐺',price:15,cat:'❄️ Sneeuwland'},
+    {id:'w4_8',name:'IJskristal',emoji:'💠',price:28,cat:'❄️ Sneeuwland'},
   ]},
-  { world:5, price:30, items:[
-    {id:'w5_1',name:'Vulkaan',emoji:'🌋',cat:'Wereld 6'},{id:'w5_2',name:'Draak',emoji:'🐉',cat:'Wereld 6'},
-    {id:'w5_3',name:'Vuurbal',emoji:'🔥',cat:'Wereld 6'},{id:'w5_4',name:'Lava',emoji:'♨️',cat:'Wereld 6'},
-    {id:'w5_5',name:'Salamander',emoji:'🦎',cat:'Wereld 6'},{id:'w5_6',name:'Ridder',emoji:'⚔️',cat:'Wereld 6'},
-    {id:'w5_7',name:'Goud',emoji:'💛',cat:'Wereld 6'},{id:'w5_8',name:'Fakkel',emoji:'🕯️',cat:'Wereld 6'},
+  { world:5, items:[
+    {id:'w5_1',name:'Vuurtje',emoji:'🔥',price:6,cat:'🌋 Vulkaan'},
+    {id:'w5_2',name:'Lava',emoji:'♨️',price:8,cat:'🌋 Vulkaan'},
+    {id:'w5_3',name:'Draak',emoji:'🐉',price:20,cat:'🌋 Vulkaan'},
+    {id:'w5_4',name:'Ridder',emoji:'⚔️',price:12,cat:'🌋 Vulkaan'},
+    {id:'w5_5',name:'Fakkel',emoji:'🕯️',price:5,cat:'🌋 Vulkaan'},
+    {id:'w5_6',name:'Salamander',emoji:'🦎',price:10,cat:'🌋 Vulkaan'},
+    {id:'w5_7',name:'Vuur Zwaard',emoji:'🗡️',price:18,cat:'🌋 Vulkaan'},
+    {id:'w5_8',name:'Gouden Harnas',emoji:'🛡️',price:30,cat:'🌋 Vulkaan'},
   ]},
-  { world:6, price:35, items:[
-    {id:'w6_1',name:'Raket',emoji:'🚀',cat:'Wereld 7'},{id:'w6_2',name:'Planeet',emoji:'🪐',cat:'Wereld 7'},
-    {id:'w6_3',name:'Astronaut',emoji:'👨‍🚀',cat:'Wereld 7'},{id:'w6_4',name:'UFO',emoji:'🛸',cat:'Wereld 7'},
-    {id:'w6_5',name:'Alien',emoji:'👽',cat:'Wereld 7'},{id:'w6_6',name:'Ster',emoji:'⭐',cat:'Wereld 7'},
-    {id:'w6_7',name:'Robot',emoji:'🤖',cat:'Wereld 7'},{id:'w6_8',name:'Telescoop',emoji:'🔭',cat:'Wereld 7'},
+  { world:6, items:[
+    {id:'w6_1',name:'Raket',emoji:'🚀',price:8,cat:'🚀 Ruimte'},
+    {id:'w6_2',name:'Ster',emoji:'⭐',price:5,cat:'🚀 Ruimte'},
+    {id:'w6_3',name:'Planeet',emoji:'🪐',price:12,cat:'🚀 Ruimte'},
+    {id:'w6_4',name:'Alien',emoji:'👽',price:10,cat:'🚀 Ruimte'},
+    {id:'w6_5',name:'UFO',emoji:'🛸',price:15,cat:'🚀 Ruimte'},
+    {id:'w6_6',name:'Robot',emoji:'🤖',price:18,cat:'🚀 Ruimte'},
+    {id:'w6_7',name:'Astronaut',emoji:'👨‍🚀',price:20,cat:'🚀 Ruimte'},
+    {id:'w6_8',name:'Zwart Gat',emoji:'🌌',price:35,cat:'🚀 Ruimte'},
   ]},
-  { world:7, price:40, items:[
-    {id:'w7_1',name:'Kasteel',emoji:'🏰',cat:'Wereld 8'},{id:'w7_2',name:'Prinses',emoji:'👸',cat:'Wereld 8'},
-    {id:'w7_3',name:'Kroon',emoji:'👑',cat:'Wereld 8'},{id:'w7_4',name:'Eenhoorn',emoji:'🦄',cat:'Wereld 8'},
-    {id:'w7_5',name:'Toverstaf',emoji:'🪄',cat:'Wereld 8'},{id:'w7_6',name:'Fee',emoji:'🧚',cat:'Wereld 8'},
-    {id:'w7_7',name:'Draakon',emoji:'🐲',cat:'Wereld 8'},{id:'w7_8',name:'Heks',emoji:'🧙',cat:'Wereld 8'},
+  { world:7, items:[
+    {id:'w7_1',name:'Kasteel',emoji:'🏰',price:8,cat:'🏰 Sprookjes'},
+    {id:'w7_2',name:'Fee',emoji:'🧚',price:10,cat:'🏰 Sprookjes'},
+    {id:'w7_3',name:'Kroon',emoji:'👑',price:15,cat:'🏰 Sprookjes'},
+    {id:'w7_4',name:'Toverstaf',emoji:'🪄',price:6,cat:'🏰 Sprookjes'},
+    {id:'w7_5',name:'Eenhoorn',emoji:'🦄',price:20,cat:'🏰 Sprookjes'},
+    {id:'w7_6',name:'Heks',emoji:'🧙',price:12,cat:'🏰 Sprookjes'},
+    {id:'w7_7',name:'Draak',emoji:'🐲',price:22,cat:'🏰 Sprookjes'},
+    {id:'w7_8',name:'Magisch Zwaard',emoji:'⚔️',price:40,cat:'🏰 Sprookjes'},
   ]},
-  { world:8, price:45, items:[
-    {id:'w8_1',name:'Zeemeermin',emoji:'🧜',cat:'Wereld 9'},{id:'w8_2',name:'Kraken',emoji:'🦑',cat:'Wereld 9'},
-    {id:'w8_3',name:'Goudschat',emoji:'💰',cat:'Wereld 9'},{id:'w8_4',name:'Piraat',emoji:'🏴‍☠️',cat:'Wereld 9'},
-    {id:'w8_5',name:'Anker',emoji:'⚓',cat:'Wereld 9'},{id:'w8_6',name:'Schat',emoji:'💎',cat:'Wereld 9'},
-    {id:'w8_7',name:'Zeepaardje',emoji:'🐠',cat:'Wereld 9'},{id:'w8_8',name:'Parel',emoji:'🪬',cat:'Wereld 9'},
+  { world:8, items:[
+    {id:'w8_1',name:'Zeepaardje',emoji:'🐠',price:8,cat:'🐙 Onderwater'},
+    {id:'w8_2',name:'Kraken',emoji:'🦑',price:15,cat:'🐙 Onderwater'},
+    {id:'w8_3',name:'Schat',emoji:'💰',price:10,cat:'🐙 Onderwater'},
+    {id:'w8_4',name:'Anker',emoji:'⚓',price:6,cat:'🐙 Onderwater'},
+    {id:'w8_5',name:'Piraat',emoji:'🏴‍☠️',price:12,cat:'🐙 Onderwater'},
+    {id:'w8_6',name:'Zeemeermin',emoji:'🧜',price:25,cat:'🐙 Onderwater'},
+    {id:'w8_7',name:'Goudschat',emoji:'💎',price:20,cat:'🐙 Onderwater'},
+    {id:'w8_8',name:'Neptunes Drietand',emoji:'🔱',price:45,cat:'🐙 Onderwater'},
   ]},
-  { world:9, price:50, items:[
-    {id:'w9_1',name:'Regenboogpaard',emoji:'🦄',cat:'Wereld 10'},{id:'w9_2',name:'Kristal',emoji:'💎',cat:'Wereld 10'},
-    {id:'w9_3',name:'Gouden ster',emoji:'🌟',cat:'Wereld 10'},{id:'w9_4',name:'Magie',emoji:'✨',cat:'Wereld 10'},
-    {id:'w9_5',name:'Regenboog',emoji:'🌈',cat:'Wereld 10'},{id:'w9_6',name:'Edelsteentje',emoji:'💍',cat:'Wereld 10'},
-    {id:'w9_7',name:'Troon',emoji:'🪑',cat:'Wereld 10'},{id:'w9_8',name:'Diamant',emoji:'💠',cat:'Wereld 10'},
+  { world:9, items:[
+    {id:'w9_1',name:'Regenboog',emoji:'🌈',price:8,cat:'🌈 Regenboog'},
+    {id:'w9_2',name:'Kristal',emoji:'💎',price:12,cat:'🌈 Regenboog'},
+    {id:'w9_3',name:'Gouden Ster',emoji:'🌟',price:10,cat:'🌈 Regenboog'},
+    {id:'w9_4',name:'Magie',emoji:'✨',price:6,cat:'🌈 Regenboog'},
+    {id:'w9_5',name:'Eenhoorn',emoji:'🦄',price:20,cat:'🌈 Regenboog'},
+    {id:'w9_6',name:'Diamant',emoji:'💍',price:30,cat:'🌈 Regenboog'},
+    {id:'w9_7',name:'Regenboogpaard',emoji:'🦄',price:35,cat:'🌈 Regenboog'},
+    {id:'w9_8',name:'Heilige Graal',emoji:'🏆',price:50,cat:'🌈 Regenboog'},
   ]},
 ];
+
 
 // Vaste goedkope items (altijd beschikbaar)
 const SHOP_ITEMS_BASE = [
@@ -993,11 +1035,11 @@ const SHOP_ITEMS_BASE = [
 // Combineer alle winkelitems
 function getShopItems(playerIdx) {
   const p = state.players[playerIdx];
-  const worldUnlocked = Math.floor((p.level || 0) / 8);
+  const worldUnlocked = Math.floor((p.level || 0) / 5); // 5 levels per world now
   let items = [...SHOP_ITEMS_BASE];
   WORLD_SHOP.forEach(ws => {
     const unlocked = ws.world <= worldUnlocked;
-    ws.items.forEach(it => items.push({...it, price: ws.price, locked: !unlocked, worldRequired: ws.world}));
+    ws.items.forEach(it => items.push({...it, locked: !unlocked, worldRequired: ws.world}));
   });
   return items;
 }
@@ -1167,10 +1209,14 @@ function openChallenge(idx, worldIdx) {
   currentWorldIdx = worldIdx || 0;
   const lvl = LEVELS[idx];
   challengeState = { lives: 3, correct: 0, total: 0 };
-  if (lvl.type === 'finish') showFinishChallenge();
-  else if (lvl.type === 'parcour') showParcour();
-  else if (lvl.type === 'spell') showSpell();
-  else if (lvl.type === 'math') showMath();
+  if (lvl.type === 'finish')   showFinishChallenge();
+  else if (lvl.type === 'parcour')  showParcour();
+  else if (lvl.type === 'spell')    showSpell();
+  else if (lvl.type === 'math')     showMath();
+  else if (lvl.type === 'surprise') showSurpriseChallenge();
+  else if (lvl.type === 'speed')    showSpeedChallenge();
+  else if (lvl.type === 'memory')   showMemoryChallenge();
+  else showSurpriseChallenge(); // fallback
   document.getElementById('challenge-modal').classList.add('open');
 }
 
@@ -1907,56 +1953,41 @@ function renderAvatarBuilder() {
   const p = getPlayer();
   const owned = state.ownedAvatarItems[state.currentPlayer] || [];
   const equipped = p.equipped || {};
-  const bodyItem = AVATAR_BASE_BODIES.find(b => b.id === (p.avatarBody||'av_body_f1')) || AVATAR_BASE_BODIES[0];
+  const color = p.avatarColor || '#E91E63';
 
-  // Build outfit display
-  const equippedItems = Object.values(equipped).filter(Boolean).map(id => {
-    const it = AVATAR_ITEMS.find(x => x.id===id);
-    return it ? `<div class="avatar-badge">${it.emoji}</div>` : '';
-  }).join('');
+  const headItem    = equipped.head      ? AVATAR_ITEMS.find(x=>x.id===equipped.head)      : null;
+  const outfitItem  = equipped.outfit    ? AVATAR_ITEMS.find(x=>x.id===equipped.outfit)    : null;
+  const accessItem  = equipped.accessory ? AVATAR_ITEMS.find(x=>x.id===equipped.accessory) : null;
+  const petItem     = equipped.pet       ? AVATAR_ITEMS.find(x=>x.id===equipped.pet)       : null;
+  const bgItem      = equipped.bg        ? AVATAR_ITEMS.find(x=>x.id===equipped.bg)        : null;
 
-  // Background
-  const bgItem = equipped.bg ? AVATAR_ITEMS.find(x=>x.id===equipped.bg) : null;
-  const bgEmoji = bgItem ? bgItem.emoji : '🌸';
+  const svgBody = buildAvatarSVG(color, headItem, outfitItem, accessItem, petItem, bgItem, p);
 
   const html = `
-    <div class="avatar-display" style="background:linear-gradient(180deg,${p.avatarColor||'#E91E63'}22,#fff)">
-      <div style="font-size:3rem;margin-bottom:4px">${bgEmoji}</div>
-      <div class="avatar-name">${p.avatar} ${p.name}</div>
-      <div class="avatar-figure">${bodyItem.emoji}
-        ${equipped.head ? `<span style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:1.5rem">${AVATAR_ITEMS.find(x=>x.id===equipped.head)?.emoji||''}</span>` : ''}
+    <div style="background:linear-gradient(180deg,${color}33,${color}11,white);border-radius:20px;
+      padding:16px;margin-bottom:12px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.1)">
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:${color};margin-bottom:8px">
+        ${p.avatar} ${p.name}'s Poppetje
       </div>
-      <div class="avatar-outfit">${equippedItems || '<span style="color:#ccc;font-size:0.85rem">Geen kleding aan</span>'}</div>
+      ${svgBody}
       <div style="margin-top:10px">
-        <div style="font-family:\'Fredoka One\',cursive;font-size:0.85rem;color:#888;margin-bottom:6px">Kleur Ranger</div>
-        <div class="color-picker">
-          ${['#E91E63','#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336','#00BCD4','#FF69B4','#FFD700','#795548'].map(c=>
-            `<button class="color-btn ${(p.avatarColor||'#E91E63')===c?'selected':''}"
-              style="background:${c}" onclick="setAvatarColor('${c}')"></button>`
+        <div style="font-family:'Fredoka One',cursive;font-size:0.8rem;color:#888;margin-bottom:6px">🎨 Kleur</div>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${['#E91E63','#2196F3','#4CAF50','#FF9800','#9C27B0','#F44336','#00BCD4','#FF69B4','#FFD700','#795548','#607D8B','#FF5722'].map(c=>
+            `<button style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${color===c?'#333':'transparent'};cursor:pointer"
+              onclick="setAvatarColor('${c}')"></button>`
           ).join('')}
         </div>
       </div>
     </div>
 
-    <div style="margin-bottom:10px">
-      <div style="font-family:\'Fredoka One\',cursive;font-size:0.9rem;color:var(--purple);margin-bottom:6px">🧑 Basis Poppetje</div>
-      <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px">
-        ${AVATAR_BASE_BODIES.map(b => {
-          const isOwned = b.price===0 || owned.includes(b.id);
-          const isActive = (p.avatarBody||'av_body_f1')===b.id;
-          return `<div style="flex-shrink:0;text-align:center;cursor:pointer;padding:8px;border-radius:12px;border:2px solid ${isActive?'var(--purple)':'transparent'};background:${isActive?'#f0edff':'white'};min-width:60px;box-shadow:0 2px 8px rgba(0,0,0,0.1)"
-            onclick="selectBody('${b.id}')">
-            <div style="font-size:1.8rem">${b.emoji}</div>
-            <div style="font-family:\'Fredoka One\',cursive;font-size:0.65rem;color:var(--dark)">${b.name}</div>
-            ${!isOwned?`<div style="font-size:0.65rem;color:var(--coin)">🪙${b.price}</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>
-
-    <div class="wardrobe-tabs">
-      ${[['head','👒 Hoofd'],['outfit','👗 Kleding'],['accessory','🪄 Accessoire'],['pet','🐉 Huisdier'],['bg','🌸 Achtergrond']].map(([slot,label])=>
-        `<button class="wardrobe-tab ${activeWardrobeTab===slot?'active':''}" onclick="setWardrobeTab('${slot}')">${label}</button>`
+    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none">
+      ${[['head','👒 Hoofd'],['outfit','👗 Kleding'],['accessory','🪄 Gadget'],['pet','🐾 Dier'],['bg','🌸 Achter']].map(([slot,label])=>
+        `<button style="flex-shrink:0;padding:8px 12px;border-radius:20px;border:none;cursor:pointer;
+          font-family:'Fredoka One',cursive;font-size:0.78rem;white-space:nowrap;
+          background:${activeWardrobeTab===slot?'var(--purple)':'rgba(102,126,234,0.15)'};
+          color:${activeWardrobeTab===slot?'white':'var(--purple)'}"
+          onclick="setWardrobeTab('${slot}')">${label}${equipped[slot]?'✅':''}</button>`
       ).join('')}
     </div>
     <div class="wardrobe-grid" id="wardrobe-grid">
@@ -1964,6 +1995,78 @@ function renderAvatarBuilder() {
     </div>
   `;
   document.getElementById('avatar-builder').innerHTML = html;
+}
+
+function buildAvatarSVG(color, headItem, outfitItem, accessItem, petItem, bgItem, p) {
+  const skin = '#FDBCB4';
+  const hair = p.hairColor || '#5D4037';
+  const dark = (hex) => {
+    try {
+      const n=parseInt(hex.slice(1),16);
+      const r=Math.max(0,(n>>16)-40),g=Math.max(0,((n>>8)&255)-40),b=Math.max(0,(n&255)-40);
+      return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+    } catch(e){return hex;}
+  };
+  return `<svg viewBox="0 0 160 220" xmlns="http://www.w3.org/2000/svg" width="140" height="193" style="display:block;margin:0 auto">
+    <rect width="160" height="220" rx="16" fill="${color}22"/>
+    ${bgItem?`<text x="80" y="115" text-anchor="middle" font-size="85" opacity="0.12">${bgItem.emoji}</text>`:''}
+    <!-- Schoenen -->
+    <ellipse cx="58" cy="208" rx="18" ry="9" fill="${dark(color)}"/>
+    <ellipse cx="102" cy="208" rx="18" ry="9" fill="${dark(color)}"/>
+    <ellipse cx="57" cy="205" rx="15" ry="7" fill="${color}"/>
+    <ellipse cx="101" cy="205" rx="15" ry="7" fill="${color}"/>
+    <!-- Benen -->
+    <rect x="50" y="155" width="22" height="54" rx="11" fill="${color}bb"/>
+    <rect x="88" y="155" width="22" height="54" rx="11" fill="${color}bb"/>
+    <!-- Lichaam -->
+    <rect x="38" y="96" width="84" height="66" rx="16" fill="${color}"/>
+    ${outfitItem
+      ? `<text x="80" y="137" text-anchor="middle" font-size="30">${outfitItem.emoji}</text>`
+      : `<circle cx="80" cy="110" r="3" fill="white" opacity="0.5"/>
+         <circle cx="80" cy="122" r="3" fill="white" opacity="0.5"/>
+         <circle cx="80" cy="134" r="3" fill="white" opacity="0.5"/>`}
+    <!-- Armen -->
+    <rect x="12" y="98" width="28" height="50" rx="13" fill="${color}bb"/>
+    <rect x="120" y="98" width="28" height="50" rx="13" fill="${color}bb"/>
+    <circle cx="26" cy="153" r="12" fill="${skin}"/>
+    <circle cx="134" cy="153" r="12" fill="${skin}"/>
+    ${accessItem?`<text x="136" y="146" text-anchor="middle" font-size="18" transform="rotate(25,136,146)">${accessItem.emoji}</text>`:''}
+    <!-- Nek -->
+    <rect x="68" y="83" width="24" height="18" rx="7" fill="${skin}"/>
+    <!-- Hoofd -->
+    <ellipse cx="80" cy="64" rx="40" ry="42" fill="${skin}"/>
+    <!-- Haar -->
+    <ellipse cx="80" cy="28" rx="40" ry="20" fill="${hair}"/>
+    <rect x="40" y="24" width="80" height="25" fill="${hair}"/>
+    <ellipse cx="41" cy="57" rx="10" ry="24" fill="${hair}"/>
+    <ellipse cx="119" cy="57" rx="10" ry="24" fill="${hair}"/>
+    <!-- Ogen -->
+    <circle cx="65" cy="62" r="8" fill="white"/>
+    <circle cx="95" cy="62" r="8" fill="white"/>
+    <circle cx="66" cy="63" r="4.5" fill="#333"/>
+    <circle cx="96" cy="63" r="4.5" fill="#333"/>
+    <circle cx="68" cy="61" r="1.8" fill="white"/>
+    <circle cx="98" cy="61" r="1.8" fill="white"/>
+    <!-- Neus -->
+    <ellipse cx="80" cy="74" rx="4" ry="3" fill="${skin}" stroke="#d4938a" stroke-width="1.2"/>
+    <!-- Mond -->
+    <path d="M 67 85 Q 80 96 93 85" stroke="#c0735a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- Wangen -->
+    <ellipse cx="53" cy="77" rx="11" ry="8" fill="#ffb6b6" opacity="0.45"/>
+    <ellipse cx="107" cy="77" rx="11" ry="8" fill="#ffb6b6" opacity="0.45"/>
+    <!-- Hoofddeksel -->
+    ${headItem?`<text x="80" y="18" text-anchor="middle" font-size="34">${headItem.emoji}</text>`:''}
+    <!-- Huisdier -->
+    ${petItem?`<text x="142" y="190" text-anchor="middle" font-size="28">${petItem.emoji}</text>`:''}
+  </svg>`;
+}
+
+function darken(hex) {
+  try {
+    const n=parseInt(hex.slice(1),16);
+    const r=Math.max(0,(n>>16)-40),g=Math.max(0,((n>>8)&255)-40),b=Math.max(0,(n&255)-40);
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  } catch(e){return hex;}
 }
 
 function renderWardrobeItems(slot, owned, equipped) {
@@ -2788,6 +2891,284 @@ function renderHome() {
         </div>`).join('')}
     </div>`;
 }
+
+// ===== 🎁 VERRASSING & BONUS CHALLENGES =====
+
+const SURPRISE_REWARDS = [
+  {emoji:'🎁', msg:'Verrassing! Bonus muntjes!', coins:15},
+  {emoji:'💰', msg:'Jackpot! Dubbele muntjes!', coins:20},
+  {emoji:'🌟', msg:'Superster! Extra beloning!', coins:25},
+  {emoji:'🎊', msg:'Confetti! Je wint muntjes!', coins:18},
+  {emoji:'🏆', msg:'Trofee! Top prestatie!', coins:22},
+];
+
+const SURPRISE_CHALLENGES = [
+  // Raad het woord van de afbeelding
+  { type:'riddle', q:'🐘 Ik ben grijs en heel groot. Wat ben ik?', a:'OLIFANT', opts:['OLIFANT','NEUSHOORN','NIJLPAARD','KAMEEL'] },
+  { type:'riddle', q:'☀️ Ik schijn overdag en geef warmte. Wat ben ik?', a:'ZON', opts:['ZON','MAAN','STER','LAMP'] },
+  { type:'riddle', q:'🐟 Ik zwem in water en heb schubben. Wat ben ik?', a:'VIS', opts:['VIS','KIKKER','SCHILDPAD','KRAB'] },
+  { type:'riddle', q:'🍎 Ik ben rood en groei aan een boom. Wat ben ik?', a:'APPEL', opts:['APPEL','PEER','KERS','TOMAAT'] },
+  { type:'riddle', q:'🌙 Ik schijn \'s nachts aan de hemel. Wat ben ik?', a:'MAAN', opts:['MAAN','ZON','STER','WOLK'] },
+  { type:'riddle', q:'🚂 Ik rijd op rails en ga heel snel. Wat ben ik?', a:'TREIN', opts:['TREIN','BUS','AUTO','FIETS'] },
+  { type:'riddle', q:'🦁 Ik ben de koning van de jungle. Wat ben ik?', a:'LEEUW', opts:['LEEUW','TIJGER','BEER','WOLF'] },
+  { type:'riddle', q:'⛄ Ik sta buiten in de winter en smelt in de lente. Wat ben ik?', a:'SNEEUWPOP', opts:['SNEEUWPOP','IJSBERG','IJSPEGEL','VORST'] },
+];
+
+function showSurpriseChallenge() {
+  sfxBonus();
+  const lvl = LEVELS[currentLevelIdx];
+  const reward = lvl.reward || 15;
+
+  // Kies willekeurig: raadsel OF dubbele muntjes spin
+  const doSpin = Math.random() < 0.4;
+
+  if (doSpin) {
+    showCoinSpin(reward);
+    return;
+  }
+
+  const ch = SURPRISE_CHALLENGES[Math.floor(Math.random() * SURPRISE_CHALLENGES.length)];
+  challengeStartTime = Date.now();
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:3rem">🎁</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--purple);margin:6px 0">Verrassing Challenge!</div>
+      <div style="background:linear-gradient(135deg,#fff3cd,#fff);border-radius:14px;padding:14px;margin:10px 0;font-size:1.1rem;color:var(--dark);font-family:'Fredoka One',cursive">
+        ${ch.q}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        ${shuffleArr([...ch.opts]).map(o =>
+          `<button class="math-btn" onclick="checkSurprise(this,'${o}','${ch.a}',${reward})" style="font-size:1rem;padding:14px">${o}</button>`
+        ).join('')}
+      </div>
+      <button class="btn-secondary" onclick="closeChallenge()" style="margin-top:12px">← Terug</button>
+    </div>`;
+}
+
+function checkSurprise(btn, answer, correct, reward) {
+  const btns = document.querySelectorAll('.math-btn');
+  btns.forEach(b => b.onclick = null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.classList.add('correct-ans');
+    sfxPerfect();
+    recordAnswer('spell', true, ms);
+    closeChallenge();
+    completeChallenge(reward, true);
+  } else {
+    btn.classList.add('wrong-ans');
+    sfxWrong();
+    recordAnswer('spell', false, ms);
+    // Toon correct antwoord
+    btns.forEach(b => { if (b.textContent === correct) b.classList.add('correct-ans'); });
+    setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1500);
+  }
+}
+
+function showCoinSpin(reward) {
+  const bonus = [reward, reward*2, Math.floor(reward*1.5), Math.floor(reward*0.5), reward+5, reward+10];
+  let spinIdx = 0;
+  let spinning = true;
+  let spinCount = 0;
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:3rem">🎰</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--purple);margin:8px 0">Muntjes Wiel!</div>
+      <div style="font-size:4rem;margin:16px 0" id="spin-display">🪙</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:var(--coin)" id="spin-coins">?</div>
+      <div style="margin-top:16px;font-size:0.9rem;color:#888" id="spin-hint">Tik om te stoppen!</div>
+      <button class="btn-primary" id="spin-btn" onclick="stopSpin()" style="margin-top:12px">🎰 Stop!</button>
+    </div>`;
+
+  function doSpin() {
+    if (!spinning) return;
+    spinIdx = (spinIdx + 1) % bonus.length;
+    const el = document.getElementById('spin-coins');
+    if (el) el.textContent = '🪙 ' + bonus[spinIdx];
+    spinCount++;
+    const delay = spinCount < 10 ? 80 : spinCount < 20 ? 120 : 200;
+    setTimeout(doSpin, delay);
+  }
+  doSpin();
+
+  window._spinBonus = bonus;
+  window._spinIdx = () => spinIdx;
+  window._stopSpinFn = () => { spinning = false; };
+}
+
+function stopSpin() {
+  if (window._stopSpinFn) window._stopSpinFn();
+  const coins = window._spinBonus[window._spinIdx()];
+  sfxCoins(coins);
+  const el = document.getElementById('spin-hint');
+  if (el) el.textContent = `🎉 Je wint ${coins} muntjes!`;
+  const btn = document.getElementById('spin-btn');
+  if (btn) { btn.textContent = 'Pakken! 🎁'; btn.onclick = () => { closeChallenge(); completeChallenge(coins, coins >= 20); }; }
+}
+
+// ===== ⚡ SPEED CHALLENGE =====
+let speedTimer = null;
+let speedTimeLeft = 0;
+
+function showSpeedChallenge() {
+  // Snelle reken- of spellingsvraag met countdown
+  const playerMath = MATH_BY_WORLD[state.currentPlayer][Math.min(currentWorldIdx, 9)];
+  const q = playerMath[Math.floor(Math.random() * playerMath.length)];
+  const reward = LEVELS[currentLevelIdx].reward;
+  speedTimeLeft = 8; // 8 seconden
+  challengeStartTime = Date.now();
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:2.5rem">⚡</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:#e74c3c">Razendnel!</div>
+      <div style="font-size:0.85rem;color:#888;margin:4px 0">Antwoord zo snel mogelijk!</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2.5rem;color:var(--coin);margin:8px 0" id="speed-timer">⏱️ 8</div>
+      <div class="math-problem" style="font-size:2.2rem">${q.q}</div>
+      <div class="math-options" id="speed-opts">
+        ${shuffleArr([...q.opts]).map(o =>
+          `<button class="math-btn" onclick="checkSpeed(this,${o},${q.a},${reward})">${o}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+
+  speedTimer = setInterval(() => {
+    speedTimeLeft--;
+    const el = document.getElementById('speed-timer');
+    if (el) el.textContent = '⏱️ ' + speedTimeLeft;
+    if (speedTimeLeft <= 0) {
+      clearInterval(speedTimer);
+      sfxWrong();
+      closeChallenge();
+      showToast('Tijd op! ⏱️', true);
+    }
+  }, 1000);
+}
+
+function checkSpeed(btn, answer, correct, reward) {
+  clearInterval(speedTimer);
+  const ms = Date.now() - challengeStartTime;
+  const btns = document.querySelectorAll('.math-btn');
+  btns.forEach(b => b.onclick = null);
+  if (answer === correct) {
+    btn.classList.add('correct-ans');
+    const speedBonus = ms < 3000 ? reward * 2 : reward; // dubbel als onder 3 sec!
+    sfxPerfect();
+    recordAnswer('math', true, ms);
+    closeChallenge();
+    completeChallenge(speedBonus, ms < 3000);
+    if (ms < 3000) showToast('⚡ Super snel! Dubbele muntjes!');
+  } else {
+    btn.classList.add('wrong-ans');
+    sfxWrong();
+    recordAnswer('math', false, ms);
+    closeChallenge();
+    showToast(`Het antwoord was ${correct}`, true);
+  }
+}
+
+// ===== 🧩 MEMORY CHALLENGE =====
+let memorySequence = [];
+let memoryInput = [];
+let memoryPhase = 'show'; // show | input
+
+function showMemoryChallenge() {
+  const emojis = ['🌸','🦁','⭐','🎈','🌈','🦄','🔥','💎'];
+  const len = 3 + Math.floor(currentWorldIdx / 3); // wordt langer per wereld
+  memorySequence = Array.from({length: len}, () => emojis[Math.floor(Math.random() * emojis.length)]);
+  memoryInput = [];
+  memoryPhase = 'show';
+  const reward = LEVELS[currentLevelIdx].reward;
+
+  showMemoryDisplay(reward);
+}
+
+function showMemoryDisplay(reward) {
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:2rem">🧩</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:var(--purple)">Onthoud de volgorde!</div>
+      <div style="font-size:3rem;margin:16px 0;letter-spacing:8px" id="mem-show">${memorySequence.join('')}</div>
+      <div style="font-size:0.85rem;color:#888;margin-bottom:12px">Onthoud deze volgorde!</div>
+      <button class="btn-primary" id="mem-ready" onclick="startMemoryInput(${reward})">Ik heb het! 👀</button>
+    </div>`;
+}
+
+function startMemoryInput(reward) {
+  memoryPhase = 'input';
+  memoryInput = [];
+  const emojis = ['🌸','🦁','⭐','🎈','🌈','🦄','🔥','💎'];
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--purple);margin-bottom:8px">Wat was de volgorde?</div>
+      <div style="font-size:2rem;margin-bottom:12px;letter-spacing:4px;min-height:2.5rem" id="mem-input-display">?</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        ${emojis.map(e => `<button style="font-size:1.8rem;padding:10px;border:none;border-radius:12px;background:#f0edff;cursor:pointer" onclick="memoryTap('${e}',${reward})">${e}</button>`).join('')}
+      </div>
+      <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+    </div>`;
+}
+
+function memoryTap(emoji, reward) {
+  memoryInput.push(emoji);
+  const disp = document.getElementById('mem-input-display');
+  if (disp) disp.textContent = memoryInput.join('');
+
+  if (memoryInput.length === memorySequence.length) {
+    const correct = memoryInput.join('') === memorySequence.join('');
+    if (correct) {
+      sfxPerfect();
+      recordAnswer('spell', true, 5000);
+      closeChallenge();
+      completeChallenge(reward, true);
+    } else {
+      sfxWrong();
+      showToast(`Het was: ${memorySequence.join('')}`, true);
+      setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1800);
+    }
+  }
+}
+
+// ===== 🗺️ PARCOUR VERRASSINGEN =====
+// Speciale items die in het parcour kunnen verschijnen
+const PARCOUR_SURPRISES = [
+  {emoji:'⭐', name:'Superster', coins:3, color:'#FFD700'},
+  {emoji:'💎', name:'Diamant', coins:5, color:'#90CAF9'},
+  {emoji:'🍭', name:'Snoepje', coins:2, color:'#FF69B4'},
+  {emoji:'🎁', name:'Cadeautje', coins:4, color:'#FF6B9D'},
+  {emoji:'🏆', name:'Trofee', coins:6, color:'#FFA500'},
+  {emoji:'🪙', name:'Muntje', coins:1, color:'#FFD700'},
+];
+
+// Override makeBalloons to also include surprise items
+const _origMakeBalloons = makeBalloons;
+function makeBalloons() {
+  const balloons = _origMakeBalloons();
+  // Voeg 3 verrassing-items toe aan het parcour
+  const surprisePositions = [350, 700, 1050];
+  surprisePositions.forEach((x, i) => {
+    const s = PARCOUR_SURPRISES[Math.floor(Math.random() * PARCOUR_SURPRISES.length)];
+    balloons.push({
+      x, y: B_GROUND_Y - 30,
+      emoji: s.emoji, high: false,
+      collected: false, wobble: Math.random() * Math.PI * 2,
+      isSurprise: true, surpriseCoins: s.coins, name: s.name
+    });
+  });
+  return balloons;
+}
+
+// Override balloon collection to handle surprises with special effects
+const _origBLoop = bLoop;
+// Patch: add extra coin for surprise items in bLoop
+// (patched inline via global flag check in bLoop scoring)
 
 // ===== 👨‍👩‍👧 OUDERRAPPORT =====
 
