@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>⚡ TitansPad - Go Titans Go!</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f3460">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TitansPad">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -957,26 +963,26 @@ const WORLDS = [
 // Types per wereld: parcour → spell → math → verrassing → finish
 function getLevelsForWorld(worldId) {
   const base = 5 + worldId * 2;
-  const r = [base, base*2, base*2, base*3, base*2]; // rewards
+  const r = [base, base*2, base*2, base*3, base*2];
   const SURPRISES = [
-    {icon:'💥',label:'BOOYAH!',type:'surprise',desc:'Titans bonus activeren!'},
-    {icon:'⚡',label:'SPEED ROUND!',type:'speed',  desc:'Zo snel als Beast Boy!'},
-    {icon:'🧠',label:'BRAIN BLAST!',type:'memory', desc:'Raven zou trots zijn!'},
-    {icon:'🎯',label:'TITANS GO!',  type:'surprise',desc:'Laat je krachten zien!'},
-    {icon:'🌟',label:'TITAN POWER!',type:'surprise',desc:'Dubbele Titan Coins!'},
-    {icon:'🔥',label:'TITAN FURY!', type:'surprise',desc:'Drie uitdagingen!'},
-    {icon:'⭐',label:'STARFIRE!',   type:'surprise',desc:'Energie bonus!'},
-    {icon:'🐦',label:'BIRDSTRIKE!', type:'surprise',desc:'Robin approved!'},
-    {icon:'💎',label:'RARE DROP!',  type:'surprise',desc:'Ultra zeldzame beloning!'},
-    {icon:'🌀',label:'RAVEN MAGIC!',type:'surprise',desc:'Azarath metrion zinthos!'},
+    {icon:'💥',label:'BOOYAH!',    type:'surprise', desc:'Titans bonus activeren!'},
+    {icon:'⚡',label:'SPEED!',     type:'speed',    desc:'Zo snel als Beast Boy!'},
+    {icon:'🧠',label:'BRAIN!',     type:'memory',   desc:'Raven zou trots zijn!'},
+    {icon:'📚',label:'STAAL!',     type:'staal',    desc:'Taal Titan aan het werk!'},
+    {icon:'🌟',label:'TITAN POWER',type:'surprise', desc:'Dubbele Titan Coins!'},
+    {icon:'🔥',label:'FURY!',      type:'surprise', desc:'Drie uitdagingen!'},
+    {icon:'📖',label:'TAAL!',      type:'staal',    desc:'Staal taalchallenge!'},
+    {icon:'🐦',label:'BIRDSTRIKE!',type:'surprise', desc:'Robin approved!'},
+    {icon:'💎',label:'RARE DROP!', type:'surprise', desc:'Ultra zeldzame beloning!'},
+    {icon:'🌀',label:'RAVEN!',     type:'staal',    desc:'Azarath taalchallenge!'},
   ];
   const surprise = SURPRISES[worldId % SURPRISES.length];
   return [
-    { icon:'🗺️', label:'Missie!', type:'parcour',          reward:r[0], desc:'Titan Missie: pak alle energie!' },
-    { icon:'📝', label:'Code',    type:'spell',             reward:r[1], desc:'Titans kennen hun codes!' },
-    { icon:'🔢', label:'Brains!', type:'math',              reward:r[2], desc:'Gebruik je Titan Brains!' },
+    { icon:'🗺️', label:'Missie!',  type:'parcour', reward:r[0], desc:'Titan Missie: pak alle energie!' },
+    { icon:'📝', label:'Code',     type:'spell',   reward:r[1], desc:'Titans kennen hun codes!' },
+    { icon:'🔢', label:'Brains!',  type:'math',    reward:r[2], desc:'Gebruik je Titan Brains!' },
     { icon:surprise.icon, label:surprise.label, type:surprise.type, reward:r[3], desc:surprise.desc },
-    { icon:'🏁', label:'BOOYAH!', type:'finish',            reward:r[4], desc:'BOOYAH! Wereld veroverd!' },
+    { icon:'🏆', label:'EXAMEN!',  type:'boss',    reward:r[4], desc:'Eindexamen — bewijs je kracht!' },
   ];
 }
 let LEVELS = getLevelsForWorld(0);
@@ -1349,7 +1355,9 @@ function openChallenge(idx, worldIdx) {
   else if (lvl.type === 'surprise') showSurpriseChallenge();
   else if (lvl.type === 'speed')    showSpeedChallenge();
   else if (lvl.type === 'memory')   showMemoryChallenge();
-  else showSurpriseChallenge(); // fallback
+  else if (lvl.type === 'staal')    { showStaalChallenge(state.currentPlayer, currentWorldIdx); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'boss')     { showBossBattle(currentWorldIdx); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else showSurpriseChallenge();
   document.getElementById('challenge-modal').classList.add('open');
 }
 
@@ -1989,8 +1997,14 @@ function completeChallenge(coins, perfect) {
     if (perfect) sfxPerfect(); else sfxCorrect();
   }
 
-  addCoins(wasCompleted ? Math.floor(coins/2) : coins);
+  if (perfect && !wasCompleted) {
+    p.perfectCount = (p.perfectCount||0) + 1;
+  }
+  const earned = wasCompleted ? Math.floor(coins/2) : coins;
+  p.totalCoinsEarned = (p.totalCoinsEarned||0) + earned;
+  addCoins(earned);
   if (perfect && !wasCompleted) setTimeout(sfxPerfect, 200);
+  setTimeout(() => checkAndAwardBadges(), 1500);
 
   const messages = perfect
     ? ['BOOYAH! 🌟', 'TITANS GO! 🎊', 'BEAST MODE! 🐯', 'AZARATH POWER! 🌀', 'ROBIN APPROVED! 🐦', 'STARFIRE SPARKLES! ⭐']
@@ -2356,7 +2370,7 @@ const MARKET_NEWS = [
 ];
 
 let currentNews = null;
-let walletTab = 'overview'; // overview | save | invest | goal
+let walletTab = 'overview'; // overview | save | invest | goal | missions | badges
 
 function getWallet() {
   const p = getPlayer();
@@ -2410,6 +2424,8 @@ function renderWallet() {
     ['save','🏦 Sparen'],
     ['invest','📈 Beleggen'],
     ['goal','🎯 Doel'],
+    ['missions','🏠 Missies'],
+    ['badges','🏅 Badges'],
   ];
 
   let html = `
@@ -2432,9 +2448,54 @@ function renderWallet() {
     html += renderWalletInvest(p, w);
   } else if (walletTab === 'goal') {
     html += renderWalletGoal(p, w, goal);
+  } else if (walletTab === 'missions') {
+    html += renderMissionsTab();
+  } else if (walletTab === 'badges') {
+    html += renderBadgesTab(p);
   }
 
   document.getElementById('wallet-content').innerHTML = html;
+}
+
+function renderBadgesTab(p) {
+  const earned = p.badges || [];
+  const sd = p.streakData || {};
+  return `
+    <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#f5a623;margin-bottom:6px">
+      🏅 Titan Badges
+    </div>
+    <div style="background:#1a2744;border-radius:14px;padding:12px;margin-bottom:12px">
+      <div style="display:flex;gap:16px;text-align:center">
+        <div style="flex:1">
+          <div style="font-size:1.8rem">🔥</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#f5a623">${sd.streak||0}</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.5)">Dag streak</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:1.8rem">📅</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#57c785">${sd.totalDays||0}</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.5)">Totaal dagen</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:1.8rem">🏅</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#ce93d8">${earned.length}/${BADGES.length}</div>
+          <div style="font-size:0.72rem;color:rgba(255,255,255,0.5)">Badges</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${BADGES.map(b => {
+        const has = earned.includes(b.id);
+        return `<div style="background:#1a2744;border-radius:12px;padding:10px;text-align:center;
+          border:1px solid ${has?'rgba(245,166,35,0.4)':'rgba(255,255,255,0.05)'};
+          opacity:${has?1:0.4}">
+          <div style="font-size:2rem">${b.emoji}</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:0.75rem;color:${has?'#f5a623':'#888'}">${b.name}</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);margin-top:2px">${b.desc}</div>
+          ${has?'<div style="font-size:0.65rem;color:#57c785">✅ Behaald!</div>':''}
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function renderWalletOverview(p, w, goal, totalWealth) {
@@ -3799,9 +3860,97 @@ function renderParentReport() {
 
   let html = `
     <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:8px 12px;margin-bottom:14px;
-      color:#555;font-size:0.82rem;text-align:center">
+      color:#aaa;font-size:0.82rem;text-align:center">
       📅 Titans HQ Briefing — ${dateStr}
     </div>`;
+
+  // ===== WACHTENDE GOEDKEURINGEN =====
+  const pendingAll = [];
+  state.players.forEach((p, pidx) => {
+    Object.entries(p.pendingMissions||{}).forEach(([mid, date]) => {
+      const m = getMissions().find(x=>x.id===mid);
+      if (m) pendingAll.push({m, pidx, mid, date});
+    });
+  });
+
+  if (pendingAll.length > 0) {
+    html += `<div style="background:linear-gradient(135deg,#1a2744,#0f3460);border:2px solid #f5a623;
+      border-radius:18px;padding:14px;margin-bottom:14px">
+      <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#f5a623;margin-bottom:10px">
+        ✋ Wacht op Jouw Goedkeuring (${pendingAll.length})
+      </div>
+      ${pendingAll.map(({m, pidx, mid}) => {
+        const p = state.players[pidx];
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px;
+          background:rgba(255,255,255,0.06);border-radius:12px;margin-bottom:6px">
+          <span style="font-size:1.8rem">${m.emoji}</span>
+          <div style="flex:1">
+            <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">
+              ${p.avatar} ${p.name}: ${m.title}
+            </div>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.5)">${m.desc}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button onclick="approveParentMission(${pidx},'${mid}')"
+              style="background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+              border-radius:8px;padding:8px 12px;font-family:'Fredoka One',cursive;font-size:0.8rem;cursor:pointer">
+              ✅ Goed!
+            </button>
+            <button onclick="rejectMission(${pidx},'${mid}')"
+              style="background:rgba(233,69,96,0.3);color:#e94560;border:1px solid #e94560;
+              border-radius:8px;padding:6px 10px;font-family:'Fredoka One',cursive;font-size:0.75rem;cursor:pointer">
+              ❌ Nee
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ===== EIGEN KLUSJES TOEVOEGEN =====
+  html += `<div style="background:#1a2744;border:1px solid rgba(245,166,35,0.3);border-radius:18px;padding:14px;margin-bottom:14px">
+    <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:8px">
+      ➕ Eigen Klusje Toevoegen
+    </div>
+    <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+      Voeg een klusje toe dat jij hebt bedacht voor de kinderen!
+    </div>
+    <input id="custom-mission-title" placeholder="Naam klusje..." type="text"
+      style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
+      background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:6px;box-sizing:border-box">
+    <input id="custom-mission-desc" placeholder="Omschrijving..." type="text"
+      style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
+      background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:6px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <label style="color:rgba(255,255,255,0.6);font-size:0.8rem">🪙 Beloning:</label>
+      <input id="custom-mission-reward" type="number" value="15" min="5" max="100"
+        style="width:70px;padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
+        background:#0f3460;color:#f5a623;font-family:'Fredoka One',cursive;text-align:center">
+      <select id="custom-mission-emoji"
+        style="padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
+        background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+        ${['🧹','🍽️','🛒','🌱','📚','🐕','🎨','⚽','🎵','🤝','💛','🏠'].map(e=>`<option>${e}</option>`).join('')}
+      </select>
+    </div>
+    <button onclick="addCustomMission()"
+      style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#e94560);
+      color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
+      ⚡ Klusje Toevoegen!
+    </button>
+
+    ${(state.customMissions||[]).length > 0 ? `
+    <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">
+      <div style="font-family:'Fredoka One',cursive;font-size:0.85rem;color:#888;margin-bottom:6px">Jouw klusjes:</div>
+      ${(state.customMissions||[]).map((m,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+          <span>${m.emoji}</span>
+          <span style="flex:1;color:white;font-size:0.85rem">${m.title}</span>
+          <span style="color:#f5a623;font-size:0.8rem">🪙${m.reward}</span>
+          <button onclick="removeCustomMission(${i})"
+            style="background:none;border:none;color:#e94560;cursor:pointer;font-size:0.9rem">✕</button>
+        </div>`).join('')}
+    </div>` : ''}
+  </div>`;
 
   // Render rapport per speler
   state.players.forEach((p, idx) => {
@@ -3810,8 +3959,8 @@ function renderParentReport() {
 
   // Uitleg sectie
   html += `
-    <div style="background:white;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 4px 15px rgba(0,0,0,0.06)">
-      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#2C3E50;margin-bottom:10px">
+    <div style="background:#1a2744;border-radius:18px;padding:16px;margin-bottom:14px">
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:10px">
         ℹ️ Hoe werkt het systeem?
       </div>
       <div style="font-size:0.82rem;color:#555;line-height:1.7">
@@ -3998,21 +4147,625 @@ function getDetailedTrend(history) {
   return '➡️ stabiel';
 }
 
+// ===== 📚 STAAL TAAL ELEMENTEN =====
+// Gebaseerd op Staal/Noordhoff methode: spelling, woordenschat, zinsbouw, dt-regel
+
+const STAAL_CHALLENGES = {
+  // Groep 2 (Dewi) — Klankgroepen, rijmen, letterherkenning
+  groep2: [
+    { type:'rijm',  q:'Welk woord rijmt op KAT?',     opts:['MAT','BOS','VIS','DAK'],  a:'MAT',  reward:12 },
+    { type:'rijm',  q:'Welk woord rijmt op ZON?',     opts:['BON','BEL','DAK','MUS'],  a:'BON',  reward:12 },
+    { type:'rijm',  q:'Welk woord rijmt op BEER?',    opts:['MEER','BOS','DAK','VIS'], a:'MEER', reward:12 },
+    { type:'klank', q:'Welke letter hoor je als eerste in 🐱?', opts:['K','B','V','M'], a:'K', reward:15 },
+    { type:'klank', q:'Welke letter hoor je als eerste in 🌳?', opts:['B','V','S','D'], a:'B', reward:15 },
+    { type:'klank', q:'Welke letter hoor je als LAATSTE in BED?', opts:['D','B','E','T'], a:'D', reward:15 },
+    { type:'woord', q:'Hoeveel letters heeft het woord KAT?', opts:['2','3','4','5'], a:'3', reward:12 },
+    { type:'woord', q:'Hoeveel letters heeft SCHOOL?',        opts:['4','5','6','7'], a:'6', reward:15 },
+    { type:'zin',   q:'Welk woord hoort hier? "De ... loopt."', opts:['HOND','SNEL','GROOT','BLAUW'], a:'HOND', reward:18 },
+    { type:'zin',   q:'Welk woord hoort hier? "Ik ... naar school."', opts:['GA','GROOT','LIEF','ROD'], a:'GA', reward:18 },
+  ],
+  // Groep 4 (Mila) — Spelling, dt-regel, verdubbeling, woordenschat
+  groep4: [
+    { type:'dt',    q:'Hij loop... naar huis.',        opts:['loopt','lopen','loopte','loop'], a:'loopt', reward:20 },
+    { type:'dt',    q:'Zij rent... heel hard.',         opts:['rent','rendt','rend','renne'],   a:'rent',  reward:20 },
+    { type:'dt',    q:'Het paard rijd... over het veld.', opts:['rijdt','rijt','rijden','rij'], a:'rijdt', reward:20 },
+    { type:'dt',    q:'De hond blaff... de hele dag.',  opts:['blaft','blafdt','blaff','blaven'], a:'blaft', reward:20 },
+    { type:'verd',  q:'Welk woord is goed gespeld?',   opts:['bakker','baker','bakcker','bakkker'], a:'bakker', reward:18 },
+    { type:'verd',  q:'Welk woord is goed gespeld?',   opts:['lepel','leppel','leepel','lepal'],    a:'lepel',  reward:18 },
+    { type:'verd',  q:'Welk woord is goed gespeld?',   opts:['koffie','cofie','kofie','coffie'],    a:'koffie', reward:18 },
+    { type:'syn',   q:'Wat betekent VROLIJK?',         opts:['blij','verdrietig','boos','bang'],    a:'blij',   reward:22 },
+    { type:'syn',   q:'Wat is het tegenovergestelde van GROOT?', opts:['klein','dik','lang','zwaar'], a:'klein', reward:22 },
+    { type:'syn',   q:'Wat betekent SNEL?',            opts:['vlug','langzaam','rustig','stil'],    a:'vlug',   reward:22 },
+    { type:'zin',   q:'Welke zin klopt?',              opts:['De kat loopt.','Kat de loopt.','Loopt kat de.','De loopt kat.'], a:'De kat loopt.', reward:25 },
+    { type:'lees',  q:"Begrijpend lezen: De maan schijnt 's nachts. Wanneer schijnt de maan?", opts:["'s nachts","'s ochtends",'altijd','nooit'], a:"'s nachts", reward:25 },
+    { type:'lees',  q:"Begrijpend lezen: Roos heeft een rode fiets. Welke kleur is haar fiets?", opts:['rood','blauw','groen','geel'], a:'rood', reward:25 },
+    { type:'mv',    q:'Wat is het meervoud van FIETS?', opts:['fietsen','fietsen','fiets','fietses'], a:'fietsen', reward:20 },
+    { type:'mv',    q:'Wat is het meervoud van HUIS?',  opts:['huizen','huises','huis','huise'],      a:'huizen',  reward:20 },
+  ],
+};
+
+// Topografie & wereldoriëntatie
+const GEO_CHALLENGES = [
+  { q:'Wat is de hoofdstad van Nederland?', opts:['Amsterdam','Rotterdam','Den Haag','Utrecht'], a:'Amsterdam', reward:20 },
+  { q:'Welke rivier stroomt door Utrecht?', opts:['Rijn','Vecht','Maas','Schelde'], a:'Vecht', reward:22 },
+  { q:'In welke provincie ligt Amsterdam?', opts:['Noord-Holland','Utrecht','Gelderland','Friesland'], a:'Noord-Holland', reward:22 },
+  { q:'Hoeveel provincies heeft Nederland?', opts:['12','10','15','8'], a:'12', reward:20 },
+  { q:'Welk dier staat op het wapen van Nederland?', opts:['Leeuw','Beer','Adelaar','Wolf'], a:'Leeuw', reward:18 },
+  { q:'Wat is de langste rivier van Nederland?', opts:['Rijn','Maas','IJssel','Schelde'], a:'Rijn', reward:22 },
+];
+
+// Klokkijken
+const CLOCK_CHALLENGES = [
+  { q:'Het is half twee. Hoe laat is het?', opts:['1:30','2:00','2:30','1:00'], a:'1:30', reward:18 },
+  { q:'Het is kwart voor drie. Hoe laat is het?', opts:['2:45','3:15','3:45','2:15'], a:'2:45', reward:20 },
+  { q:'School begint om 8:30. Hoe zeg je dat?', opts:['half negen','half acht','kwart voor negen','kwart over acht'], a:'half negen', reward:20 },
+  { q:'Het is 12:00 uur. Wat eet je dan?', opts:['lunch','ontbijt','avondeten','snack'], a:'lunch', reward:15 },
+  { q:'Een kwartier is hoeveel minuten?', opts:['15','20','10','30'], a:'15', reward:15 },
+];
+
+// Geld rekenen
+const MONEY_CHALLENGES = [
+  { q:'Je hebt €1,50. Een broodje kost €1,20. Hoeveel houd je over?', opts:['€0,30','€0,20','€0,40','€0,50'], a:'€0,30', reward:22 },
+  { q:'Hoeveel is 2 euro + 50 cent?', opts:['€2,50','€3,00','€1,50','€2,00'], a:'€2,50', reward:18 },
+  { q:'Je betaalt €5 voor iets van €3,75. Hoeveel wisselgeld krijg je?', opts:['€1,25','€1,50','€0,75','€2,25'], a:'€1,25', reward:25 },
+  { q:'Wat kost meer: 3 snoepjes à 25 cent of 1 lolly van 80 cent?', opts:['3 snoepjes','1 lolly','even duur','weet niet'], a:'3 snoepjes', reward:22 },
+];
+
+// Natuur & biologie
+const NATURE_CHALLENGES = [
+  { q:'Welk dier maakt een cocon?', opts:['vlinder','bij','mier','kever'], a:'vlinder', reward:18 },
+  { q:'Wat eten herbivoren?', opts:['planten','vlees','vissen','insecten'], a:'planten', reward:18 },
+  { q:'Hoeveel poten heeft een spin?', opts:['8','6','4','10'], a:'8', reward:15 },
+  { q:'Wat is het verschil tussen dag en nacht?', opts:['de aarde draait','de zon beweegt','de maan schijnt','het weer verandert'], a:'de aarde draait', reward:22 },
+  { q:'In welk seizoen bloeien de meeste bloemen?', opts:['lente','zomer','herfst','winter'], a:'lente', reward:15 },
+];
+
+function showStaalChallenge(playerIdx, worldIdx) {
+  const isGroep4 = playerIdx === 0;
+  const pool = isGroep4 ? STAAL_CHALLENGES.groep4 : STAAL_CHALLENGES.groep2;
+
+  // Mix met geo/klok/geld/natuur
+  const extras = [...GEO_CHALLENGES, ...CLOCK_CHALLENGES, ...MONEY_CHALLENGES, ...NATURE_CHALLENGES];
+  const allQ = [...pool, ...(isGroep4 ? extras : [])];
+
+  // Kies vraag op basis van wereld (steeds andere)
+  const q = allQ[(worldIdx * 3 + Math.floor(Math.random() * 3)) % allQ.length];
+  const reward = q.reward || 20;
+  challengeStartTime = Date.now();
+
+  const typeLabels = {
+    rijm:'Taal: Rijmen 🎵', klank:'Taal: Klanken 🔤', woord:'Taal: Woorden 📖',
+    zin:'Taal: Zinnen ✍️', dt:'Taal: dt-regel 📝', verd:'Taal: Spelling ✏️',
+    syn:'Taal: Betekenis 💡', lees:'Taal: Begrijpend lezen 📚', mv:'Taal: Meervoud 📝',
+  };
+  const label = typeLabels[q.type] || '📚 Taalvraag';
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:2rem">📚</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#f5a623;margin:4px 0">${label}</div>
+      <div style="background:#0f3460;border-radius:14px;padding:14px;margin:10px 0;
+        font-family:'Fredoka One',cursive;font-size:1.1rem;color:white;line-height:1.4">
+        ${q.q}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        ${shuffleArr([...q.opts]).map(o =>
+          `<button class="math-btn" onclick="checkStaal(this,'${o.replace(/'/g,"\\'")}','${q.a.replace(/'/g,"\\'")}',${reward})"
+            style="font-size:0.9rem;padding:12px">${o}</button>`
+        ).join('')}
+      </div>
+      <button class="btn-secondary" onclick="closeChallenge()" style="margin-top:10px">← Terug</button>
+    </div>`;
+}
+
+function checkStaal(btn, answer, correct, reward) {
+  const btns = document.querySelectorAll('.math-btn');
+  btns.forEach(b => b.onclick = null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.classList.add('correct-ans');
+    sfxPerfect();
+    recordAnswer('spell', true, ms);
+    closeChallenge();
+    completeChallenge(reward, ms < 5000);
+  } else {
+    btn.classList.add('wrong-ans');
+    sfxWrong();
+    recordAnswer('spell', false, ms);
+    btns.forEach(b => { if (b.textContent.trim() === correct) b.classList.add('correct-ans'); });
+    setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1800);
+  }
+}
+
+// ===== 🏆 WERELD EINDEXAMEN (Boss Battle) =====
+// Wordt getoond na het voltooien van een wereld
+
+let bossQuestions = [];
+let bossIdx = 0;
+let bossScore = 0;
+let bossTotal = 5;
+
+function showBossBattle(worldIdx) {
+  const p = getPlayer();
+  const world = WORLDS[Math.min(worldIdx, WORLDS.length-1)];
+
+  // Maak gemengde vragenset: spell + math + staal + verrassing
+  const words = getAdaptiveWords(state.currentPlayer, worldIdx % 10);
+  const maths = getAdaptiveMath(state.currentPlayer, worldIdx % 10);
+  const staalPool = state.currentPlayer === 0 ? STAAL_CHALLENGES.groep4 : STAAL_CHALLENGES.groep2;
+
+  bossQuestions = [
+    { type:'spell', word: words[Math.floor(Math.random()*words.length)] },
+    { type:'math',  math: maths[Math.floor(Math.random()*maths.length)] },
+    { type:'staal', q: staalPool[Math.floor(Math.random()*staalPool.length)] },
+    { type:'math',  math: maths[Math.floor(Math.random()*maths.length)] },
+    { type:'spell', word: words[Math.floor(Math.random()*words.length)] },
+  ];
+  bossIdx = 0; bossScore = 0; bossTotal = bossQuestions.length;
+
+  showBossQuestion(world);
+}
+
+function showBossQuestion(world) {
+  if (bossIdx >= bossTotal) {
+    showBossResult(world);
+    return;
+  }
+  const q = bossQuestions[bossIdx];
+  const world_ = world || WORLDS[0];
+  const box = document.getElementById('challenge-content');
+
+  // Progress bar
+  const pct = Math.round((bossIdx / bossTotal) * 100);
+  const progressHtml = `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Fredoka One',cursive;font-size:0.85rem;color:#f5a623">
+          ${world_.icon} ${world_.name} EINDEXAMEN
+        </span>
+        <span style="font-family:'Fredoka One',cursive;font-size:0.85rem;color:#57c785">
+          ${bossIdx}/${bossTotal} · ⭐${bossScore}
+        </span>
+      </div>
+      <div style="background:#1a2744;border-radius:10px;height:8px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:10px;transition:width 0.3s"></div>
+      </div>
+    </div>`;
+
+  if (q.type === 'spell') {
+    challengeStartTime = Date.now();
+    box.innerHTML = `${progressHtml}
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:8px">⚡ Vraag ${bossIdx+1}: Spellen</div>
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:6px">${q.word.hint}</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#57c785;letter-spacing:6px;margin:10px 0">
+        ${scramble(q.word.word)}
+      </div>
+      <div style="font-size:0.8rem;color:#888;margin-bottom:10px">Letters door elkaar</div>
+      <input type="text" id="boss-spell" class="answer-input"
+        placeholder="Typ het woord..." autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="this.value=this.value.toUpperCase()"
+        onkeydown="if(event.key==='Enter')checkBossSpell('${q.word.word}')">
+      <button class="btn-primary" onclick="checkBossSpell('${q.word.word}')" style="margin-top:10px;font-size:1rem;padding:12px 24px">
+        BEVESTIG ⚡
+      </button>`;
+    setTimeout(() => document.getElementById('boss-spell')?.focus(), 100);
+
+  } else if (q.type === 'math') {
+    challengeStartTime = Date.now();
+    box.innerHTML = `${progressHtml}
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:8px">⚡ Vraag ${bossIdx+1}: Rekenen</div>
+      <div class="math-problem" style="font-size:2.2rem">${q.math.q}</div>
+      <div class="math-options">
+        ${shuffleArr([...q.math.opts]).map(o =>
+          `<button class="math-btn" onclick="checkBossMath(this,${o},${q.math.a})">${o}</button>`
+        ).join('')}
+      </div>`;
+
+  } else if (q.type === 'staal') {
+    challengeStartTime = Date.now();
+    box.innerHTML = `${progressHtml}
+      <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:8px">⚡ Vraag ${bossIdx+1}: Taal</div>
+      <div style="background:#0f3460;border-radius:14px;padding:12px;margin:8px 0;
+        font-family:'Fredoka One',cursive;font-size:1rem;color:white">${q.q.q}</div>
+      <div class="math-options">
+        ${shuffleArr([...q.q.opts]).map(o =>
+          `<button class="math-btn" onclick="checkBossStaal(this,'${o.replace(/'/g,"\\'")}','${q.q.a.replace(/'/g,"\\'")}')">
+            ${o}</button>`
+        ).join('')}
+      </div>`;
+  }
+}
+
+function checkBossSpell(correct) {
+  const input = document.getElementById('boss-spell');
+  const val = input?.value?.trim().toUpperCase();
+  const ms = Date.now() - challengeStartTime;
+  if (val === correct) {
+    bossScore++; sfxCorrect();
+    recordAnswer('spell', true, ms);
+    showBossCorrect();
+  } else {
+    sfxWrong();
+    showBossWrong(`Het woord was: ${correct}`);
+  }
+}
+
+function checkBossMath(btn, answer, correct) {
+  document.querySelectorAll('.math-btn').forEach(b=>b.onclick=null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.classList.add('correct-ans'); bossScore++; sfxCorrect();
+    recordAnswer('math', true, ms);
+    setTimeout(() => { bossIdx++; showBossQuestion(WORLDS[Math.min(currentWorldIdx,WORLDS.length-1)]); }, 800);
+  } else {
+    btn.classList.add('wrong-ans'); sfxWrong();
+    recordAnswer('math', false, ms);
+    setTimeout(() => { bossIdx++; showBossQuestion(WORLDS[Math.min(currentWorldIdx,WORLDS.length-1)]); }, 800);
+  }
+}
+
+function checkBossStaal(btn, answer, correct) {
+  document.querySelectorAll('.math-btn').forEach(b=>b.onclick=null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.classList.add('correct-ans'); bossScore++; sfxCorrect();
+    recordAnswer('spell', true, ms);
+  } else {
+    btn.classList.add('wrong-ans'); sfxWrong();
+    recordAnswer('spell', false, ms);
+    document.querySelectorAll('.math-btn').forEach(b => {
+      if (b.textContent.trim() === correct) b.classList.add('correct-ans');
+    });
+  }
+  setTimeout(() => { bossIdx++; showBossQuestion(WORLDS[Math.min(currentWorldIdx,WORLDS.length-1)]); }, 900);
+}
+
+function showBossCorrect() {
+  bossIdx++;
+  setTimeout(() => showBossQuestion(WORLDS[Math.min(currentWorldIdx,WORLDS.length-1)]), 600);
+}
+function showBossWrong(msg) {
+  showToast(msg, true);
+  bossIdx++;
+  setTimeout(() => showBossQuestion(WORLDS[Math.min(currentWorldIdx,WORLDS.length-1)]), 1200);
+}
+
+function showBossResult(world) {
+  const pct = Math.round((bossScore / bossTotal) * 100);
+  const grade = pct >= 80 ? '🏆 UITSTEKEND!' : pct >= 60 ? '⭐ GOED GEDAAN!' : '💪 BLIJF OEFENEN!';
+  const reward = Math.round((bossScore / bossTotal) * 80);
+  const stars = pct >= 80 ? 3 : pct >= 60 ? 2 : 1;
+
+  sfxLevelUp();
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center;padding:8px">
+      <div style="font-size:3rem;margin-bottom:6px">${world.icon}</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623">${grade}</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#57c785;margin:6px 0">
+        ${world.name} Eindexamen
+      </div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;margin:10px 0">
+        ${Array.from({length:3},(_,i)=>`<span style="filter:${i<stars?'none':'grayscale(1)'}">⭐</span>`).join('')}
+      </div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:white;margin:8px 0">
+        ${bossScore}/${bossTotal} goed · ${pct}%
+      </div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:#f5a623">
+        +${reward} Titan Coins! 🪙
+      </div>
+      <button class="btn-primary" onclick="closeBoss(${reward},${stars===3})" style="margin-top:14px">
+        TITANS GO! ⚡
+      </button>
+    </div>`;
+}
+
+function closeBoss(reward, perfect) {
+  closeChallenge();
+  completeChallenge(reward, perfect);
+}
+
+// ===== 🏅 STREAK & MEDAILLE SYSTEEM =====
+
+const BADGES = [
+  { id:'day1',    name:'Eerste Dag!',      emoji:'🌱', desc:'Je eerste dag geoefend!',           req:1   },
+  { id:'day3',    name:'3 Dagen!',         emoji:'🔥', desc:'3 dagen op rij geoefend!',          req:3   },
+  { id:'day7',    name:'Week Titan!',      emoji:'⚡', desc:'7 dagen op rij — BOOYAH!',          req:7   },
+  { id:'day14',   name:'2 Weken!',         emoji:'🦸', desc:'14 dagen — echte Titan!',           req:14  },
+  { id:'day30',   name:'Maand Titan!',     emoji:'🏆', desc:'30 dagen — legendair!',             req:30  },
+  { id:'level10', name:'Level 10!',        emoji:'🎯', desc:'10 levels voltooid!',               level:10  },
+  { id:'level25', name:'Level 25!',        emoji:'💥', desc:'25 levels — Beast Mode!',           level:25  },
+  { id:'level50', name:'Halverwege!',      emoji:'🌟', desc:'50 levels — Super Titan!',          level:50  },
+  { id:'perfect5',name:'5x Perfect!',      emoji:'💎', desc:'5 keer perfect gescoord!',          perfect:5 },
+  { id:'coins500',name:'500 Coins!',       emoji:'💰', desc:'500 Titan Coins verdiend!',         coins:500 },
+  { id:'coins2000',name:'2000 Coins!',     emoji:'👑', desc:'2000 Titan Coins — rijke Titan!',   coins:2000},
+  { id:'worlds3', name:'3 Werelden!',      emoji:'🗺️', desc:'3 werelden veroverd!',              worlds:3  },
+  { id:'staal5',  name:'Taal Titan!',      emoji:'📚', desc:'5 Staal uitdagingen gewonnen!',     staal:5   },
+];
+
+function checkAndAwardBadges() {
+  const p = getPlayer();
+  if (!p.badges) p.badges = [];
+  if (!p.streakData) p.streakData = { lastDate: null, streak: 0, totalDays: 0 };
+
+  const today = new Date().toDateString();
+  const sd = p.streakData;
+
+  // Update streak
+  if (sd.lastDate !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (sd.lastDate === yesterday) {
+      sd.streak = (sd.streak||0) + 1;
+    } else if (sd.lastDate !== today) {
+      sd.streak = 1;
+    }
+    sd.lastDate = today;
+    sd.totalDays = (sd.totalDays||0) + 1;
+  }
+
+  const newBadges = [];
+  BADGES.forEach(b => {
+    if (p.badges.includes(b.id)) return;
+    let earned = false;
+    if (b.req    && sd.streak >= b.req)           earned = true;
+    if (b.level  && (p.level||0) >= b.level)      earned = true;
+    if (b.perfect && (p.perfectCount||0) >= b.perfect) earned = true;
+    if (b.coins  && (p.totalCoinsEarned||0) >= b.coins) earned = true;
+    if (b.worlds && Math.floor((p.level||0)/5) >= b.worlds) earned = true;
+    if (b.staal  && (p.staalCount||0) >= b.staal) earned = true;
+    if (earned) { p.badges.push(b.id); newBadges.push(b); }
+  });
+
+  if (newBadges.length > 0) {
+    saveState();
+    setTimeout(() => showNewBadges(newBadges), 1000);
+  }
+}
+
+function showNewBadges(badges) {
+  sfxLevelUp();
+  const badge = badges[0]; // toon eerste
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#0f3460,#1a1a2e);border:2px solid #f5a623;
+    border-radius:20px;padding:16px 20px;z-index:500;text-align:center;
+    box-shadow:0 8px 30px rgba(245,166,35,0.4);min-width:220px;
+    animation:tt-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1)`;
+  overlay.innerHTML = `
+    <div style="font-size:0.75rem;color:#f5a623;font-family:'Fredoka One',cursive;margin-bottom:4px">
+      🏅 NIEUWE BADGE!
+    </div>
+    <div style="font-size:2.5rem">${badge.emoji}</div>
+    <div style="font-family:'Fredoka One',cursive;color:white;font-size:1rem">${badge.name}</div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);margin-top:2px">${badge.desc}</div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => {
+    overlay.style.animation = 'fadeOut 0.5s forwards';
+    setTimeout(() => overlay.parentNode?.removeChild(overlay), 500);
+    if (badges.length > 1) showNewBadges(badges.slice(1));
+  }, 3000);
+}
+
+// ===== 🏠 REAL WORLD MISSIES =====
+
+const DEFAULT_MISSIONS = [
+  { id:'m_tafel',   emoji:'🍽️', title:'Tafel Dekken',       desc:'Dek de tafel voor het avondeten!',        reward:15, coins:15, needsApproval:true },
+  { id:'m_vaat',    emoji:'🫧', title:'Vaatwasser Uitruimen',desc:'Ruim de schone vaatwasser uit!',          reward:18, coins:18, needsApproval:true },
+  { id:'m_kamer',   emoji:'🧹', title:'Slaapkamer Opruimen', desc:'Ruim je slaapkamer netjes op!',           reward:20, coins:20, needsApproval:true },
+  { id:'m_speelhoek',emoji:'🎮',title:'Speelhoek Opruimen',  desc:'Ruim je speelgoed netjes op!',            reward:15, coins:15, needsApproval:true },
+  { id:'m_compliment',emoji:'💛',title:'Geef een Compliment', desc:'Geef iemand een echt gemeend compliment!',reward:12, coins:0,  needsApproval:false, freeItem:true },
+  { id:'m_lezen',   emoji:'📖', title:'10 min Lezen',        desc:'Lees 10 minuten in een boek!',            reward:15, coins:15, needsApproval:true },
+  { id:'m_bewegen', emoji:'🏃', title:'Buiten Spelen',       desc:'Speel 20 minuten buiten!',                reward:12, coins:12, needsApproval:false },
+  { id:'m_helpen',  emoji:'🤝', title:'Iemand Helpen',       desc:'Help iemand zonder dat ze het vragen!',   reward:15, coins:15, needsApproval:true },
+  { id:'m_planten', emoji:'🌱', title:'Planten Water Geven', desc:'Geef alle planten water!',                reward:10, coins:10, needsApproval:true },
+  { id:'m_eten',    emoji:'🥗', title:'Helpen Koken',        desc:'Help mee met het klaarmaken van het eten!',reward:18, coins:18, needsApproval:true },
+];
+
+function getMissions() {
+  const p = getPlayer();
+  const custom = state.customMissions || [];
+  return [...DEFAULT_MISSIONS, ...custom];
+}
+
+function renderMissionsTab() {
+  const p = getPlayer();
+  const today = new Date().toDateString();
+  if (!p.completedMissions) p.completedMissions = {};
+  const missions = getMissions();
+
+  return `
+    <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#f5a623;margin-bottom:8px">
+      🏠 Real World Missies
+    </div>
+    <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
+      Doe een klusje in de echte wereld en verdien Titan Coins! Sommige moeten door een ouder goedgekeurd worden.
+    </div>
+    ${missions.map(m => {
+      const doneToday = p.completedMissions[m.id] === today;
+      const pending = p.pendingMissions && p.pendingMissions[m.id];
+      return `
+        <div style="background:#1a2744;border-radius:14px;padding:12px;margin-bottom:8px;
+          display:flex;align-items:center;gap:10px;
+          border:1px solid ${doneToday?'#57c785':pending?'#f5a623':'rgba(255,255,255,0.1)'}">
+          <div style="font-size:2rem">${m.emoji}</div>
+          <div style="flex:1">
+            <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem">${m.title}</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.5)">${m.desc}</div>
+            <div style="font-size:0.72rem;color:#f5a623;margin-top:2px">
+              🪙 +${m.reward} Titan Coins${m.freeItem?' · 🎁 Gratis winkelitem':''}
+              ${m.needsApproval?'<span style="color:rgba(255,255,255,0.4)"> · ✋ Ouder goedkeuring</span>':''}
+            </div>
+          </div>
+          <div>
+            ${doneToday
+              ? '<span style="font-family:Fredoka One,cursive;color:#57c785;font-size:0.8rem">✅ Klaar!</span>'
+              : pending
+                ? '<span style="font-family:Fredoka One,cursive;color:#f5a623;font-size:0.8rem">⏳ Wacht...</span>'
+                : `<button onclick="startMission('${m.id}')"
+                    style="background:linear-gradient(135deg,#f5a623,#e94560);color:white;
+                    border:none;border-radius:10px;padding:8px 12px;font-family:'Fredoka One',cursive;
+                    font-size:0.8rem;cursor:pointer">
+                    Doen! ⚡
+                  </button>`}
+          </div>
+        </div>`;
+    }).join('')}`;
+}
+
+function startMission(missionId) {
+  const m = getMissions().find(x => x.id === missionId);
+  if (!m) return;
+  const p = getPlayer();
+  const today = new Date().toDateString();
+
+  if (m.freeItem) {
+    // Compliment — direct belonen
+    completeMission(missionId);
+    return;
+  }
+
+  if (!m.needsApproval) {
+    // Geen goedkeuring nodig — direct
+    const box = document.getElementById('challenge-content');
+    box.innerHTML = `
+      <div style="text-align:center;padding:10px">
+        <div style="font-size:3rem">${m.emoji}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.3rem;color:#f5a623">${m.title}</div>
+        <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin:10px 0">${m.desc}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#57c785;margin-bottom:16px">
+          🪙 +${m.reward} Titan Coins wacht op je!
+        </div>
+        <button class="btn-primary" onclick="completeMission('${missionId}')">
+          Gedaan! ✅
+        </button>
+        <br><button class="btn-secondary" onclick="closeChallenge()" style="margin-top:8px">Nog niet</button>
+      </div>`;
+    document.getElementById('challenge-modal').classList.add('open');
+  } else {
+    // Ouder goedkeuring nodig
+    if (!p.pendingMissions) p.pendingMissions = {};
+    p.pendingMissions[missionId] = today;
+    saveState();
+    renderWallet();
+    showToast(`${m.emoji} Missie gestart! Vraag een ouder om goed te keuren in het HQ!`);
+  }
+}
+
+function completeMission(missionId) {
+  const m = getMissions().find(x => x.id === missionId);
+  if (!m) return;
+  const p = getPlayer();
+  const today = new Date().toDateString();
+  if (!p.completedMissions) p.completedMissions = {};
+  p.completedMissions[missionId] = today;
+  if (p.pendingMissions) delete p.pendingMissions[missionId];
+
+  sfxLevelUp();
+  closeChallenge();
+  addCoins(m.reward);
+  saveState();
+  renderWallet();
+
+  if (m.freeItem) {
+    showToast(`💛 Compliment gegeven! +${m.reward} coins & een verrassing in de winkel!`);
+    // Geef gratis willekeurig shop item
+    grantFreeItem();
+  } else {
+    showToast(`${m.emoji} ${m.title} gedaan! +${m.reward} Titan Coins! BOOYAH!`);
+  }
+  checkAndAwardBadges();
+}
+
+function grantFreeItem() {
+  const allItems = getShopItems(state.currentPlayer);
+  const owned = state.ownedItems[state.currentPlayer] || [];
+  const available = allItems.filter(it => !owned.includes(it.id) && !it.locked);
+  if (available.length === 0) return;
+  const item = available[Math.floor(Math.random() * Math.min(available.length, 10))];
+  state.ownedItems[state.currentPlayer] = [...owned, item.id];
+  saveState();
+  showToast(`🎁 Gratis item: ${item.emoji} ${item.name}!`);
+}
+
+// Parent approvalmission
+function approveParentMission(playerIdx, missionId) {
+  const p = state.players[playerIdx];
+  if (!p.pendingMissions || !p.pendingMissions[missionId]) {
+    showToast('Geen wachtende missie gevonden', true);
+    return;
+  }
+  const prevPlayer = state.currentPlayer;
+  state.currentPlayer = playerIdx;
+  completeMission(missionId);
+  state.currentPlayer = prevPlayer;
+  renderParentReport();
+  showToast('✅ Missie goedgekeurd! Coins uitbetaald!');
+}
+
+function rejectMission(playerIdx, missionId) {
+  const p = state.players[playerIdx];
+  if (p.pendingMissions) delete p.pendingMissions[missionId];
+  saveState();
+  renderParentReport();
+  showToast('❌ Missie afgewezen');
+}
+
+function addCustomMission() {
+  const title  = document.getElementById('custom-mission-title')?.value?.trim();
+  const desc   = document.getElementById('custom-mission-desc')?.value?.trim();
+  const reward = parseInt(document.getElementById('custom-mission-reward')?.value||'15');
+  const emoji  = document.getElementById('custom-mission-emoji')?.value||'🧹';
+  if (!title) { showToast('Vul een naam in!', true); return; }
+  if (!state.customMissions) state.customMissions = [];
+  const id = 'custom_' + Date.now();
+  state.customMissions.push({ id, title, desc:desc||title, reward, emoji, needsApproval:true });
+  saveState();
+  renderParentReport();
+  showToast(`${emoji} Klusje "${title}" toegevoegd!`);
+}
+
+function removeCustomMission(idx) {
+  if (!state.customMissions) return;
+  state.customMissions.splice(idx, 1);
+  saveState();
+  renderParentReport();
+}
+
 // ===== INIT =====
+// PWA: Service Worker registreren
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('✅ SW actief:', r.scope))
+      .catch(e => console.log('SW fout:', e));
+  });
+}
 if (!state.ownedAvatarItems) state.ownedAvatarItems = [[], []];
+if (!state.customMissions) state.customMissions = [];
 state.players.forEach(p => {
-  if (!p.equipped) p.equipped = {head:null,outfit:null,accessory:null,pet:null,bg:null};
-  if (!p.skills)   p.skills   = {spell:50, math:50, lang:50};
-  if (!p.history)  p.history  = [];
-  if (!p.wallet)   p.wallet   = {savings:0, investments:{}, goal:'limousine', goalSaved:0, lastTick:null};
-  if (!p.bonusDue) p.bonusDue = 0;
+  if (!p.equipped)           p.equipped           = {head:null,outfit:null,accessory:null,pet:null,bg:null};
+  if (!p.skills)             p.skills             = {spell:50, math:50, lang:50};
+  if (!p.history)            p.history            = [];
+  if (!p.wallet)             p.wallet             = {savings:0, investments:{}, goal:'limousine', goalSaved:0, lastTick:null};
+  if (!p.bonusDue)           p.bonusDue           = 0;
+  if (!p.badges)             p.badges             = [];
+  if (!p.streakData)         p.streakData         = {lastDate:null, streak:0, totalDays:0};
+  if (!p.completedMissions)  p.completedMissions  = {};
+  if (!p.pendingMissions)    p.pendingMissions    = {};
+  if (!p.perfectCount)       p.perfectCount       = 0;
+  if (!p.totalCoinsEarned)   p.totalCoinsEarned   = 0;
+  if (!p.staalCount)         p.staalCount         = 0;
 });
-loadAudioPrefs(); // laad voorkeuren meteen
+loadAudioPrefs();
 updateCoinDisplay();
 setWorldForPlayer();
 renderHome();
 selectPlayer(0);
 setTimeout(() => { updateMusicBtn(); updateSfxBtn(); }, 100);
+// Check badges bij opstarten (telt ook als speeldag)
+setTimeout(() => checkAndAwardBadges(), 1500);
 </script>
 </body>
 </html>
