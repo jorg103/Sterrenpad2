@@ -71,10 +71,11 @@
   /* ===== HOME SCREEN ===== */
   #home-screen {
     background: linear-gradient(180deg, #0d0d1a 0%, #0f3460 50%, #1a1a2e 100%);
-    position: relative; overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow-y: auto;
+    min-height: calc(100vh - 60px);
   }
-  .home-content { text-align: center; padding: 24px 20px 90px; width: 100%; max-width: 380px; margin: 0 auto; }
+  .home-content { text-align: center; padding: 30px 20px 100px; width: 100%; max-width: 380px; margin: 0 auto; }
   .welcome-title { font-family:'Fredoka One',cursive; font-size:2.6rem; color:#f5a623;
     text-shadow:0 0 30px rgba(245,166,35,0.5); margin-bottom:4px; }
   .welcome-sub { font-size:1rem; color:#57c785; font-weight:700; margin-bottom:22px; }
@@ -877,12 +878,12 @@ document.addEventListener('mousedown', function _firstM() {
 }, false);
 
 function updateCoinDisplay() {
-  const wc = document.getElementById('wallet-coins'); if(wc) wc.textContent = getCoins();
   const c = getCoins();
-  document.getElementById('header-coins').textContent = c;
-  document.getElementById('shop-coins').textContent = c;
-  const ac = document.getElementById('avatar-coins');
-  if (ac) ac.textContent = c;
+  const ids = ['header-coins','shop-coins','avatar-coins','wallet-coins'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = c;
+  });
 }
 
 // ===== LEVELS CONFIG =====
@@ -5131,6 +5132,8 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW fout:', e));
   });
 }
+
+// State migratie — veilig uitvoeren
 if (!state.ownedAvatarItems) state.ownedAvatarItems = [[], []];
 if (!state.customMissions) state.customMissions = [];
 state.players.forEach(p => {
@@ -5147,14 +5150,27 @@ state.players.forEach(p => {
   if (!p.totalCoinsEarned)   p.totalCoinsEarned   = 0;
   if (!p.staalCount)         p.staalCount         = 0;
 });
-loadAudioPrefs();
-updateCoinDisplay();
-setWorldForPlayer();
-renderHome();
-selectPlayer(0);
-setTimeout(() => { updateMusicBtn(); updateSfxBtn(); }, 100);
-// Check badges bij opstarten (telt ook als speeldag)
-setTimeout(() => checkAndAwardBadges(), 1500);
+
+// DOM-afhankelijke init — wacht tot DOM klaar is
+function initApp() {
+  try {
+    loadAudioPrefs();
+    updateCoinDisplay();
+    setWorldForPlayer();
+    renderHome();
+    selectPlayer(0);
+    setTimeout(() => { updateMusicBtn(); updateSfxBtn(); }, 100);
+    setTimeout(() => checkAndAwardBadges(), 1500);
+  } catch(e) {
+    console.error('Init fout:', e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 </script>
 </body>
 </html>
