@@ -1,27 +1,16 @@
 {
-  "name": "Sterrenpad - Leren is Leuk!",
-  "short_name": "Sterrenpad",
-  "description": "Leer rekenen en spellen met een leuk parcour-avontuur!",
+  "name": "TitansPad - Go Titans Go!",
+  "short_name": "TitansPad",
+  "description": "Leer rekenen, spellen en talen met de Titans! BOOYAH!",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#667eea",
-  "theme_color": "#667eea",
+  "background_color": "#0d0d1a",
+  "theme_color": "#0f3460",
   "orientation": "portrait",
   "lang": "nl",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
-  "screenshots": [],
   "categories": ["education", "games", "kids"]
 }
