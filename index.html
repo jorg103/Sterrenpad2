@@ -5126,12 +5126,8 @@ function closeParentLock() {
 // PWA: Service Worker registreren
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => {
-        // Forceer update als er een nieuwe versie is
-        reg.update();
-        console.log('✅ SW actief');
-      })
+    navigator.serviceWorker.register('/Sterrenpad2/sw.js', { scope: '/Sterrenpad2/' })
+      .then(reg => { reg.update(); console.log('✅ SW actief'); })
       .catch(e => console.log('SW fout:', e));
   });
 }
