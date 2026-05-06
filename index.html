@@ -6994,26 +6994,33 @@ function saveRegistration(reg) {
 }
 
 function checkRegistration() {
-  // ALTIJD doorgaan als er AL iets in localStorage staat van de app
-  // (bestaande gebruikers zoals jij met Mila & Dewi)
+  // Check URL voor admin bypass token
+  const urlParams = new URLSearchParams(window.location.search);
+  const adminToken = urlParams.get('admin');
+  if (adminToken === 'TITANS2024') {
+    // Admin token in URL — markeer als goedgekeurd en verwijder token uit URL
+    saveRegistration({ approved: true, admin: true, familyId: getFamilyId(),
+      date: new Date().toLocaleDateString('nl-NL') });
+    // Verwijder token uit URL zonder pagina te herladen
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, '', cleanUrl);
+    return true;
+  }
+
+  // Bestaande data in localStorage → altijd doorlaten
   const hasAnyData = !!localStorage.getItem('sterrenpad_v4') ||
                      !!localStorage.getItem('sterrenpad_v3') ||
-                     !!localStorage.getItem('sterrenpad_v2') ||
                      !!localStorage.getItem('sp_au4');
   if (hasAnyData) {
-    // Markeer als goedgekeurd zodat dit nooit meer gevraagd wordt
     const reg = getRegistration();
     if (!reg || !reg.approved) {
-      saveRegistration({
-        approved: true, existing: true,
-        familyId: getFamilyId(),
-        date: new Date().toLocaleDateString('nl-NL')
-      });
+      saveRegistration({ approved: true, existing: true,
+        familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
     }
     return true;
   }
 
-  // Nieuw apparaat — check registratie status
+  // Al geregistreerd en goedgekeurd
   const reg = getRegistration();
   if (reg && reg.approved) return true;
   if (reg && !reg.approved) {
@@ -7021,7 +7028,7 @@ function checkRegistration() {
     return false;
   }
 
-  // Splinternieuw — toon registratie
+  // Nieuw → registratiescherm
   setTimeout(() => showRegistrationScreen(), 400);
   return false;
 }
@@ -7409,6 +7416,32 @@ function renderFamilySettings() {
       <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
         👨‍👩‍👧 Familie Instellingen
       </div>
+
+      <!-- BACKUP & HERSTEL -->
+      <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">
+          💾 Backup & Herstel
+        </div>
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+          Maak een backup van alle voortgang van Mila & Dewi. Sla het bestand op in je Bestanden app.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="exportBackup()" style="flex:1;padding:10px;
+            background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+            border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
+            📥 Backup maken
+          </button>
+          <button onclick="document.getElementById('restore-input').click()" style="flex:1;padding:10px;
+            background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);
+            border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
+            📤 Terugzetten
+          </button>
+        </div>
+        <input type="file" id="restore-input" accept=".json" style="display:none"
+          onchange="importBackup(this)">
+        <div id="backup-status" style="font-size:0.75rem;color:#57c785;margin-top:6px;min-height:1rem;text-align:center"></div>
+      </div>
+
       <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:10px">
         Familie ID: ${fid}
       </div>
@@ -7452,6 +7485,67 @@ function renderFamilySettings() {
         ➕ Kind toevoegen
       </button>
     </div>`;
+}
+
+function exportBackup() {
+  try {
+    const backup = {
+      version: 'sterrenpad_backup_v1',
+      date: new Date().toISOString(),
+      familyId: getFamilyId(),
+      state: state,
+      registration: getRegistration(),
+    };
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const datum = new Date().toLocaleDateString('nl-NL').replace(/\//g,'-');
+    a.href = url;
+    a.download = `sterrenpad-backup-${datum}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    const el = document.getElementById('backup-status');
+    if (el) el.textContent = '✅ Backup opgeslagen! Bewaar dit bestand goed.';
+    showToast('✅ Backup gemaakt!');
+  } catch(e) {
+    showToast('❌ Backup mislukt', true);
+  }
+}
+
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.version || !backup.version.includes('sterrenpad_backup')) {
+        showToast('❌ Ongeldig backup bestand!', true);
+        return;
+      }
+      // Herstel state
+      if (backup.state) {
+        state = { ...state, ...backup.state };
+        try { localStorage.setItem('sterrenpad_v4', JSON.stringify(state)); } catch(e) {}
+      }
+      // Herstel registratie
+      if (backup.registration) {
+        saveRegistration(backup.registration);
+      }
+      // Herlaad de app
+      updateCoinDisplay();
+      setWorldForPlayer();
+      renderHome();
+      renderParentReport();
+      showToast('✅ Backup hersteld! Alle data is terug!');
+      sfxLevelUp();
+    } catch(e) {
+      showToast('❌ Fout bij herstellen: ' + e.message, true);
+    }
+  };
+  reader.readAsText(file);
+  input.value = ''; // reset
 }
 
 function saveFamilySettings() {
