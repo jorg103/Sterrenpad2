@@ -671,15 +671,87 @@ let state = {
   ownedAvatarItems: [[], []]
 };
 
-function saveState() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){}
+// ===== ☁️ SUPABASE CONFIG =====
+// Vul dit in na aanmaken Supabase project
+const SUPABASE_URL = 'https://arwzwdogbukhgomsmfdw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_hBS3wyE4q0eW7USKDrnUEw_nEG5MOpU';
+
+async function sbFetch(path, method='GET', body=null) {
+  try {
+    const opts = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': method==='POST' ? 'resolution=merge-duplicates' : '',
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, opts);
+    if (!r.ok) return null;
+    const text = await r.text();
+    return text ? JSON.parse(text) : true;
+  } catch(e) { return null; }
 }
+
+// ===== 💾 STATE OPSLAAN & LADEN =====
+let _syncPending = false;
+let _syncTO = null;
+
+function saveState() {
+  // Altijd lokaal opslaan (snel, offline-first)
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){}
+  // Debounce cloud sync — max 1x per 3 seconden
+  if (_syncTO) clearTimeout(_syncTO);
+  _syncTO = setTimeout(() => syncToCloud(), 3000);
+}
+
+async function syncToCloud() {
+  const fid = getFamilyId();
+  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return; // niet geconfigureerd
+  if (_syncPending) return;
+  _syncPending = true;
+  try {
+    await sbFetch('game_data', 'POST', {
+      family_id: fid,
+      data: state,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e) {}
+  _syncPending = false;
+}
+
+async function loadFromCloud() {
+  const fid = getFamilyId();
+  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return false;
+  try {
+    const rows = await sbFetch(`game_data?family_id=eq.${fid}&select=data,updated_at`);
+    if (!rows || rows.length === 0) return false;
+    const cloudData = rows[0].data;
+    const cloudTime = new Date(rows[0].updated_at).getTime();
+    // Gebruik cloud data als die nieuwer is dan lokaal
+    const localSaved = localStorage.getItem(SAVE_KEY + '_time');
+    const localTime = localSaved ? parseInt(localSaved) : 0;
+    if (cloudTime > localTime) {
+      state = { ...state, ...cloudData };
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        localStorage.setItem(SAVE_KEY + '_time', cloudTime.toString());
+      } catch(e) {}
+      return true; // cloud data geladen
+    }
+  } catch(e) {}
+  return false;
+}
+
 function loadState() {
   try {
     const s = localStorage.getItem(SAVE_KEY);
     if (s) state = {...state, ...JSON.parse(s)};
   } catch(e){}
 }
+
 loadState();
 
 function getPlayer() { return state.players[state.currentPlayer]; }
@@ -4541,7 +4613,8 @@ function renderParentReport() {
     </div>`;
 
   // ===== UITNODIGING & REGISTRATIE =====
-  html += renderPendingApprovals();
+  html += '<div id="pending-approvals-section"></div>';
+  setTimeout(() => renderPendingApprovals(), 100);
 
   // ===== IDEEËNBUS & FAMILIE =====
   html += `<div style="display:flex;gap:8px;margin-bottom:14px">
@@ -7064,23 +7137,15 @@ async function submitRegistration() {
   }
 
   const fid = getFamilyId();
-  const reg = {
-    familyId: fid,
-    parentName: parent,
-    familyName: family,
-    source,
-    approved: false,
-    date: new Date().toLocaleDateString('nl-NL'),
-    children: [
-      { name: c1name, grade: parseInt(c1grade)||4, goal: c1goal, avatar:'🦁' },
-      ...(c2name ? [{ name: c2name, grade: parseInt(c2grade)||2, goal: c2goal, avatar:'🐯' }] : []),
-    ]
-  };
+  const children = [
+    { name: c1name, grade: parseInt(c1grade)||4, goal: c1goal, avatar:'🦁' },
+    ...(c2name ? [{ name: c2name, grade: parseInt(c2grade)||2, goal: c2goal, avatar:'🐯' }] : []),
+  ];
 
   if (errEl) errEl.textContent = '⏳ Aanmelding versturen...';
 
-  // Pas speler namen aan vanuit registratie
-  reg.children.forEach((ch, i) => {
+  // Pas speler namen aan
+  children.forEach((ch, i) => {
     if (state.players[i]) {
       state.players[i].name   = ch.name;
       state.players[i].avatar = ch.avatar;
@@ -7089,27 +7154,44 @@ async function submitRegistration() {
   });
   saveState();
 
-  // Stuur naar Claude API — sla registratie op als "wacht op goedkeuring"
-  // De admin ziet dit in zijn Ouders HQ via dezelfde API-aanroep
-  try {
-    await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:50,
-        messages:[{ role:'user',
-          content:`Registratie ontvangen voor SterrenPad - Familie ${family}. Kinderen: ${reg.children.map(c=>c.name+' groep '+c.grade).join(', ')}. FamilieID: ${fid}. Datum: ${reg.date}. [LOG ONLY - geen actie nodig]`
-        }]
-      })
-    });
-  } catch(e) {}
+  const reg = {
+    familyId: fid, parentName: parent, familyName: family,
+    source, approved: false,
+    date: new Date().toLocaleDateString('nl-NL'), children
+  };
 
-  // Sla lokaal op als wacht op goedkeuring
+  // Sla op in Supabase families tabel
+  const saved = await sbFetch('families', 'POST', {
+    id: fid,
+    family_name: family,
+    parent_name: parent,
+    source,
+    approved: false,
+    children,
+    created_at: new Date().toISOString()
+  });
+
+  // Ook lokaal opslaan
   saveRegistration(reg);
 
   document.getElementById('reg-overlay')?.remove();
   showPendingScreen(reg);
+}
+
+async function checkApprovalStatus() {
+  // Controleer in Supabase of de familie goedgekeurd is
+  const fid = getFamilyId();
+  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return false;
+  try {
+    const rows = await sbFetch(`families?id=eq.${fid}&select=approved`);
+    if (rows && rows.length > 0 && rows[0].approved) {
+      const reg = getRegistration() || {};
+      reg.approved = true;
+      saveRegistration(reg);
+      return true;
+    }
+  } catch(e) {}
+  return false;
 }
 
 function showPendingScreen(reg, customMsg) {
@@ -7144,7 +7226,7 @@ function showPendingScreen(reg, customMsg) {
         border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-bottom:8px">
         📋 Kopieer uitnodigingslink
       </button>
-      <button onclick="adminApproveCode()" style="width:100%;padding:10px;
+      <button onclick="checkApprovalFromCloud()" style="width:100%;padding:10px;
         background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);
         border-radius:14px;color:#f5a623;font-family:'Fredoka One',cursive;
         font-size:0.85rem;cursor:pointer">
@@ -7154,7 +7236,20 @@ function showPendingScreen(reg, customMsg) {
   document.body.appendChild(overlay);
 }
 
-// Admin voert goedkeuringscode in (simpel maar effectief)
+async function checkApprovalFromCloud() {
+  showToast('⏳ Status controleren...');
+  const approved = await checkApprovalStatus();
+  if (approved) {
+    document.getElementById('pending-overlay')?.remove();
+    showToast('✅ Goedgekeurd! Welkom bij SterrenPad!');
+    sfxLevelUp();
+    setTimeout(() => navigate('home'), 500);
+  } else {
+    // Fallback: code invoeren
+    adminApproveCode();
+  }
+}
+
 // Jij ziet nieuwe aanmeldingen in je Ouders HQ en keurt goed met de code
 const ADMIN_APPROVE_CODE = 'TITANS2024'; // verander dit naar eigen code
 
@@ -7187,17 +7282,26 @@ function copyShareLink() {
   }
 }
 
-// Admin dashboard in Ouders HQ — toon wachtende registraties
-function renderPendingApprovals() {
+async function renderPendingApprovals() {
   const reg = getRegistration();
-  return `
+
+  // Haal wachtende families op uit Supabase (alleen voor admin)
+  let pendingFamilies = [];
+  if (SUPABASE_URL !== 'JOUW_SUPABASE_URL') {
+    try {
+      const rows = await sbFetch('families?approved=eq.false&order=created_at.desc&limit=20');
+      if (rows) pendingFamilies = rows;
+    } catch(e) {}
+  }
+
+  const el = document.getElementById('pending-approvals-section');
+  if (!el) return '';
+
+  el.innerHTML = `
     <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
       border:1px solid rgba(87,199,133,0.3)">
       <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">
         🔗 SterrenPad Delen
-      </div>
-      <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-bottom:8px">
-        Deel deze link — nieuwe families registreren zich en jij keurt ze goed met code <span style="color:#f5a623;font-family:'Fredoka One',cursive">TITANS2024</span>
       </div>
       <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px;
         font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">
@@ -7205,14 +7309,67 @@ function renderPendingApprovals() {
       </div>
       <button onclick="copyShareLink()" style="width:100%;padding:10px;
         background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
-        border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+        border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;margin-bottom:8px">
         📋 Kopieer Uitnodigingslink
       </button>
-      <div style="margin-top:10px;font-size:0.75rem;color:rgba(255,255,255,0.4)">
-        💡 Nieuwe familie stap voor stap:<br>
-        1. Stuur de link → 2. Ze registreren → 3. Ze wachten → 4. Jij geeft de code <strong style="color:#f5a623">TITANS2024</strong> → 5. Direct toegang!
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.4)">
+        Code voor nieuwe families: <strong style="color:#f5a623">TITANS2024</strong>
       </div>
-    </div>`;
+    </div>
+
+    ${pendingFamilies.length > 0 ? `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
+      border:2px solid #f5a623">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
+        ✋ Wacht op Goedkeuring (${pendingFamilies.length})
+      </div>
+      ${pendingFamilies.map(f => `
+        <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:8px">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">
+            👨‍👩‍👧 ${f.family_name}
+          </div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:3px 0">
+            Ouder: ${f.parent_name} · ${new Date(f.created_at).toLocaleDateString('nl-NL')}
+          </div>
+          ${(f.children||[]).map(c=>`
+            <div style="font-size:0.75rem;color:#57c785">👶 ${c.name} · Groep ${c.grade}</div>
+          `).join('')}
+          <button onclick="approveFamily('${f.id}')"
+            style="width:100%;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);
+            color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;
+            font-size:0.85rem;cursor:pointer;margin-top:8px">
+            ✅ Goedkeuren
+          </button>
+        </div>`).join('')}
+    </div>` : SUPABASE_URL !== 'JOUW_SUPABASE_URL' ? `
+    <div style="background:#1a2744;border-radius:12px;padding:10px;margin-bottom:12px;
+      text-align:center;border:1px solid rgba(87,199,133,0.2)">
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">✅ Geen wachtende aanmeldingen</div>
+    </div>` : `
+    <div style="background:#1a2744;border-radius:12px;padding:12px;margin-bottom:12px;
+      border:1px dashed rgba(245,166,35,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">
+        ⚙️ Supabase nog niet geconfigureerd
+      </div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.5">
+        Volg de installatie-instructies om cloudsync in te schakelen.
+        Nieuwe families gebruiken nu de goedkeuringscode <strong style="color:#f5a623">TITANS2024</strong>.
+      </div>
+    </div>`}`;
+}
+
+async function approveFamily(familyId) {
+  const ok = await sbFetch(`families?id=eq.${familyId}`, 'PATCH', {
+    approved: true,
+    approved_at: new Date().toISOString()
+  });
+  if (ok !== null) {
+    showToast('✅ Familie goedgekeurd!');
+    sfxLevelUp();
+    renderParentReport();
+  } else {
+    showToast('❌ Fout bij goedkeuren', true);
+  }
 }
 
 // ===== 👨‍👩‍👧 MULTI-FAMILIE SYSTEEM =====
@@ -7491,8 +7648,26 @@ function initApp() {
     // Finn tip elke 8 minuten
     setInterval(() => { if(document.getElementById('home-screen')?.classList.contains('active')) showFinnTip('algemeen'); }, 480000);
     checkFamilySetup();
-    // Check registratie na korte vertraging
-    setTimeout(() => checkRegistration(), 800);
+    // Laad data van cloud als beschikbaar, daarna check registratie
+    loadFromCloud().then(loaded => {
+      if (loaded) {
+        // Cloud data geladen — herinitialiseer
+        state.players.forEach(p => {
+          if (!p.equipped)          p.equipped          = {head:null,outfit:null,accessory:null,pet:null,bg:null};
+          if (!p.badges)            p.badges            = [];
+          if (!p.streakData)        p.streakData        = {lastDate:null,streak:0,totalDays:0};
+          if (!p.completedMissions) p.completedMissions = {};
+          if (!p.pendingMissions)   p.pendingMissions   = {};
+          if (!p.seenStories)       p.seenStories       = [];
+          if (!p.wallet)            p.wallet            = {savings:0,investments:{},goal:'limousine',goalSaved:0,lastTick:null};
+        });
+        updateCoinDisplay();
+        setWorldForPlayer();
+        renderHome();
+        selectPlayer(0);
+      }
+      setTimeout(() => checkRegistration(), 300);
+    }).catch(() => setTimeout(() => checkRegistration(), 300));
   } catch(e) {
     console.error('Init fout:', e);
   }
