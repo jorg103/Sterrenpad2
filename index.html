@@ -6912,17 +6912,47 @@ function getRegistration() {
 
 function checkRegistration() {
   const fid = getFamilyId();
+
   // Admin heeft altijd toegang
   if (fid === ADMIN_FAMILY_ID || fid?.startsWith('family_admin')) return true;
-  // Check of eerste keer
+
+  // Als er al spelersdata is (bestaande gebruiker zoals Mila & Dewi)
+  // → automatisch goedgekeurd, sla registratie op zodat ze niet meer hoeven
+  const hasExistingData = state.players.some(p =>
+    (p.level||0) > 0 || (p.coins||0) > 0 || (p.history||[]).length > 0
+  );
+  if (hasExistingData) {
+    // Bestaande gebruiker — automatisch registreren als goedgekeurd
+    const existing = getRegistration();
+    if (!existing) {
+      try {
+        localStorage.setItem(REG_KEY, JSON.stringify({
+          approved: true,
+          familyName: 'Familie',
+          parentName: 'Ouder',
+          familyId: fid,
+          existing: true,
+          date: new Date().toLocaleDateString('nl-NL'),
+          children: state.players.map(p => ({
+            name: p.name, grade: p.grade||2
+          }))
+        }));
+      } catch(e) {}
+    } else if (!existing.approved) {
+      existing.approved = true;
+      try { localStorage.setItem(REG_KEY, JSON.stringify(existing)); } catch(e) {}
+    }
+    return true;
+  }
+
+  // Check of al geregistreerd
   const reg = getRegistration();
   if (!reg) {
-    // Eerste keer — toon registratie scherm
+    // Nieuwe gebruiker — toon registratie
     setTimeout(() => showRegistrationScreen(), 500);
     return false;
   }
   if (!reg.approved) {
-    // Wacht op goedkeuring
     setTimeout(() => showPendingScreen(reg), 500);
     return false;
   }
