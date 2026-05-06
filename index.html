@@ -72,10 +72,13 @@
   #home-screen {
     background: linear-gradient(180deg, #0d0d1a 0%, #0f3460 50%, #1a1a2e 100%);
     position: relative;
-    overflow-y: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
     min-height: calc(100vh - 60px);
+    overflow-y: auto;
   }
-  .home-content { text-align: center; padding: 30px 20px 100px; width: 100%; max-width: 380px; margin: 0 auto; }
+  .home-content { text-align: center; padding: 20px 20px 80px; width: 100%; max-width: 380px; }
   .welcome-title { font-family:'Fredoka One',cursive; font-size:2.6rem; color:#f5a623;
     text-shadow:0 0 30px rgba(245,166,35,0.5); margin-bottom:4px; }
   .welcome-sub { font-size:1rem; color:#57c785; font-weight:700; margin-bottom:22px; }
@@ -481,21 +484,26 @@
 <div class="screen active" id="home-screen">
   <div class="home-content">
     <div class="welcome-title">⚡ TitansPad</div>
-    <div class="welcome-sub">Wie gaat er trainen?</div>
+    <div class="welcome-sub" id="home-sub">Tik op jouw naam!</div>
     <div class="player-select">
-      <div class="player-card" onclick="selectPlayer(0)" id="card-0">
-        <div class="player-avatar">🦁</div>
-        <div class="player-name">Mila</div>
+      <div class="player-card" onclick="selectAndStart(0)" id="card-0">
+        <div class="player-avatar" id="av-0">🦁</div>
+        <div class="player-name" id="pname-0">${state.players[0]?.name||'Speler 1'}</div>
         <div class="player-info" id="info-0">Groep 4</div>
+        <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
+          Tik om te spelen!
+        </div>
       </div>
-      <div class="player-card" onclick="selectPlayer(1)" id="card-1">
-        <div class="player-avatar">🐯</div>
-        <div class="player-name">Dewi</div>
+      <div class="player-card" onclick="selectAndStart(1)" id="card-1">
+        <div class="player-avatar" id="av-1">🐯</div>
+        <div class="player-name" id="pname-1">${state.players[1]?.name||'Speler 2'}</div>
         <div class="player-info" id="info-1">Groep 2</div>
+        <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
+          Tik om te spelen!
+        </div>
       </div>
     </div>
-    <button class="btn-primary" onclick="startGame()">⚡ START!</button>
-    <div id="home-progress" style="margin-top:16px"></div>
+    <div id="home-progress" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -620,6 +628,7 @@ let state = {
       avatarBody: 'av_body_f1', avatarColor: '#E91E63',
       equipped: { head: null, outfit: null, accessory: null, pet: null, bg: null },
       wallet: { savings: 0, investments: {}, goal: 'limousine', goalSaved: 0, lastTick: null },
+      grade: 4, // groep op school (4 = groep 4)
       skills: { spell: 50, math: 50, lang: 50 }, // 0-100 vaardigheidscore
       history: [], // laatste 20 antwoorden: {type, correct, ms}
       bonusDue: 0  // bonus challenge na dit aantal levels
@@ -954,11 +963,12 @@ function getLevelsForWorld(worldId) {
     {icon:'⚡',label:'SPEED!',     type:'speed',    desc:'Zo snel als Beast Boy!'},
     {icon:'🧠',label:'BRAIN!',     type:'memory',   desc:'Raven zou trots zijn!'},
     {icon:'📚',label:'STAAL!',     type:'staal',    desc:'Taal Titan aan het werk!'},
-    {icon:'🌟',label:'TITAN POWER',type:'surprise', desc:'Dubbele Titan Coins!'},
-    {icon:'🔥',label:'FURY!',      type:'surprise', desc:'Drie uitdagingen!'},
-    {icon:'📖',label:'TAAL!',      type:'staal',    desc:'Staal taalchallenge!'},
-    {icon:'🐦',label:'BIRDSTRIKE!',type:'surprise', desc:'Robin approved!'},
-    {icon:'💎',label:'RARE DROP!', type:'surprise', desc:'Ultra zeldzame beloning!'},
+    {icon:'🎡',label:'WIEL!',      type:'wheel',    desc:'Draai aan het Titans wiel!'},
+    {icon:'🃏',label:'MEMORY!',    type:'cards',    desc:'2 of a kind — zoek de paren!'},
+    {icon:'🎈',label:'BALLONNEN!', type:'balloons', desc:'Prik zoveel mogelijk ballonnen!'},
+    {icon:'🗺️',label:'TOPO!',     type:'topo',     desc:'Topografie uitdaging!'},
+    {icon:'🎬',label:'ONTDEKKING!',type:'ontdekking',desc:'Titans Unieke Ontdekking!'},
+    {icon:'😄',label:'MOPJE!',     type:'joke',     desc:'Een grappige tussenstop!'},
     {icon:'🌀',label:'RAVEN!',     type:'staal',    desc:'Azarath taalchallenge!'},
   ];
   const surprise = SURPRISES[worldId % SURPRISES.length];
@@ -1184,47 +1194,85 @@ const AVATAR_BASE_BODIES = [
 ];
 
 const AVATAR_ITEMS = [
-  // Hoofddeksels
-  {id:'av_h1',name:'Kroon',emoji:'👑',slot:'head',price:10,style:'meisje'},
-  {id:'av_h2',name:'Helm',emoji:'⛑️',slot:'head',price:10,style:'neutraal'},
-  {id:'av_h3',name:'Hoed',emoji:'🎩',slot:'head',price:8,style:'neutraal'},
-  {id:'av_h4',name:'Ranger Helm',emoji:'🪖',slot:'head',price:12,style:'jongen'},
-  {id:'av_h5',name:'Fee Diadeem',emoji:'💍',slot:'head',price:15,style:'meisje'},
-  {id:'av_h6',name:'Ninja Bandana',emoji:'🥷',slot:'head',price:12,style:'jongen'},
-  {id:'av_h7',name:'Feesthoedje',emoji:'🎉',slot:'head',price:8,style:'neutraal'},
-  {id:'av_h8',name:'Bloemenkrans',emoji:'💐',slot:'head',price:10,style:'meisje'},
-  // Kleding
-  {id:'av_c1',name:'Ranger Pak',emoji:'🦺',slot:'outfit',price:15,style:'jongen'},
-  {id:'av_c2',name:'Prinsessenjurk',emoji:'👗',slot:'outfit',price:15,style:'meisje'},
-  {id:'av_c3',name:'Superheld Cape',emoji:'🦸',slot:'outfit',price:18,style:'neutraal'},
-  {id:'av_c4',name:'Ninja Pak',emoji:'🥋',slot:'outfit',price:15,style:'jongen'},
-  {id:'av_c5',name:'Fee Jurkje',emoji:'🧚',slot:'outfit',price:18,style:'meisje'},
-  {id:'av_c6',name:'Astronaut Pak',emoji:'👨‍🚀',slot:'outfit',price:20,style:'neutraal'},
-  {id:'av_c7',name:'Ridder Harnas',emoji:'🛡️',slot:'outfit',price:20,style:'jongen'},
-  {id:'av_c8',name:'Zeemeermin',emoji:'🧜',slot:'outfit',price:20,style:'meisje'},
-  // Accessoires
-  {id:'av_a1',name:'Toverstaf',emoji:'🪄',slot:'accessory',price:10,style:'neutraal'},
-  {id:'av_a2',name:'Zwaard',emoji:'⚔️',slot:'accessory',price:12,style:'jongen'},
-  {id:'av_a3',name:'Bloemboeket',emoji:'💐',slot:'accessory',price:10,style:'meisje'},
-  {id:'av_a4',name:'Schild',emoji:'🛡️',slot:'accessory',price:12,style:'jongen'},
-  {id:'av_a5',name:'Vleugels',emoji:'🪽',slot:'accessory',price:15,style:'meisje'},
-  {id:'av_a6',name:'Laser Blaster',emoji:'🔫',slot:'accessory',price:15,style:'jongen'},
-  {id:'av_a7',name:'Magisch Boek',emoji:'📖',slot:'accessory',price:12,style:'neutraal'},
-  {id:'av_a8',name:'Harp',emoji:'🎵',slot:'accessory',price:12,style:'meisje'},
-  // Huisdieren
-  {id:'av_p1',name:'Draakje',emoji:'🐉',slot:'pet',price:20,style:'neutraal'},
-  {id:'av_p2',name:'Eenhoorn',emoji:'🦄',slot:'pet',price:20,style:'meisje'},
-  {id:'av_p3',name:'Robothond',emoji:'🤖',slot:'pet',price:20,style:'jongen'},
-  {id:'av_p4',name:'Baby Dino',emoji:'🦕',slot:'pet',price:18,style:'neutraal'},
-  {id:'av_p5',name:'Vuurvogel',emoji:'🦅',slot:'pet',price:22,style:'neutraal'},
-  {id:'av_p6',name:'Zeepaardje',emoji:'🐠',slot:'pet',price:18,style:'meisje'},
-  // Achtergronden
-  {id:'av_bg1',name:'Bloemenweide',emoji:'🌸',slot:'bg',price:10,style:'meisje'},
-  {id:'av_bg2',name:'Ruimte',emoji:'🌌',slot:'bg',price:10,style:'neutraal'},
-  {id:'av_bg3',name:'Jungle',emoji:'🌴',slot:'bg',price:10,style:'neutraal'},
-  {id:'av_bg4',name:'Kasteel',emoji:'🏰',slot:'bg',price:15,style:'meisje'},
-  {id:'av_bg5',name:'Vulkaan',emoji:'🌋',slot:'bg',price:15,style:'jongen'},
-  {id:'av_bg6',name:'Sneeuw',emoji:'❄️',slot:'bg',price:10,style:'neutraal'},
+  // === HOOFDDEKSELS ===
+  {id:'av_h1', name:'Gouden Kroon',    emoji:'👑',  slot:'head', price:10},
+  {id:'av_h2', name:'Veiligheidshelm', emoji:'⛑️',  slot:'head', price:10},
+  {id:'av_h3', name:'Hoge Hoed',       emoji:'🎩',  slot:'head', price:8},
+  {id:'av_h4', name:'Legerhelm',       emoji:'🪖',  slot:'head', price:12},
+  {id:'av_h5', name:'Bloemenkrans',    emoji:'💐',  slot:'head', price:10},
+  {id:'av_h6', name:'Feesthoedje',     emoji:'🎉',  slot:'head', price:8},
+  {id:'av_h7', name:'Cowboyhoed',      emoji:'🤠',  slot:'head', price:12},
+  {id:'av_h8', name:'Kerstmuts',       emoji:'🎅',  slot:'head', price:10},
+  {id:'av_h9', name:'Heksenhoed',      emoji:'🧙',  slot:'head', price:15},
+  {id:'av_h10',name:'Carnaval Masker', emoji:'🎭',  slot:'head', price:18},
+  {id:'av_h11',name:'Piratenhoed',     emoji:'🏴‍☠️', slot:'head', price:15},
+  {id:'av_h12',name:'Viking Helm',     emoji:'⚔️',  slot:'head', price:18},
+  {id:'av_h13',name:'Alien Antennes',  emoji:'👽',  slot:'head', price:20},
+  {id:'av_h14',name:'Clown Pruik',     emoji:'🤡',  slot:'head', price:15},
+  {id:'av_h15',name:'Regenboog Pruik', emoji:'🌈',  slot:'head', price:20},
+
+  // === CARNAVAL & KOSTUUMS ===
+  {id:'av_c1', name:'Superheld Cape',  emoji:'🦸',  slot:'outfit', price:15},
+  {id:'av_c2', name:'Prinsessenjurk',  emoji:'👗',  slot:'outfit', price:15},
+  {id:'av_c3', name:'Ninja Pak',       emoji:'🥷',  slot:'outfit', price:15},
+  {id:'av_c4', name:'Astronaut Pak',   emoji:'👨‍🚀', slot:'outfit', price:20},
+  {id:'av_c5', name:'Ridder Harnas',   emoji:'🛡️',  slot:'outfit', price:20},
+  {id:'av_c6', name:'Zeemeermin',      emoji:'🧜',  slot:'outfit', price:20},
+  {id:'av_c7', name:'T-Rex Kostuum',   emoji:'🦖',  slot:'outfit', price:22},
+  {id:'av_c8', name:'Clown Pak',       emoji:'🤡',  slot:'outfit', price:18},
+  {id:'av_c9', name:'Piratenpak',      emoji:'🏴‍☠️', slot:'outfit', price:18},
+  {id:'av_c10',name:'Heksenjurk',      emoji:'🧙‍♀️',slot:'outfit', price:18},
+  {id:'av_c11',name:'Leeuwenpak',      emoji:'🦁',  slot:'outfit', price:22},
+  {id:'av_c12',name:'Tijgerpak',       emoji:'🐯',  slot:'outfit', price:22},
+  {id:'av_c13',name:'Drakenpak',       emoji:'🐉',  slot:'outfit', price:25},
+  {id:'av_c14',name:'Regenboog Jurkje',emoji:'🌈',  slot:'outfit', price:20},
+  {id:'av_c15',name:'Robot Pak',       emoji:'🤖',  slot:'outfit', price:25},
+  {id:'av_c16',name:'Fee Kostuum',     emoji:'🧚',  slot:'outfit', price:18},
+  {id:'av_c17',name:'Brandweerpak',    emoji:'🚒',  slot:'outfit', price:18},
+  {id:'av_c18',name:'Dokterjas',       emoji:'👨‍⚕️', slot:'outfit', price:15},
+  {id:'av_c19',name:'Kookschort',      emoji:'👨‍🍳', slot:'outfit', price:12},
+  {id:'av_c20',name:'Unicorn Pak',     emoji:'🦄',  slot:'outfit', price:28},
+
+  // === WAPENS / ACCESSOIRES ===
+  {id:'av_a1', name:'Toverstaf',       emoji:'🪄',  slot:'accessory', price:10},
+  {id:'av_a2', name:'Zwaard',          emoji:'⚔️',  slot:'accessory', price:12},
+  {id:'av_a3', name:'Bloemboeket',     emoji:'💐',  slot:'accessory', price:10},
+  {id:'av_a4', name:'Regenboogschild', emoji:'🌈',  slot:'accessory', price:12},
+  {id:'av_a5', name:'Laser Pistool',   emoji:'🔫',  slot:'accessory', price:15},
+  {id:'av_a6', name:'Magisch Boek',    emoji:'📖',  slot:'accessory', price:12},
+  {id:'av_a7', name:'Gitaar',          emoji:'🎸',  slot:'accessory', price:15},
+  {id:'av_a8', name:'Ballonnen',       emoji:'🎈',  slot:'accessory', price:8},
+  {id:'av_a9', name:'Vlag',            emoji:'🚩',  slot:'accessory', price:8},
+  {id:'av_a10',name:'IJsstaf',         emoji:'❄️',  slot:'accessory', price:18},
+  {id:'av_a11',name:'Vurige Fakkel',   emoji:'🔥',  slot:'accessory', price:15},
+  {id:'av_a12',name:'Trident',         emoji:'🔱',  slot:'accessory', price:20},
+  {id:'av_a13',name:'Vlinder Net',     emoji:'🦋',  slot:'accessory', price:10},
+  {id:'av_a14',name:'Pizza',           emoji:'🍕',  slot:'accessory', price:8},
+  {id:'av_a15',name:'Trophy',          emoji:'🏆',  slot:'accessory', price:25},
+
+  // === HUISDIEREN ===
+  {id:'av_p1', name:'Draakje',         emoji:'🐉',  slot:'pet', price:20},
+  {id:'av_p2', name:'Eenhoorn',        emoji:'🦄',  slot:'pet', price:20},
+  {id:'av_p3', name:'Robothond',       emoji:'🤖',  slot:'pet', price:20},
+  {id:'av_p4', name:'Baby Dino',       emoji:'🦕',  slot:'pet', price:18},
+  {id:'av_p5', name:'Tijgertje',       emoji:'🐯',  slot:'pet', price:18},
+  {id:'av_p6', name:'Papegaai',        emoji:'🦜',  slot:'pet', price:15},
+  {id:'av_p7', name:'Baby Haai',       emoji:'🦈',  slot:'pet', price:22},
+  {id:'av_p8', name:'Vliegende Vis',   emoji:'🐟',  slot:'pet', price:12},
+  {id:'av_p9', name:'Mini Panda',      emoji:'🐼',  slot:'pet', price:18},
+  {id:'av_p10',name:'Magikat',         emoji:'🐱',  slot:'pet', price:15},
+
+  // === ACHTERGRONDEN ===
+  {id:'av_bg1',name:'Bloemenweide',    emoji:'🌸',  slot:'bg', price:10},
+  {id:'av_bg2',name:'Ruimte',          emoji:'🌌',  slot:'bg', price:10},
+  {id:'av_bg3',name:'Jungle',          emoji:'🌴',  slot:'bg', price:10},
+  {id:'av_bg4',name:'Kasteel',         emoji:'🏰',  slot:'bg', price:15},
+  {id:'av_bg5',name:'Vulkaan',         emoji:'🌋',  slot:'bg', price:15},
+  {id:'av_bg6',name:'Sneeuwland',      emoji:'❄️',  slot:'bg', price:10},
+  {id:'av_bg7',name:'Strand',          emoji:'🏖️',  slot:'bg', price:12},
+  {id:'av_bg8',name:'Regenboog',       emoji:'🌈',  slot:'bg', price:15},
+  {id:'av_bg9',name:'Diepzee',         emoji:'🌊',  slot:'bg', price:18},
+  {id:'av_bg10',name:'Disco',          emoji:'🪩',  slot:'bg', price:20},
 ];
 
 // ===== NAVIGATION =====
@@ -1257,10 +1305,213 @@ function setWorldForPlayer() {
   LEVELS = getLevelsForWorld(worldIdx);
 }
 
-function startGame() {
-  if (!state.players[state.currentPlayer]) { showToast('Kies een speler!', true); return; }
-  navigate('map');
+function selectAndStart(i) {
+  selectPlayer(i);
+  sfxClick();
+  // Direct naar map — geen aparte START knop nodig
+  setTimeout(() => navigate('map'), 150);
 }
+
+// ===== 🐯 DEWI MODUS — toegankelijk voor niet-lezers =====
+// Detecteer of speler nog niet kan lezen (groep 1-2)
+function isEarlyReader(playerIdx) {
+  const p = state.players[playerIdx];
+  return (p.grade || 2) <= 2; // groep 1 of 2
+}
+
+// Spreek tekst uit via Web Speech API
+function speak(text, lang) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = lang || 'nl-NL';
+  utt.rate = 0.85;
+  utt.pitch = 1.1;
+  window.speechSynthesis.speak(utt);
+}
+
+// Speek de huidige vraag voor
+function speakQuestion(text) {
+  if (isEarlyReader(state.currentPlayer)) {
+    setTimeout(() => speak(text), 300);
+  }
+}
+
+// Dewi-vriendelijke letters leren
+const LETTER_CHALLENGES = [
+  // Klinkers eerst
+  {letter:'A', woord:'Appel',   emoji:'🍎', klank:'aaa'},
+  {letter:'E', woord:'Eend',    emoji:'🦆', klank:'eee'},
+  {letter:'I', woord:'IJsbeer', emoji:'🐻‍❄️', klank:'iii'},
+  {letter:'O', woord:'Olifant', emoji:'🐘', klank:'ooo'},
+  {letter:'U', woord:'Ui',      emoji:'🧅', klank:'uuu'},
+  // Medeklinkers makkelijk
+  {letter:'M', woord:'Maan',    emoji:'🌙', klank:'mmm'},
+  {letter:'N', woord:'Neus',    emoji:'👃', klank:'nnn'},
+  {letter:'P', woord:'Peer',    emoji:'🍐', klank:'ppp'},
+  {letter:'B', woord:'Bal',     emoji:'⚽', klank:'bbb'},
+  {letter:'D', woord:'Deur',    emoji:'🚪', klank:'ddd'},
+  {letter:'K', woord:'Kat',     emoji:'🐱', klank:'kkk'},
+  {letter:'L', woord:'Leeuw',   emoji:'🦁', klank:'lll'},
+  {letter:'R', woord:'Roos',    emoji:'🌹', klank:'rrr'},
+  {letter:'S', woord:'Ster',    emoji:'⭐', klank:'sss'},
+  {letter:'T', woord:'Tafel',   emoji:'🍽️', klank:'ttt'},
+  {letter:'V', woord:'Vis',     emoji:'🐟', klank:'vvv'},
+  {letter:'W', woord:'Wolk',    emoji:'☁️', klank:'www'},
+  // Combinaties
+  {letter:'AA', woord:'Aap',    emoji:'🐒', klank:'aap'},
+  {letter:'OE', woord:'Boek',   emoji:'📚', klank:'boekkk'},
+  {letter:'IE', woord:'Piet',   emoji:'🧑', klank:'pieet'},
+];
+
+// Rijm spel voor kleuters
+const RIJM_PLAATJES = [
+  {v:'🐱 Kat', opts:['🪖 Pat','🌳 Boom','🐟 Vis'], a:'🪖 Pat', uitleg:'Kat - Pat: beide eindigen op -at!'},
+  {v:'🌞 Zon', opts:['🎵 Bon','🚗 Auto','🏠 Huis'], a:'🎵 Bon', uitleg:'Zon - Bon: beide eindigen op -on!'},
+  {v:'🐸 Kikker', opts:['✂️ Stikker','🌸 Bloem','⭐ Ster'], a:'✂️ Stikker', uitleg:'Kikker - Stikker: eindigen op -ikker!'},
+  {v:'🏠 Huis', opts:['🖱️ Muis','🌈 Boog','🍕 Pizza'], a:'🖱️ Muis', uitleg:'Huis - Muis: eindigen op -uis!'},
+  {v:'🌙 Maan', opts:['🦁 Laan','🐬 Dolfijn','🍎 Appel'], a:'🦁 Laan', uitleg:'Maan - Laan: eindigen op -aan!'},
+];
+
+// Tellen met plaatjes
+const TELLEN_CHALLENGES = [
+  {vraag:'Hoeveel ballen zijn er?', items:'⚽⚽⚽', aantal:3, opts:[2,3,4,5]},
+  {vraag:'Hoeveel sterren zie je?', items:'⭐⭐', aantal:2, opts:[1,2,3,4]},
+  {vraag:'Hoeveel appels zijn er?', items:'🍎🍎🍎🍎', aantal:4, opts:[3,4,5,6]},
+  {vraag:'Hoeveel harten zie je?', items:'❤️❤️❤️❤️❤️', aantal:5, opts:[4,5,6,7]},
+  {vraag:'Hoeveel bomen zijn er?', items:'🌳🌳🌳', aantal:3, opts:[2,3,4,5]},
+];
+
+function showDewiFriendlyChallenge(type) {
+  const box = document.getElementById('challenge-content');
+  challengeStartTime = Date.now();
+  const reward = LEVELS[currentLevelIdx]?.reward || 10;
+
+  if (type === 'letters') {
+    const ch = LETTER_CHALLENGES[Math.floor(Math.random() * LETTER_CHALLENGES.length)];
+    speakQuestion(`Welke letter hoort bij ${ch.woord}?`);
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-size:5rem;margin-bottom:4px;animation:tt-bounce 0.5s">${ch.emoji}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#f5a623;margin-bottom:4px">${ch.woord}</div>
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:14px">Welke letter begint dit woord?</div>
+        <button onclick="speak('${ch.woord}')" style="background:rgba(87,199,133,0.2);border:1px solid #57c785;
+          border-radius:10px;padding:6px 14px;color:#57c785;font-family:'Fredoka One',cursive;
+          font-size:0.85rem;cursor:pointer;margin-bottom:12px">🔊 Hoor het woord</button>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+          ${shuffleArr([ch.letter, ...getWrongLetters(ch.letter, 5)]).slice(0,6).map(l =>
+            `<button onclick="checkDewiLetter(this,'${l}','${ch.letter}',${reward},'${ch.woord}')"
+              style="padding:16px;font-family:'Fredoka One',cursive;font-size:2rem;
+              background:#1a2744;color:#f5a623;border:2px solid rgba(245,166,35,0.3);
+              border-radius:14px;cursor:pointer">${l}</button>`
+          ).join('')}
+        </div>
+        <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+      </div>`;
+
+  } else if (type === 'rijm') {
+    const ch = RIJM_PLAATJES[Math.floor(Math.random() * RIJM_PLAATJES.length)];
+    speakQuestion(`Wat rijmt op ${ch.v.split(' ')[1]}?`);
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:8px">🎵 Wat rijmt hierop?</div>
+        <div style="font-size:4rem;margin-bottom:6px">${ch.v.split(' ')[0]}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:white;margin-bottom:4px">${ch.v.split(' ')[1]}</div>
+        <button onclick="speak('${ch.v.split(' ')[1]}')" style="background:rgba(87,199,133,0.2);border:1px solid #57c785;
+          border-radius:10px;padding:6px 14px;color:#57c785;font-family:'Fredoka One',cursive;
+          font-size:0.85rem;cursor:pointer;margin-bottom:12px">🔊 Hoor het woord</button>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+          ${shuffleArr([...ch.opts]).map(o =>
+            `<button onclick="checkDewiRijm(this,'${o}','${ch.a}',${reward},'${ch.uitleg}')"
+              style="padding:14px 8px;font-size:2rem;background:#1a2744;
+              border:2px solid rgba(245,166,35,0.3);border-radius:14px;cursor:pointer">${o.split(' ')[0]}</button>`
+          ).join('')}
+        </div>
+        <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+      </div>`;
+
+  } else if (type === 'tellen') {
+    const ch = TELLEN_CHALLENGES[Math.floor(Math.random() * TELLEN_CHALLENGES.length)];
+    speakQuestion(ch.vraag);
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#f5a623;margin-bottom:8px">
+          🔢 ${ch.vraag}
+        </div>
+        <div style="font-size:3rem;letter-spacing:4px;margin:12px 0;background:#0f3460;
+          border-radius:14px;padding:12px">${ch.items}</div>
+        <button onclick="speak('${ch.vraag}')" style="background:rgba(87,199,133,0.2);border:1px solid #57c785;
+          border-radius:10px;padding:6px 14px;color:#57c785;font-family:'Fredoka One',cursive;
+          font-size:0.85rem;cursor:pointer;margin-bottom:12px">🔊 Lees voor</button>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+          ${shuffleArr([...ch.opts]).map(n =>
+            `<button onclick="checkDewiTellen(this,${n},${ch.aantal},${reward})"
+              style="padding:16px 8px;font-family:'Fredoka One',cursive;font-size:2rem;
+              background:#1a2744;color:#f5a623;border:2px solid rgba(245,166,35,0.3);
+              border-radius:14px;cursor:pointer">${n}</button>`
+          ).join('')}
+        </div>
+        <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+      </div>`;
+  }
+}
+
+function getWrongLetters(correct, count) {
+  const all = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  return shuffleArr(all.filter(l => l !== correct)).slice(0, count);
+}
+
+function checkDewiLetter(btn, answer, correct, reward, woord) {
+  document.querySelectorAll('button').forEach(b => b.onclick = null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.style.background = '#57c785';
+    sfxPerfect();
+    speak(`Ja! ${correct} is de eerste letter van ${woord}!`);
+    recordAnswer('spell', true, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(reward, true); }, 1200);
+  } else {
+    btn.style.background = '#e94560';
+    sfxWrong();
+    speak(`Probeer nog eens! De letter ${correct} begint ${woord}`);
+    recordAnswer('spell', false, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1500);
+  }
+}
+
+function checkDewiRijm(btn, answer, correct, reward, uitleg) {
+  document.querySelectorAll('button').forEach(b => b.onclick = null);
+  const ms = Date.now() - challengeStartTime;
+  const isCorrect = answer === correct;
+  if (isCorrect) {
+    btn.style.background = '#57c785'; sfxPerfect();
+    speak(uitleg);
+    recordAnswer('spell', true, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(reward, true); }, 1500);
+  } else {
+    btn.style.background = '#e94560'; sfxWrong();
+    speak('Probeer nog eens!');
+    recordAnswer('spell', false, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1200);
+  }
+}
+
+function checkDewiTellen(btn, answer, correct, reward) {
+  document.querySelectorAll('button').forEach(b => b.onclick = null);
+  const ms = Date.now() - challengeStartTime;
+  if (answer === correct) {
+    btn.style.background = '#57c785'; sfxPerfect();
+    speak(`Goed gedaan! Het zijn er ${correct}!`);
+    recordAnswer('math', true, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(reward, true); }, 1200);
+  } else {
+    btn.style.background = '#e94560'; sfxWrong();
+    speak(`Probeer nog eens! Tel de plaatjes!`);
+    recordAnswer('math', false, ms);
+    setTimeout(() => { closeChallenge(); completeChallenge(Math.floor(reward/3), false); }, 1200);
+  }
+}
+
 
 function renderMap() {
   const track = document.getElementById('path-track');
@@ -1338,15 +1589,24 @@ function openChallenge(idx, worldIdx) {
   currentWorldIdx = worldIdx || 0;
   const lvl = LEVELS[idx];
   challengeState = { lives: 3, correct: 0, total: 0 };
-  if (lvl.type === 'finish')   showFinishChallenge();
-  else if (lvl.type === 'parcour')  showParcour();
-  else if (lvl.type === 'spell')    showSpell();
-  else if (lvl.type === 'math')     showMath();
-  else if (lvl.type === 'surprise') showSurpriseChallenge();
-  else if (lvl.type === 'speed')    showSpeedChallenge();
-  else if (lvl.type === 'memory')   showMemoryChallenge();
-  else if (lvl.type === 'staal')    { showStaalChallenge(state.currentPlayer, currentWorldIdx); document.getElementById('challenge-modal').classList.add('open'); return; }
-  else if (lvl.type === 'boss')     { showBossBattle(currentWorldIdx); document.getElementById('challenge-modal').classList.add('open'); return; }
+  challengeStartTime = Date.now();
+  const dewi = isEarlyReader(state.currentPlayer);
+
+  if      (lvl.type === 'finish')     showFinishChallenge();
+  else if (lvl.type === 'parcour')    showParcour();
+  else if (lvl.type === 'spell')      { dewi ? showDewiFriendlyChallenge('letters') : showSpell(); }
+  else if (lvl.type === 'math')       { dewi ? showDewiFriendlyChallenge('tellen')  : showMath(); }
+  else if (lvl.type === 'surprise')   showSurpriseChallenge();
+  else if (lvl.type === 'speed')      { dewi ? showDewiFriendlyChallenge('rijm')    : showSpeedChallenge(); }
+  else if (lvl.type === 'memory')     showMemoryChallenge();
+  else if (lvl.type === 'staal')      { if(dewi){showDewiFriendlyChallenge('rijm');}else{showStaalChallenge(state.currentPlayer,currentWorldIdx);document.getElementById('challenge-modal').classList.add('open');return;} }
+  else if (lvl.type === 'boss')       { showBossBattle(currentWorldIdx); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'wheel')      { showPrizeWheel(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'cards')      { showMemoryCards(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'balloons')   { showBallonPrikken(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'topo')       { if(dewi){showDewiFriendlyChallenge('tellen');}else{showTopoChallenge(state.currentPlayer);document.getElementById('challenge-modal').classList.add('open');return;} }
+  else if (lvl.type === 'ontdekking') { showTitansOntdekking(currentWorldIdx, state.currentPlayer); return; }
+  else if (lvl.type === 'joke')       { showMopje(); setTimeout(()=>{ completeChallenge(lvl.reward||5, true); }, 100); return; }
   else showSurpriseChallenge();
   document.getElementById('challenge-modal').classList.add('open');
 }
@@ -1794,7 +2054,12 @@ function showSpell() {
         onkeydown="if(event.key==='Enter')checkSpell()">
     </div>
     <button class="btn-primary" onclick="checkSpell()" style="margin-top:10px">Controleer! ✅</button>
-    <br><button class="btn-secondary" onclick="closeChallenge()" style="margin-top:8px">← Terug</button>
+    <div style="display:flex;gap:8px;margin-top:8px;justify-content:center">
+      <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+      <button onclick="showHint('spell')" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);
+        border-radius:12px;padding:8px 12px;color:#f5a623;font-family:'Fredoka One',cursive;
+        font-size:0.82rem;cursor:pointer">🧑‍🏫 Hint (-2🪙)</button>
+    </div>
   `;
   setTimeout(() => document.getElementById('spell-input')?.focus(), 100);
 }
@@ -1873,7 +2138,12 @@ function showMath() {
         `<button class="math-btn" onclick="checkMath(this, ${o})">${o}</button>`
       ).join('')}
     </div>
-    <br><button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:center">
+      <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+      <button onclick="showHint('math')" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);
+        border-radius:12px;padding:8px 12px;color:#f5a623;font-family:'Fredoka One',cursive;
+        font-size:0.82rem;cursor:pointer">🧑‍🏫 Hint (-2🪙)</button>
+    </div>
   `;
 }
 
@@ -1997,6 +2267,9 @@ function completeChallenge(coins, perfect) {
   addCoins(earned);
   if (perfect && !wasCompleted) setTimeout(sfxPerfect, 200);
   setTimeout(() => checkAndAwardBadges(), 1500);
+  checkTimeLimit();
+  if (!wasCompleted && (p.level||0) % 5 === 0) setTimeout(() => showWistJeDat(), 2500);
+  if (!wasCompleted && (p.level||0) % 10 === 0) setTimeout(() => showMopje(), 4000);
 
   const messages = perfect
     ? ['BOOYAH! 🌟', 'TITANS GO! 🎊', 'BEAST MODE! 🐯', 'AZARATH POWER! 🌀', 'ROBIN APPROVED! 🐦', 'STARFIRE SPARKLES! ⭐']
@@ -2263,26 +2536,34 @@ function wardrobeAction(itemId, slot) {
   if (!item) return;
   const owned = state.ownedAvatarItems[state.currentPlayer] || [];
   const p = getPlayer();
+  // Zorg dat equipped altijd alle slots heeft
   if (!p.equipped) p.equipped = {};
+  ['head','outfit','accessory','pet','bg'].forEach(s => {
+    if (!(s in p.equipped)) p.equipped[s] = null;
+  });
 
   if (owned.includes(itemId)) {
-    // Toggle equip
+    // Toggle equip/uitdoen
     if (p.equipped[slot] === itemId) {
       p.equipped[slot] = null;
       showToast(`${item.emoji} Uitgetrokken`);
     } else {
       p.equipped[slot] = itemId;
-      showToast(`${item.emoji} ${item.name} aangetrokken!`);
+      sfxBuy();
+      showToast(`${item.emoji} ${item.name} aangetrokken! ✅`);
     }
-    saveState(); renderAvatarBuilder();
+    saveState();
+    renderAvatarBuilder();
   } else {
-    // Buy
+    // Kopen + direct aantrekken
     if (getCoins() < item.price) { showToast('Onvoldoende Titan Coins! 🪙', true); return; }
     getPlayer().coins -= item.price;
     state.ownedAvatarItems[state.currentPlayer] = [...owned, itemId];
-    p.equipped[slot] = itemId;
-    saveState(); updateCoinDisplay();
-    showToast(`${item.emoji} ${item.name} gekocht & aangetrokken!`);
+    p.equipped[slot] = itemId; // direct aantrekken!
+    saveState();
+    updateCoinDisplay();
+    sfxBuy();
+    showToast(`🎉 ${item.emoji} ${item.name} gekocht & aangetrokken!`);
     renderAvatarBuilder();
   }
 }
@@ -3581,19 +3862,40 @@ function renderHome() {
   const worldIdx = Math.min(Math.floor((p.level||0)/5),49);
   const world = WORLDS[worldIdx];
   const prog = document.getElementById('home-progress');
-  if (!prog) return;
   const sd = p.streakData || {};
   const fb = getSkillFeedback(state.currentPlayer);
 
-  // Update player info cards
-  const info = document.getElementById(`info-${state.currentPlayer}`);
-  if (info) info.textContent = `${world.icon} Wereld ${worldIdx+1} · 🪙${p.coins}`;
+  // Update alle speler kaarten dynamisch
+  state.players.forEach((pl, i) => {
+    const nameEl = document.getElementById(`pname-${i}`);
+    const avEl   = document.getElementById(`av-${i}`);
+    const infoEl = document.getElementById(`info-${i}`);
+    const wIdx   = Math.min(Math.floor((pl.level||0)/5),49);
+    const w      = WORLDS[wIdx];
+    if (nameEl) nameEl.textContent = pl.name || `Speler ${i+1}`;
+    if (avEl)   avEl.textContent   = pl.avatar || '⭐';
+    if (infoEl) {
+      if (i === state.currentPlayer) {
+        infoEl.textContent = `${w.icon} Wereld ${wIdx+1} · 🪙${pl.coins}`;
+      } else {
+        infoEl.textContent = `Groep ${pl.grade||2}`;
+      }
+    }
+    // Highlight geselecteerde kaart
+    const card = document.getElementById(`card-${i}`);
+    if (card) {
+      card.style.borderColor = i === state.currentPlayer ? '#f5a623' : 'transparent';
+      card.style.background  = i === state.currentPlayer ? '#1a3060' : '#1a2744';
+    }
+  });
 
+  if (!prog) return;
   prog.innerHTML = `
     <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:left">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem">
           ${world.icon} ${world.name}
+          ${isEarlyReader(state.currentPlayer) ? '<span style="font-size:0.7rem;color:#ce93d8;margin-left:6px">🔊 Voorleesmodus</span>' : ''}
         </div>
         <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">
           ${sd.streak>0?`🔥 ${sd.streak} dagen`:''}
@@ -3886,7 +4188,55 @@ function renderParentReport() {
       📅 Titans HQ Briefing — ${dateStr}
     </div>`;
 
-  // ===== WACHTENDE GOEDKEURINGEN =====
+  // ===== IDEEËNBUS & FAMILIE =====
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px">
+    <button onclick="showIdeaBox()" style="flex:1;padding:12px;background:linear-gradient(135deg,#2e7d32,#57c785);
+      color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+      💡 Ideeënbus
+    </button>
+    <button onclick="document.getElementById('family-settings-section').style.display=document.getElementById('family-settings-section').style.display==='none'?'block':'none'"
+      style="flex:1;padding:12px;background:linear-gradient(135deg,#1565c0,#42a5f5);
+      color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+      👨‍👩‍👧 Familie
+    </button>
+  </div>
+  <div id="family-settings-section" style="display:none">
+    ${renderFamilySettings()}
+  </div>`;
+
+  // ===== TIJDSLIMIET INSTELLING =====
+  const tl = getTimeLimit();
+  html += `<div style="background:#1a2744;border:1px solid rgba(245,166,35,0.3);border-radius:18px;padding:14px;margin-bottom:14px">
+    <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:#f5a623;margin-bottom:10px">
+      ⏰ Dagelijkse Tijdslimiet
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="tl-enabled" ${tl.enabled?'checked':''}
+          onchange="toggleTimeLimit(this.checked)"
+          style="width:18px;height:18px;accent-color:#f5a623;cursor:pointer">
+        <span style="color:white;font-family:'Fredoka One',cursive;font-size:0.9rem">Tijdslimiet inschakelen</span>
+      </label>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="color:rgba(255,255,255,0.6);font-size:0.85rem">Minuten per dag:</span>
+      <input type="range" min="5" max="60" step="5" value="${tl.minutes}" id="tl-minutes"
+        style="flex:1;accent-color:#f5a623;cursor:pointer"
+        oninput="document.getElementById('tl-val').textContent=this.value"
+        onchange="setTimeLimitMinutes(parseInt(this.value))">
+      <span id="tl-val" style="font-family:'Fredoka One',cursive;color:#f5a623;min-width:32px">${tl.minutes}</span>
+    </div>
+    <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-top:6px">
+      Vandaag gebruikt: ${getUsedTimeToday()} minuten
+    </div>
+    <button onclick="resetTodayTime()" style="margin-top:8px;background:rgba(233,69,96,0.2);
+      border:1px solid rgba(233,69,96,0.4);border-radius:10px;padding:6px 14px;
+      color:#e94560;font-family:'Fredoka One',cursive;font-size:0.8rem;cursor:pointer">
+      🔄 Reset tijdslimiet vandaag
+    </button>
+  </div>`;
+
+
   const pendingAll = [];
   state.players.forEach((p, pidx) => {
     Object.entries(p.pendingMissions||{}).forEach(([mid, date]) => {
@@ -4153,7 +4503,10 @@ function renderPlayerReport(p, idx) {
         </div>` : ''}
 
       </div>
-    </div>`;
+    </div>
+
+    ${renderSkillSliders(p, idx)}
+  `;
 }
 
 function getDetailedTrend(history) {
@@ -4726,6 +5079,35 @@ function approveParentMission(playerIdx, missionId) {
   showToast('✅ Missie goedgekeurd! Coins uitbetaald!');
 }
 
+function toggleTimeLimit(enabled) {
+  const tl = getTimeLimit();
+  tl.enabled = enabled;
+  saveTimeLimit(tl);
+  showToast(enabled ? `⏰ Tijdslimiet ingeschakeld: ${tl.minutes} min/dag` : '⏰ Tijdslimiet uitgeschakeld');
+}
+
+function setTimeLimitMinutes(minutes) {
+  const tl = getTimeLimit();
+  tl.minutes = minutes;
+  saveTimeLimit(tl);
+}
+
+function resetTodayTime() {
+  try {
+    const d = JSON.parse(localStorage.getItem('tp_time_used') || '{}');
+    const today = new Date().toDateString();
+    delete d[today];
+    localStorage.setItem('tp_time_used', JSON.stringify(d));
+    // Verwijder ook het tijdslimiet scherm als dat zichtbaar is
+    const el = document.getElementById('time-limit-overlay');
+    if (el) el.remove();
+    _timeLimitWarned = false;
+    _sessionStart = Date.now();
+    showToast('✅ Tijdslimiet gereset voor vandaag!');
+    renderParentReport();
+  } catch(e) {}
+}
+
 function rejectMission(playerIdx, missionId) {
   const p = state.players[playerIdx];
   if (p.pendingMissions) delete p.pendingMissions[missionId];
@@ -5123,6 +5505,1270 @@ function closeParentLock() {
 }
 
 
+// ===== 1. PROFESSOR FINN — MASCOTTE =====
+const FINN_TIPS = [
+  { type:'sparen',  msg:"Sla elke dag een beetje op — kleine muntjes worden grote bergen!", emoji:'🏦' },
+  { type:'sparen',  msg:"Als je 10% van je muntjes spaart, heb je over een jaar heel veel!", emoji:'💡' },
+  { type:'beleggen',msg:"Goud groeit altijd langzaam maar zeker — net als een boom!", emoji:'🌳' },
+  { type:'beleggen',msg:"Spread je risico: zet niet alles op één belegging!", emoji:'🎯' },
+  { type:'rekenen', msg:"Tip: bij delen, denk hoeveel keer past het erin?", emoji:'🔢' },
+  { type:'rekenen', msg:"De tafels leren is als een superpower voor het rekenen!", emoji:'⚡' },
+  { type:'taal',    msg:"Lees elke dag iets — zo leer je vanzelf nieuwe woorden!", emoji:'📚' },
+  { type:'taal',    msg:"Bij de dt-regel: vervang het werkwoord door 'werken'. Loopt? Dan loopt!", emoji:'✏️' },
+  { type:'algemeen',msg:"Wist je dat hersenen groeien als je fouten maakt? Fouten zijn goed!", emoji:'🧠' },
+  { type:'algemeen',msg:"Pauze nemen helpt je hersenen informatie op te slaan!", emoji:'☕' },
+];
+
+const WIST_JE_DAT = [
+  { emoji:'🦁', fact:"Leeuwen slapen wel 20 uur per dag! Dat is meer dan jij!" },
+  { emoji:'🐙', fact:"Een octopus heeft 3 harten en blauw bloed!" },
+  { emoji:'🦋', fact:"Vlinders proeven met hun poten — stel je voor!" },
+  { emoji:'🌍', fact:"De aarde is 4,5 miljard jaar oud. Als dat 1 jaar was, verschenen mensen pas op 31 december!" },
+  { emoji:'🐘', fact:"Olifanten kunnen zichzelf herkennen in een spiegel — net zoals mensen!" },
+  { emoji:'🍯', fact:"Honing bederft nooit. Er is honing gevonden van 3000 jaar oud!" },
+  { emoji:'⭐', fact:"De zon is zo groot dat er 1,3 miljoen aarden in passen!" },
+  { emoji:'🐬', fact:"Dolfijnen hebben namen voor elkaar — ze roepen elkaar bij een fluitje!" },
+  { emoji:'🦒', fact:"Een giraf heeft net zoveel nekwervels als jij: 7! Alleen veel groter." },
+  { emoji:'❄️', fact:"Geen twee sneeuwvlokken zijn precies hetzelfde!" },
+  { emoji:'🐜', fact:"Mieren kunnen 50 keer hun eigen gewicht tillen. Jij zou dan een auto optillen!" },
+  { emoji:'🌈', fact:"Een regenboog is eigenlijk een volledige cirkel — je ziet alleen de helft!" },
+  { emoji:'🦈', fact:"Haaien zijn ouder dan dinosaurussen — ze bestaan al 450 miljoen jaar!" },
+  { emoji:'🍌', fact:"Bananen zijn radioactief — maar maar heel een klein beetje!" },
+  { emoji:'🐧', fact:"Pinguïns stellen voor door een steen te geven. Dat is hun trouwring!" },
+];
+
+// Freek Vonk stijl weetjes
+const FREEK_FACTS = [
+  { emoji:'🐍', fact:"Slangen hebben geen oren — ze voelen trillingen via hun kaak!" },
+  { emoji:'🦎', fact:"Kameleons veranderen van kleur voor communicatie, niet voor camouflage!" },
+  { emoji:'🐊', fact:"Krokodillen wenen echt — maar niet van verdriet, hun ogen drogen uit!" },
+  { emoji:'🦅', fact:"Een adelaar kan een konijn zien van 3 kilometer afstand!" },
+  { emoji:'🐸', fact:"Kikkers drinken niet — ze absorberen water via hun huid!" },
+];
+
+function showFinnTip(type) {
+  const tips = type ? FINN_TIPS.filter(t => t.type === type || t.type === 'algemeen') : FINN_TIPS;
+  const tip = tips[Math.floor(Math.random() * tips.length)];
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#1a2744,#0f3460);border:2px solid #f5a623;
+    border-radius:20px;padding:14px 16px;z-index:400;max-width:320px;width:90%;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5);animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)`;
+  overlay.innerHTML = `
+    <div style="display:flex;gap:10px;align-items:flex-start">
+      <div style="font-size:2.2rem;flex-shrink:0">🧑‍🏫</div>
+      <div>
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.85rem;margin-bottom:3px">
+          Professor Finn zegt: ${tip.emoji}
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);line-height:1.4">${tip.msg}</div>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()"
+        style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.2rem;cursor:pointer;flex-shrink:0">✕</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 7000);
+}
+
+function showWistJeDat() {
+  const allFacts = [...WIST_JE_DAT, ...FREEK_FACTS];
+  const fact = allFacts[Math.floor(Math.random() * allFacts.length)];
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,#1a3a1a,#0f3060);border:2px solid #57c785;
+    border-radius:20px;padding:16px;z-index:400;max-width:320px;width:90%;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5);animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    text-align:center`;
+  overlay.innerHTML = `
+    <div style="font-size:2.5rem;margin-bottom:6px">${fact.emoji}</div>
+    <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">
+      🧑‍🏫 Wist je dat...
+    </div>
+    <div style="font-size:0.85rem;color:white;line-height:1.5">${fact.fact}</div>
+    <button onclick="this.parentElement.remove()"
+      style="margin-top:10px;background:rgba(87,199,133,0.2);border:1px solid #57c785;
+      border-radius:10px;padding:6px 16px;color:#57c785;font-family:'Fredoka One',cursive;
+      font-size:0.85rem;cursor:pointer">Cool! 😎</button>`;
+  document.body.appendChild(overlay);
+}
+
+// ===== 2. SPIEKBRIEFJE (2 munten) =====
+function showHint(challengeType) {
+  const hints = {
+    spell: ["Kijk goed naar de eerste letter!", "Spreek het woord zachtjes uit.", "Hoeveel lettergrepen heeft het?"],
+    math:  ["Gebruik je vingers als het helpt!", "Rond af naar een makkelijk getal.", "Denk aan de tafel die erbij hoort."],
+    staal: ["Lees de zin nog eens hardop.", "Vervang het werkwoord door 'werken'.", "Kijk naar de andere woorden in de zin."],
+    boss:  ["Neem de tijd — haast is zelden goed!", "Begin met de vraag die je het makkelijkst vindt."],
+    memory:["Maak een klein verhaaltje van de volgorde.", "Zeg ze hardop terwijl je kijkt!"],
+    speed: ["Focus alleen op het antwoord — niet op de tijd!"],
+  };
+  const p = getPlayer();
+  if ((p.coins||0) < 2) { showToast('Te weinig Titan Coins voor een hint! 🪙', true); return; }
+
+  p.coins -= 2;
+  updateCoinDisplay();
+  saveState();
+
+  const pool = hints[challengeType] || hints.spell;
+  const hint = pool[Math.floor(Math.random() * pool.length)];
+  showToast(`🧑‍🏫 Finn: "${hint}" (-2 🪙)`);
+  sfxClick();
+}
+
+// ===== 3. DAGELIJKSE TIJDSLIMIET =====
+const TIME_LIMIT_KEY = 'tp_time_limit';
+
+function getTimeLimit() {
+  try { return JSON.parse(localStorage.getItem(TIME_LIMIT_KEY)) || {enabled: false, minutes: 15}; }
+  catch(e) { return {enabled: false, minutes: 15}; }
+}
+function saveTimeLimit(obj) {
+  try { localStorage.setItem(TIME_LIMIT_KEY, JSON.stringify(obj)); } catch(e) {}
+}
+
+let _sessionStart = Date.now();
+let _timeLimitWarned = false;
+
+function checkTimeLimit() {
+  const tl = getTimeLimit();
+  if (!tl.enabled) return;
+  const today = new Date().toDateString();
+  const used = getUsedTimeToday();
+  const elapsed = Math.floor((Date.now() - _sessionStart) / 60000);
+  const totalUsed = used + elapsed;
+
+  if (totalUsed >= tl.minutes && !_timeLimitWarned) {
+    _timeLimitWarned = true;
+    saveUsedTime(totalUsed);
+    showTimeLimitScreen(tl.minutes);
+  } else if (totalUsed >= tl.minutes - 2 && !_timeLimitWarned) {
+    showToast(`⏰ Nog 2 minuten over vandaag!`);
+  }
+}
+
+function getUsedTimeToday() {
+  try {
+    const d = JSON.parse(localStorage.getItem('tp_time_used') || '{}');
+    const today = new Date().toDateString();
+    return d[today] || 0;
+  } catch(e) { return 0; }
+}
+
+function saveUsedTime(minutes) {
+  try {
+    const d = JSON.parse(localStorage.getItem('tp_time_used') || '{}');
+    const today = new Date().toDateString();
+    d[today] = minutes;
+    // Verwijder oude data (ouder dan 7 dagen)
+    Object.keys(d).forEach(k => {
+      if (new Date(k) < new Date(Date.now() - 7*86400000)) delete d[k];
+    });
+    localStorage.setItem('tp_time_used', JSON.stringify(d));
+  } catch(e) {}
+}
+
+function showTimeLimitScreen(maxMin) {
+  const overlay = document.createElement('div');
+  overlay.id = 'time-limit-overlay';
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;
+    background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;padding:24px`;
+  overlay.innerHTML = `
+    <div style="font-size:5rem;margin-bottom:16px">⏰</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-bottom:8px">
+      Tijd is op!
+    </div>
+    <div style="font-size:1rem;color:rgba(255,255,255,0.7);margin-bottom:8px">
+      Je hebt vandaag ${maxMin} minuten gespeeld.
+    </div>
+    <div style="font-size:0.9rem;color:#57c785;margin-bottom:24px">
+      Morgen kun je weer verder! 🌅
+    </div>
+    <div style="font-size:2rem">🧑‍🏫</div>
+    <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin:8px 0 20px">
+      Professor Finn zegt: "Rust is ook leren! Je hersenen verwerken alles nu."
+    </div>
+    <div style="font-size:0.78rem;color:rgba(255,255,255,0.3)">
+      Ouders kunnen de tijdslimiet aanpassen in het Ouders menu 🔒
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// ===== 4. NIVEAU AANPASSING OUDERS =====
+function renderSkillSliders(p, idx) {
+  const skills = p.skills || {spell:50, math:50, lang:50};
+  const isGroep4 = idx === 0;
+  return `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:10px">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:12px">
+        🎚️ Niveau bijstellen voor ${p.avatar} ${p.name}
+      </div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+        Schuif links = makkelijker, rechts = moeilijker
+      </div>
+      ${[
+        ['spell', '✏️ Spellen/Woorden', isGroep4 ? 'dt-regel, meervoud, synoniemen' : 'rijmen, klanken, letters'],
+        ['math',  '🔢 Rekenen', isGroep4 ? 'optellen, aftrekken, tafels (geen delen!)' : 'tellen, optellen tot 20'],
+        ['lang',  '🌍 Taal/Staal', isGroep4 ? 'begrijpend lezen, zinsbouw' : 'letterherkenning, klanken'],
+      ].map(([key, label, desc]) => {
+        const val = Math.round(((skills[key]||50) / 100) * 10);
+        return `
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div>
+                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.88rem">${label}</div>
+                <div style="font-size:0.68rem;color:rgba(255,255,255,0.4)">${desc}</div>
+              </div>
+              <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem" id="skill-val-${idx}-${key}">
+                ${val}/10
+              </div>
+            </div>
+            <input type="range" min="1" max="10" value="${val}"
+              style="width:100%;accent-color:#f5a623;cursor:pointer"
+              oninput="updateSkillSlider(${idx},'${key}',this.value)"
+              onchange="applySkillSlider(${idx},'${key}',this.value)">
+            <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:rgba(255,255,255,0.3)">
+              <span>Makkelijker</span><span>Moeilijker</span>
+            </div>
+          </div>`;
+      }).join('')}
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.3);margin-top:4px">
+        ℹ️ De app past ook automatisch bij op basis van antwoorden
+      </div>
+    </div>`;
+}
+
+function updateSkillSlider(playerIdx, skill, value) {
+  const el = document.getElementById(`skill-val-${playerIdx}-${skill}`);
+  if (el) el.textContent = `${value}/10`;
+}
+
+function applySkillSlider(playerIdx, skill, value) {
+  const p = state.players[playerIdx];
+  if (!p.skills) p.skills = {spell:50, math:50, lang:50};
+  p.skills[skill] = Math.round((parseInt(value) / 10) * 100);
+  saveState();
+  showToast(`✅ ${p.name} ${skill} niveau bijgesteld naar ${value}/10`);
+}
+
+// Speciale instelling: geen deelsommen voor Mila
+function getMathFilter(playerIdx, worldIdx) {
+  const p = state.players[playerIdx];
+  const noDivision = p.noDivision !== false; // default: geen deling
+  return noDivision;
+}
+
+// ===== 5. TUSSENSPELLETJES =====
+
+// 5a. PRIJZENWIEL
+function showPrizeWheel() {
+  const prizes = [
+    {label:'5 coins', coins:5, color:'#f5a623'},
+    {label:'10 coins', coins:10, color:'#57c785'},
+    {label:'20 coins', coins:20, color:'#e94560'},
+    {label:'2 coins', coins:2, color:'#ce93d8'},
+    {label:'15 coins', coins:15, color:'#0f3460'},
+    {label:'JACKPOT 50!', coins:50, color:'#f5a623'},
+    {label:'8 coins', coins:8, color:'#57c785'},
+    {label:'3 coins', coins:3, color:'#e94560'},
+  ];
+  const box = document.getElementById('challenge-content');
+  let spinning = false;
+  let angle = 0;
+  let targetAngle = 0;
+  let animFrame = null;
+
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:1.5rem;font-family:'Fredoka One',cursive;color:#f5a623;margin-bottom:10px">
+        🎡 Titans Prijzenwiel!
+      </div>
+      <div style="position:relative;width:240px;height:240px;margin:0 auto 16px">
+        <canvas id="wheel-canvas" width="240" height="240"></canvas>
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:1.8rem">▼</div>
+      </div>
+      <div id="wheel-result" style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#57c785;min-height:1.5rem;margin-bottom:12px"></div>
+      <button id="wheel-btn" onclick="spinWheel()" class="btn-primary" style="font-size:1rem;padding:12px 28px">
+        🎡 DRAAIEN!
+      </button>
+      <br><button onclick="closeChallenge()" class="btn-secondary" style="margin-top:8px">← Terug</button>
+    </div>`;
+
+  drawWheel(angle, prizes);
+
+  window._wheelPrizes = prizes;
+  window._wheelAngle = 0;
+  window._wheelSpinning = false;
+}
+
+function drawWheel(angle, prizes) {
+  const canvas = document.getElementById('wheel-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 120, cy = 120, r = 115;
+  const seg = (Math.PI * 2) / prizes.length;
+  ctx.clearRect(0,0,240,240);
+  prizes.forEach((p, i) => {
+    const start = angle + i * seg;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + seg);
+    ctx.closePath();
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.strokeStyle = '#0d0d1a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Text
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + seg/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 11px Fredoka One, sans-serif';
+    ctx.fillText(p.label, r - 8, 4);
+    ctx.restore();
+  });
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, 18, 0, Math.PI*2);
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fill();
+  ctx.fillStyle = '#f5a623';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⚡', cx, cy+5);
+}
+
+function spinWheel() {
+  if (window._wheelSpinning) return;
+  window._wheelSpinning = true;
+  const btn = document.getElementById('wheel-btn');
+  if (btn) btn.disabled = true;
+  sfxBonus();
+
+  const prizes = window._wheelPrizes;
+  const extraSpins = 5 + Math.floor(Math.random() * 5); // 5-9 rondes
+  const randSegment = Math.floor(Math.random() * prizes.length);
+  const segAngle = (Math.PI * 2) / prizes.length;
+  const target = window._wheelAngle + (extraSpins * Math.PI * 2) + (randSegment * segAngle);
+
+  let start = null;
+  const duration = 3500;
+
+  function animate(ts) {
+    if (!start) start = ts;
+    const elapsed = ts - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out
+    const ease = 1 - Math.pow(1 - progress, 4);
+    window._wheelAngle = target * ease;
+    drawWheel(window._wheelAngle, prizes);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // Bepaal winnend segment
+      const normalized = ((window._wheelAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+      const winIdx = Math.floor(((Math.PI*2 - normalized) % (Math.PI*2)) / segAngle) % prizes.length;
+      const prize = prizes[winIdx];
+      const res = document.getElementById('wheel-result');
+      if (res) res.textContent = `🎉 ${prize.label}!`;
+      sfxLevelUp();
+      window._wheelSpinning = false;
+      if (btn) {
+        btn.textContent = 'CLAIM! 🎁';
+        btn.disabled = false;
+        btn.onclick = () => { closeChallenge(); addCoins(prize.coins); showToast(`🎡 ${prize.label} gewonnen!`); };
+      }
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+// 5b. MEMORY KAARTJES (2 of a kind)
+let memCards = [], memFlipped = [], memMatched = [], memMoves = 0;
+
+function showMemoryCards() {
+  const emojis = ['🦁','🐯','🐉','⭐','🚀','🦄','🔥','💎','🌈','🐙'];
+  const pairs = [...emojis.slice(0,8), ...emojis.slice(0,8)];
+  memCards = shuffleArr(pairs);
+  memFlipped = [];
+  memMatched = [];
+  memMoves = 0;
+  renderMemoryCards();
+}
+
+function renderMemoryCards() {
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:4px">
+        🃏 2 of a Kind!
+      </div>
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+        Zetten: ${memMoves} · Gevonden: ${memMatched.length/2}/8
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:280px;margin:0 auto 12px" id="mem-grid">
+        ${memCards.map((e,i) => `
+          <div onclick="flipMemCard(${i})" id="mc-${i}"
+            style="width:58px;height:58px;border-radius:12px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;font-size:1.6rem;
+            background:${memMatched.includes(i)?'#0f3060':memFlipped.includes(i)?'#1a3a6e':'#1a2744'};
+            border:2px solid ${memMatched.includes(i)?'#57c785':memFlipped.includes(i)?'#f5a623':'rgba(255,255,255,0.1)'};
+            transition:all 0.2s">
+            ${memMatched.includes(i)||memFlipped.includes(i)?e:'❓'}
+          </div>`).join('')}
+      </div>
+      <button onclick="closeChallenge()" class="btn-secondary">← Terug</button>
+    </div>`;
+}
+
+function flipMemCard(idx) {
+  if (memFlipped.length >= 2) return;
+  if (memFlipped.includes(idx) || memMatched.includes(idx)) return;
+  memFlipped.push(idx);
+  sfxClick();
+  renderMemoryCards();
+
+  if (memFlipped.length === 2) {
+    memMoves++;
+    const [a, b] = memFlipped;
+    if (memCards[a] === memCards[b]) {
+      memMatched.push(a, b);
+      memFlipped = [];
+      sfxCorrect();
+      if (memMatched.length === memCards.length) {
+        const reward = Math.max(5, 30 - memMoves);
+        setTimeout(() => {
+          sfxLevelUp();
+          closeChallenge();
+          addCoins(reward);
+          showToast(`🃏 Gewonnen in ${memMoves} zetten! +${reward} coins!`);
+        }, 500);
+      } else {
+        setTimeout(renderMemoryCards, 300);
+      }
+    } else {
+      setTimeout(() => { memFlipped = []; renderMemoryCards(); }, 900);
+    }
+  }
+}
+
+// 5c. BALLON PRIKKEN MINI-GAME
+let bPrikBalloons = [], bPrikScore = 0, bPrikTime = 20;
+let bPrikTimer = null;
+
+function showBallonPrikken() {
+  bPrikScore = 0; bPrikTime = 20; bPrikBalloons = [];
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:4px">
+        🎈 Ballon Prikken!
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-family:'Fredoka One',cursive;font-size:0.9rem">
+        <span style="color:#57c785">Score: <span id="bp-score">0</span></span>
+        <span style="color:#f5a623">Tijd: <span id="bp-time">20</span>s</span>
+      </div>
+      <div id="bp-area" style="position:relative;width:100%;height:280px;background:#0f3460;
+        border-radius:16px;overflow:hidden;cursor:pointer;touch-action:none">
+      </div>
+      <button onclick="startBallonPrikken()" class="btn-primary" id="bp-start" style="margin-top:10px;font-size:1rem;padding:12px 24px">
+        🎈 START!
+      </button>
+      <br><button onclick="stopBallonPrikken();closeChallenge()" class="btn-secondary" style="margin-top:6px">← Terug</button>
+    </div>`;
+}
+
+function startBallonPrikken() {
+  const btn = document.getElementById('bp-start');
+  if (btn) btn.style.display = 'none';
+  bPrikTime = 20; bPrikScore = 0;
+  spawnBallons();
+  bPrikTimer = setInterval(() => {
+    bPrikTime--;
+    const el = document.getElementById('bp-time');
+    if (el) el.textContent = bPrikTime;
+    if (bPrikTime <= 0) {
+      stopBallonPrikken();
+      const reward = Math.floor(bPrikScore / 2);
+      setTimeout(() => {
+        closeChallenge();
+        addCoins(reward);
+        showToast(`🎈 ${bPrikScore} ballonnen! +${reward} coins!`);
+      }, 300);
+    }
+  }, 1000);
+}
+
+function spawnBallons() {
+  const area = document.getElementById('bp-area');
+  if (!area || bPrikTime <= 0) return;
+  const colors = ['#e94560','#f5a623','#57c785','#ce93d8','#90caf9','#ff69b4'];
+  const b = document.createElement('div');
+  const x = 10 + Math.random() * 75;
+  const size = 40 + Math.random() * 25;
+  b.style.cssText = `position:absolute;left:${x}%;bottom:-60px;width:${size}px;height:${size}px;
+    border-radius:50%;background:${colors[Math.floor(Math.random()*colors.length)]};
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+    transition:bottom 0.1s;user-select:none;-webkit-user-select:none;
+    animation:float-up ${2+Math.random()*2}s linear forwards`;
+  b.textContent = '🎈';
+  b.addEventListener('click', () => {
+    bPrikScore++;
+    const sc = document.getElementById('bp-score');
+    if (sc) sc.textContent = bPrikScore;
+    sfxCorrect();
+    b.style.transform = 'scale(1.5)';
+    b.style.opacity = '0';
+    setTimeout(() => b.remove(), 200);
+  });
+  area.appendChild(b);
+  // Float up animation via JS
+  let bottom = -60;
+  const rise = setInterval(() => {
+    if (!document.contains(b) || bPrikTime <= 0) { clearInterval(rise); return; }
+    bottom += 2;
+    b.style.bottom = bottom + 'px';
+    if (bottom > 320) { b.remove(); clearInterval(rise); }
+  }, 30);
+  if (bPrikTime > 0) setTimeout(spawnBallons, 600 + Math.random() * 800);
+}
+
+function stopBallonPrikken() {
+  if (bPrikTimer) { clearInterval(bPrikTimer); bPrikTimer = null; }
+}
+
+// ===== 6. TOPOGRAFIE MINI-GAME =====
+const TOPO_PROVINCIES = [
+  {name:'Noord-Holland', hint:'Amsterdam ligt hier', emoji:'🌷'},
+  {name:'Zuid-Holland',  hint:'Den Haag en Rotterdam', emoji:'🏙️'},
+  {name:'Utrecht',       hint:'In het midden van Nederland', emoji:'⛪'},
+  {name:'Zeeland',       hint:'Veel water en eilanden', emoji:'🌊'},
+  {name:'Noord-Brabant', hint:'Carnaval en Efteling!', emoji:'🎪'},
+  {name:'Limburg',       hint:'De heuvelachtige provincie', emoji:'⛰️'},
+  {name:'Gelderland',    hint:'De grootste provincie', emoji:'🌳'},
+  {name:'Overijssel',    hint:'Giethoorn ligt hier', emoji:'🛶'},
+  {name:'Flevoland',     hint:'De nieuwste provincie (1986)', emoji:'💧'},
+  {name:'Friesland',     hint:'Eigen taal: Frysk', emoji:'🐄'},
+  {name:'Groningen',     hint:'Meest noordoostelijke provincie', emoji:'🌾'},
+  {name:'Drenthe',       hint:'Hunebedden!', emoji:'🪨'},
+];
+
+const TOPO_EUROPA = [
+  {name:'Duitsland',  hint:'Onze buren in het oosten', emoji:'🇩🇪'},
+  {name:'Frankrijk',  hint:'Eiffeltoren!', emoji:'🇫🇷'},
+  {name:'Italië',     hint:'Pizza en pasta!', emoji:'🇮🇹'},
+  {name:'Spanje',     hint:'Flamenco en zonneschijn', emoji:'🇪🇸'},
+  {name:'België',     hint:'Frieten en chocolade', emoji:'🇧🇪'},
+];
+
+function showTopoChallenge(playerIdx) {
+  const isGroep4 = playerIdx === 0;
+  const pool = isGroep4 ? [...TOPO_PROVINCIES, ...TOPO_EUROPA] : TOPO_PROVINCIES.slice(0,6);
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  const wrong = shuffleArr(pool.filter(p=>p.name!==q.name)).slice(0,3).map(p=>p.name);
+  const opts = shuffleArr([q.name, ...wrong]);
+  const reward = 18;
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:3rem;margin-bottom:6px">${q.emoji}</div>
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:4px">
+        🗺️ Topografie
+      </div>
+      <div style="background:#0f3460;border-radius:14px;padding:12px;margin:8px 0;
+        font-family:'Fredoka One',cursive;font-size:1.1rem;color:white">
+        ${q.hint}
+      </div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
+        Welke provincie/land is dit?
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${opts.map(o => `
+          <button class="math-btn" onclick="checkTopo(this,'${o}','${q.name}',${reward})"
+            style="font-size:0.9rem;padding:12px">${o}</button>`).join('')}
+      </div>
+      <button class="btn-secondary" onclick="closeChallenge()" style="margin-top:10px">← Terug</button>
+    </div>`;
+}
+
+function checkTopo(btn, answer, correct, reward) {
+  document.querySelectorAll('.math-btn').forEach(b=>b.onclick=null);
+  const ms = Date.now() - (challengeStartTime||Date.now());
+  if (answer === correct) {
+    btn.classList.add('correct-ans'); sfxPerfect();
+    recordAnswer('spell', true, ms);
+    closeChallenge();
+    completeChallenge(reward, ms < 5000);
+  } else {
+    btn.classList.add('wrong-ans'); sfxWrong();
+    document.querySelectorAll('.math-btn').forEach(b=>{if(b.textContent.trim()===correct)b.classList.add('correct-ans');});
+    recordAnswer('spell', false, ms);
+    setTimeout(()=>{closeChallenge();completeChallenge(Math.floor(reward/3),false);},1500);
+  }
+}
+
+// ===== 7. MOPJES / GRAPPEN =====
+const MOPJES = [
+  {v:"Waarom gaat een koe naar de kapper?", a:"Voor een melkkapsel! 🐄", emoji:'🐄'},
+  {v:"Wat zegt een nul tegen een acht?", a:"Leuk gordeltje! 0️⃣8️⃣", emoji:'🔢'},
+  {v:"Welk dier slaap het langst?", a:"De slaaphaai! 🦈😴", emoji:'🦈'},
+  {v:"Wat zegt een ijs tegen een andere ijs?", a:"Laten we er samen iets van maken!", emoji:'🍦'},
+  {v:"Hoe noem je een beer zonder tanden?", a:"Een gummy bear! 🐻", emoji:'🐻'},
+  {v:"Waarom kan een fiets niet zelfstandig staan?", a:"Omdat hij twee-wieling is! 🚲", emoji:'🚲'},
+  {v:"Wat is het lievelingseten van een wiskunde-leraar?", a:"Pi! 🥧", emoji:'🥧'},
+  {v:"Wat zegt een raam als het moe is?", a:"Ik ben er doorzichtig van! 🪟", emoji:'🪟'},
+  {v:"Hoe hou je een olifant bezig?", a:"Geef hem een puzzel van 1 stukje! 🐘", emoji:'🐘'},
+  {v:"Wat is het verschil tussen een piano en een vis?", a:"Je kunt geen piano vis! 🎹", emoji:'🎹'},
+];
+
+function showMopje() {
+  const m = MOPJES[Math.floor(Math.random() * MOPJES.length)];
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:#1a1a2e;border:2px solid #f5a623;border-radius:20px;padding:20px;
+    max-width:300px;width:90%;z-index:500;text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,0.6);animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)`;
+  overlay.innerHTML = `
+    <div style="font-size:2.5rem;margin-bottom:8px">${m.emoji}</div>
+    <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:10px">😄 Mopje!</div>
+    <div style="font-size:0.9rem;color:white;margin-bottom:12px;line-height:1.5">${m.v}</div>
+    <button onclick="this.previousElementSibling.textContent='${m.a.replace(/'/g,"\\'")}';this.textContent='Haha! 😂'"
+      style="background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
+      border-radius:12px;padding:10px 20px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;margin-bottom:8px">
+      Wat dan? 🤔
+    </button>
+    <br><button onclick="this.parentElement.remove()"
+      style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.8rem;cursor:pointer">
+      Sluiten
+    </button>`;
+  document.body.appendChild(overlay);
+}
+
+// ===== AVATAR UITBREIDEN — CARNAVAL OUTFITS =====
+// Wordt toegevoegd aan AVATAR_ITEMS
+
+// ===== 🎬 TITANS ONTDEKKINGEN — Oscar's Unieke Vondsten stijl =====
+// Elk verhaal heeft: een Titan karakter, een fascinerend feit, animatie, en 2-3 vragen
+
+const TITANS_CHARS = {
+  robin:    { name:'Robin',    emoji:'🐦', color:'#e74c3c', intro:'Robin deed onderzoek en ontdekte...' },
+  starfire: { name:'Starfire', emoji:'⭐', color:'#f5a623', intro:'Starfire vloog de wereld over en leerde...' },
+  beast:    { name:'Beast Boy',emoji:'🐸', color:'#57c785', intro:'Beast Boy veranderde in een dier en zag...' },
+  raven:    { name:'Raven',    emoji:'🌀', color:'#ce93d8', intro:'Raven gebruikte haar magie en ontdekte...' },
+  cyborg:   { name:'Cyborg',  emoji:'🤖', color:'#90caf9', intro:'Cyborg scande de wereld en berekende...' },
+};
+
+const TITANS_STORIES = [
+
+  // ===== NEDERLAND =====
+  {
+    id:'nl_water', world:0, char:'robin',
+    title:'Nederland en het Water!',
+    story:`🗺️ Wist je dat 26% van Nederland ONDER zeeniveau ligt?
+Dat betekent: als we geen dijken hadden, zou een groot deel van ons land onder water staan!
+De Nederlanders bouwden duizenden kilometers dijken — de langste zeewering ter wereld! 💪`,
+    image:'💧🏗️🌊',
+    vragen:[
+      { v:'Hoeveel procent van Nederland ligt onder zeeniveau?', opts:['26%','10%','50%','5%'], a:'26%' },
+      { v:'Wat beschermt Nederland tegen het water?', opts:['Dijken','Bergen','Bomen','Muren'], a:'Dijken' },
+      { v:'Hoe noemen we mensen die dijken bouwen?', opts:['Waterbouwers','Bakkers','Dijkers','Zangers'], a:'Waterbouwers' },
+    ]
+  },
+  {
+    id:'nl_fietsen', world:1, char:'beast',
+    title:'Nederland = Fietsland!',
+    story:`🚲 Nederland heeft meer fietsen dan mensen!
+Er zijn 23 miljoen fietsen voor 17 miljoen mensen. Dat betekent: bijna iedereen heeft meer dan 1 fiets!
+Amsterdam heeft 881.000 inwoners maar 881.000+ fietsen. Sommige fietsen liggen zelfs in de grachten! 😄`,
+    image:'🚲🚲🚲',
+    vragen:[
+      { v:'Hoeveel fietsen zijn er in Nederland?', opts:['23 miljoen','10 miljoen','5 miljoen','17 miljoen'], a:'23 miljoen' },
+      { v:'Nederland heeft meer fietsen dan...?', opts:['mensen','auto\'s','boten','treinen'], a:'mensen' },
+      { v:'Waar liggen sommige fietsen in Amsterdam?', opts:['In de grachten','Op de daken','In de bomen','Op het strand'], a:'In de grachten' },
+    ]
+  },
+  {
+    id:'nl_tulpen', world:2, char:'starfire',
+    title:'Tulpen komen NIET uit Nederland!',
+    story:`🌷 Verrassing! Tulpen komen oorspronkelijk uit... Turkije en Centraal-Azië!
+De Nederlandse handelaren brachten ze in de 1600s mee. Ze werden zo populair dat mensen hun huis verkochten voor een tulpenbol!
+Dit heette de "Tulpenmanie" — de eerste zeepbel in de geschiedenis! 💸`,
+    image:'🌷🇹🇷→🇳🇱',
+    vragen:[
+      { v:'Waar komen tulpen oorspronkelijk vandaan?', opts:['Turkije','Nederland','Japan','Canada'], a:'Turkije' },
+      { v:'Wanneer kwamen tulpen naar Nederland?', opts:['De 1600s','De 1800s','De 1900s','De 1200s'], a:'De 1600s' },
+      { v:'Hoe heet het als iets heel veel waard is maar dan plotseling niets?', opts:['Zeepbel','Waterbal','Luchtbal','Vuurbal'], a:'Zeepbel' },
+    ]
+  },
+
+  // ===== TAAL =====
+  {
+    id:'taal_dt', world:3, char:'raven',
+    title:'De Geheime Dt-Truc!',
+    story:`✏️ De dt-regel is eigenlijk heel makkelijk als je dit weet:
+Vervang het werkwoord door "WERKEN". Wat schrijf je dan?
+
+"Hij loopt" → "Hij werkt" → loopT! ✅
+"Jij loopt" → "Jij werkt" → loopT! ✅  
+"Loop jij?" → "Werk jij?" → loop (geen T!) ✅
+
+Raven's geheim: als er een T in "werkt" zit, schrijf je ook een T!`,
+    image:'✏️🔤💡',
+    vragen:[
+      { v:'Hoe schrijf je: "Hij loop_ naar school"?', opts:['loopt','lopen','loopp','loop'], a:'loopt' },
+      { v:'Met welk woord vervang je het werkwoord bij de dt-regel?', opts:['werken','lopen','zijn','hebben'], a:'werken' },
+      { v:'Hoe schrijf je: "Loop_ jij naar huis?"', opts:['Loop','Loopt','Loopdt','Loope'], a:'Loop' },
+    ]
+  },
+  {
+    id:'taal_talen', world:4, char:'starfire',
+    title:'Starfire Leert Aardse Talen!',
+    story:`🌍 Op aarde zijn er meer dan 7.000 verschillende talen!
+Starfire was verward: in het Nederlands zeggen we "hond", 
+in het Engels "dog", in het Spaans "perro", in het Frans "chien"!
+Maar overal op de wereld blaffen honden hetzelfde: WOEF! 🐕`,
+    image:'🌍🗣️🐕',
+    vragen:[
+      { v:'Hoe zeg je "hond" in het Engels?', opts:['dog','cat','bird','fish'], a:'dog' },
+      { v:'Hoe zeg je "hond" in het Spaans?', opts:['perro','chien','cane','hund'], a:'perro' },
+      { v:'Hoeveel talen zijn er op de wereld?', opts:['7.000','100','1.000','50'], a:'7.000' },
+    ]
+  },
+
+  // ===== REKENEN =====
+  {
+    id:'rek_tafels', world:5, char:'cyborg',
+    title:'Cyborg\'s Tafel Hack!',
+    story:`🤖 Cyborg heeft een supercomputer in zijn hoofd maar hij gebruikt toch trucjes!
+
+De tafel van 9: tel je vingers! Leg al je vingers neer.
+9 × 3: buig je 3e vinger. Links: 2 vingers, rechts: 7 vingers = 27! ✅
+
+De tafel van 5 is altijd 0 of 5 aan het einde.
+5 × 3 = 15, 5 × 4 = 20, 5 × 7 = 35!`,
+    image:'🤖🔢💡',
+    vragen:[
+      { v:'Wat is 9 × 3?', opts:['27','24','21','30'], a:'27' },
+      { v:'Waar eindigt de tafel van 5 altijd op?', opts:['0 of 5','2 of 4','1 of 3','6 of 8'], a:'0 of 5' },
+      { v:'Wat is 5 × 7?', opts:['35','30','40','25'], a:'35' },
+    ]
+  },
+  {
+    id:'rek_geld', world:6, char:'robin',
+    title:'Robin Leert Slim Geld Tellen!',
+    story:`💰 Robin koopt altijd slim in! Hier is zijn truc:
+
+Als iets €2,99 kost, denk dan: "bijna €3". 
+Dan weet je dat je van €5 ongeveer €2 terugkrijgt.
+
+€5 - €2,99 = €2,01 wisselgeld!
+Afronden maakt rekenen veel makkelijker! 💪`,
+    image:'💰🛒💡',
+    vragen:[
+      { v:'Iets kost €2,99. Hoeveel is dat afgerond?', opts:['€3','€2','€4','€2,50'], a:'€3' },
+      { v:'Je betaalt €5 voor iets van €2,99. Hoeveel wisselgeld krijg je?', opts:['€2,01','€3,01','€1,99','€2,99'], a:'€2,01' },
+      { v:'Wat is het voordeel van afronden?', opts:['Makkelijker rekenen','Meer geld','Minder betalen','Sneller winkelen'], a:'Makkelijker rekenen' },
+    ]
+  },
+
+  // ===== WERELD =====
+  {
+    id:'wereld_ruimte', world:7, char:'cyborg',
+    title:'Cyborg Gaat De Ruimte In!',
+    story:`🚀 De ruimte is ONGELOOFLIJK groot!
+Als je met een auto 100 km per uur naar de zon rijdt, doe je er 170 JAAR over!
+De dichtstbijzijnde ster na de zon? Proxima Centauri — 4,2 lichtjaar ver.
+Een lichtjaar = het licht doet er een HEEL JAAR over! ⭐`,
+    image:'🚀⭐🌌',
+    vragen:[
+      { v:'Hoe lang doe je er met de auto over naar de zon?', opts:['170 jaar','1 jaar','10 jaar','1000 jaar'], a:'170 jaar' },
+      { v:'Hoe heet de dichtstbijzijnde ster na de zon?', opts:['Proxima Centauri','Sirius','Polaris','Vega'], a:'Proxima Centauri' },
+      { v:'Wat is een lichtjaar?', opts:['Hoe ver licht in een jaar reist','Een heel licht jaar','100 km in de ruimte','Een jaar in de ruimte'], a:'Hoe ver licht in een jaar reist' },
+    ]
+  },
+  {
+    id:'wereld_dieren', world:8, char:'beast',
+    title:'Beast Boy\'s Dierenwereld!',
+    story:`🐾 Beast Boy kan veranderen in elk dier, en hij heeft ze allemaal bestudeerd!
+
+🐙 Octopussen hebben 3 harten!
+🦒 Giraffen hebben dezelfde 7 nekwervels als mensen — alleen groter!
+🐜 Mieren kunnen 50x hun eigen gewicht dragen!
+
+Als jij net zo sterk was als een mier, kon jij een auto tillen! 💪`,
+    image:'🐙🦒🐜',
+    vragen:[
+      { v:'Hoeveel harten heeft een octopus?', opts:['3','1','2','4'], a:'3' },
+      { v:'Hoeveel nekwervels heeft een giraf?', opts:['7','14','3','21'], a:'7' },
+      { v:'Hoeveel keer zijn gewicht kan een mier dragen?', opts:['50x','10x','100x','5x'], a:'50x' },
+    ]
+  },
+  {
+    id:'wereld_voedsel', world:9, char:'starfire',
+    title:'Starfire Ontdekt Aards Eten!',
+    story:`🍕 Starfire was verbaasd over aards eten!
+Pizza komt uit Italië maar werd populair in Amerika. Nu eten mensen over de hele wereld pizza!
+De meest gegeten vrucht ter wereld? Niet de appel — maar de banaan! 🍌
+En patat (friet) komt eigenlijk uit België, niet uit Amerika! 🍟`,
+    image:'🍕🍌🍟',
+    vragen:[
+      { v:'Waar komt pizza oorspronkelijk vandaan?', opts:['Italië','Amerika','Nederland','China'], a:'Italië' },
+      { v:'Wat is de meest gegeten vrucht ter wereld?', opts:['Banaan','Appel','Sinaasappel','Mango'], a:'Banaan' },
+      { v:'Waar komt patat (friet) eigenlijk vandaan?', opts:['België','Amerika','Nederland','Duitsland'], a:'België' },
+    ]
+  },
+];
+
+// ===== TITANS ONTDEKKINGEN SPELER =====
+let discoveryStory = null;
+let discoveryPhase = 'story'; // story | vraag1 | vraag2 | vraag3 | result
+let discoveryScore = 0;
+let discoveryQIdx  = 0;
+let discoveryCorrect = [];
+
+function showTitansOntdekking(worldIdx, playerIdx) {
+  // Kies verhaal op basis van wereld (cyclisch)
+  const available = TITANS_STORIES.filter(s => s.world <= Math.min(worldIdx, 9));
+  const storyPool = available.length > 0 ? available : TITANS_STORIES;
+  // Probeer een nieuw verhaal dat nog niet gezien is
+  const seen = (getPlayer().seenStories || []);
+  const unseen = storyPool.filter(s => !seen.includes(s.id));
+  discoveryStory = unseen.length > 0
+    ? unseen[Math.floor(Math.random() * unseen.length)]
+    : storyPool[Math.floor(Math.random() * storyPool.length)];
+
+  discoveryPhase = 'story';
+  discoveryScore = 0;
+  discoveryQIdx  = 0;
+  discoveryCorrect = [];
+
+  renderDiscovery();
+  document.getElementById('challenge-modal').classList.add('open');
+}
+
+function renderDiscovery() {
+  const s  = discoveryStory;
+  const ch = TITANS_CHARS[s.char];
+  const box = document.getElementById('challenge-content');
+
+  if (discoveryPhase === 'story') {
+    // Animatie scherm — het verhaal
+    box.innerHTML = `
+      <div style="text-align:center;padding:4px">
+        <!-- Header met karakter -->
+        <div style="display:flex;align-items:center;gap:10px;background:${ch.color}22;
+          border-radius:14px;padding:10px;margin-bottom:10px">
+          <div style="font-size:3rem;animation:tt-bounce 0.5s">${ch.emoji}</div>
+          <div style="text-align:left">
+            <div style="font-family:'Fredoka One',cursive;color:${ch.color};font-size:0.9rem">
+              ${ch.name} ontdekte...
+            </div>
+            <div style="font-family:'Fredoka One',cursive;color:white;font-size:1rem;line-height:1.2">
+              ${s.title}
+            </div>
+          </div>
+        </div>
+
+        <!-- Grote emoji illustratie -->
+        <div style="font-size:3.5rem;margin:8px 0;letter-spacing:8px;animation:pulse 2s infinite">
+          ${s.image}
+        </div>
+
+        <!-- Verhaal tekst — als film ondertitels -->
+        <div id="story-text" style="background:#0f3460;border-radius:16px;padding:14px;
+          margin:10px 0;text-align:left;font-size:0.88rem;color:white;line-height:1.7;
+          white-space:pre-line;min-height:120px">
+          ${s.story}
+        </div>
+
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+          🧑‍🏫 Gelezen? Dan komen de vragen!
+        </div>
+
+        <button class="btn-primary" onclick="startDiscoveryVragen()" style="font-size:1rem;padding:12px 28px">
+          ⚡ Ik snap het! Vragen!
+        </button>
+        <br><button class="btn-secondary" onclick="closeChallenge()" style="margin-top:8px">← Terug</button>
+      </div>`;
+
+  } else if (discoveryPhase === 'vraag') {
+    const q = s.vragen[discoveryQIdx];
+    const progress = discoveryQIdx + 1;
+    const total    = s.vragen.length;
+
+    box.innerHTML = `
+      <div style="text-align:center;padding:4px">
+        <!-- Progress -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="font-size:1.5rem">${ch.emoji}</div>
+          <div style="flex:1;background:#1a2744;border-radius:10px;height:8px;overflow:hidden">
+            <div style="width:${Math.round((discoveryQIdx/total)*100)}%;height:100%;
+              background:linear-gradient(90deg,${ch.color},#f5a623);border-radius:10px;transition:width 0.3s"></div>
+          </div>
+          <div style="font-family:'Fredoka One',cursive;color:${ch.color};font-size:0.85rem">
+            ${progress}/${total}
+          </div>
+        </div>
+
+        <!-- Karakter zegt -->
+        <div style="background:${ch.color}22;border-radius:14px;padding:10px;margin-bottom:10px;
+          display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:1.8rem">${ch.emoji}</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1rem;color:white;text-align:left;line-height:1.4">
+            ${q.v}
+          </div>
+        </div>
+
+        <!-- Antwoord opties -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          ${shuffleArr([...q.opts]).map(o =>
+            `<button class="math-btn" onclick="checkDiscovery('${o.replace(/'/g,"\\'")}')"
+              style="font-size:0.88rem;padding:12px;text-align:center">${o}</button>`
+          ).join('')}
+        </div>
+
+        <!-- Score -->
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.85rem">
+          ⭐ ${discoveryScore}/${discoveryQIdx} goed
+        </div>
+      </div>`;
+
+  } else if (discoveryPhase === 'result') {
+    const pct = Math.round((discoveryScore / s.vragen.length) * 100);
+    const reward = Math.round((discoveryScore / s.vragen.length) * 30) + 5;
+    const stars  = pct >= 80 ? 3 : pct >= 50 ? 2 : 1;
+
+    box.innerHTML = `
+      <div style="text-align:center;padding:8px">
+        <div style="font-size:3rem">${ch.emoji}</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623;margin:6px 0">
+          ${pct >= 80 ? 'SUPER TITAN! 🏆' : pct >= 50 ? 'GOED GEDAAN! ⭐' : 'BLIJF LEREN! 💪'}
+        </div>
+
+        <!-- Sterren -->
+        <div style="font-size:2rem;margin:8px 0">
+          ${Array.from({length:3},(_,i)=>`<span style="filter:${i<stars?'none':'grayscale(1)opacity(0.3)'}">⭐</span>`).join('')}
+        </div>
+
+        <div style="font-family:'Fredoka One',cursive;color:white;font-size:1rem;margin:8px 0">
+          ${discoveryScore}/${s.vragen.length} vragen goed · ${pct}%
+        </div>
+
+        <!-- Recap van antwoorden -->
+        <div style="background:#0f3460;border-radius:14px;padding:10px;margin:10px 0;text-align:left">
+          ${s.vragen.map((q,i) => `
+            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;
+              border-bottom:1px solid rgba(255,255,255,0.08)">
+              <span>${discoveryCorrect[i] ? '✅' : '❌'}</span>
+              <span style="font-size:0.78rem;color:rgba(255,255,255,0.8)">${q.v.slice(0,40)}...</span>
+            </div>`).join('')}
+        </div>
+
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.2rem;margin:8px 0">
+          +${reward} Titan Coins! 🪙
+        </div>
+
+        <!-- Finn tip -->
+        <div style="background:rgba(87,199,133,0.1);border:1px solid #57c785;border-radius:12px;
+          padding:8px;margin:8px 0;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:1.4rem">🧑‍🏫</span>
+          <span style="font-size:0.78rem;color:rgba(255,255,255,0.8);text-align:left">
+            ${pct >= 80
+              ? 'Professor Finn: "Geweldig! Je hebt echt opgelet. Kennis is macht!"'
+              : 'Professor Finn: "Lees het verhaal nog eens — je onthoudt meer dan je denkt!"'}
+          </span>
+        </div>
+
+        <button class="btn-primary" onclick="finishDiscovery(${reward},${stars===3})"
+          style="font-size:1rem;padding:12px 28px;margin-top:4px">
+          TITANS GO! ⚡
+        </button>
+      </div>`;
+  }
+}
+
+function startDiscoveryVragen() {
+  discoveryPhase = 'vraag';
+  discoveryQIdx  = 0;
+  renderDiscovery();
+}
+
+function checkDiscovery(answer) {
+  const s = discoveryStory;
+  const q = s.vragen[discoveryQIdx];
+  const btns = document.querySelectorAll('.math-btn');
+  btns.forEach(b => b.onclick = null);
+
+  const correct = answer === q.a;
+  discoveryCorrect.push(correct);
+  if (correct) {
+    discoveryScore++;
+    sfxCorrect();
+    btns.forEach(b => { if (b.textContent.trim() === answer) b.classList.add('correct-ans'); });
+  } else {
+    sfxWrong();
+    btns.forEach(b => {
+      if (b.textContent.trim() === answer) b.classList.add('wrong-ans');
+      if (b.textContent.trim() === q.a)    b.classList.add('correct-ans');
+    });
+  }
+
+  discoveryQIdx++;
+  if (discoveryQIdx >= s.vragen.length) {
+    setTimeout(() => { discoveryPhase = 'result'; renderDiscovery(); }, 900);
+  } else {
+    setTimeout(() => renderDiscovery(), 900);
+  }
+}
+
+function finishDiscovery(reward, perfect) {
+  // Markeer verhaal als gezien
+  const p = getPlayer();
+  if (!p.seenStories) p.seenStories = [];
+  if (!p.seenStories.includes(discoveryStory.id)) {
+    p.seenStories.push(discoveryStory.id);
+  }
+  saveState();
+  closeChallenge();
+  completeChallenge(reward, perfect);
+}
+
+// ===== 👨‍👩‍👧 MULTI-FAMILIE SYSTEEM =====
+// Elke familie heeft eigen data via familie-code
+// Admin (jij) kan families goedkeuren
+
+const FAMILY_KEY  = 'tp_family_id';
+const FAMILIES_KEY = 'tp_families'; // shared storage via Claude API
+
+function getFamilyId() {
+  try { return localStorage.getItem(FAMILY_KEY); } catch(e) { return null; }
+}
+function setFamilyId(id) {
+  try { localStorage.setItem(FAMILY_KEY, id); } catch(e) {}
+}
+
+// Toon registratie scherm als eerste keer
+function checkFamilySetup() {
+  // Voor nu: gebruik eigen opgeslagen staat (geen server nodig)
+  // Familie-instellingen via Ouders HQ
+  const fid = getFamilyId();
+  if (!fid) {
+    // Genereer uniek ID voor deze installatie
+    const newId = 'family_' + Math.random().toString(36).slice(2,10);
+    setFamilyId(newId);
+  }
+}
+
+// Familie naam & kinderen aanpassen (via Ouders HQ)
+function renderFamilySettings() {
+  const fid = getFamilyId() || 'onbekend';
+  return `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(245,166,35,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
+        👨‍👩‍👧 Familie Instellingen
+      </div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:10px">
+        Familie ID: ${fid}
+      </div>
+      ${state.players.map((p, i) => `
+        <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem;margin-bottom:6px">
+            Kind ${i+1}: ${p.avatar} ${p.name}
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <input id="pname-edit-${i}" type="text" value="${p.name}" placeholder="Naam kind"
+              style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
+              background:#1a2744;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem">
+            <select id="pavatar-edit-${i}"
+              style="padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
+              background:#1a2744;color:white;font-size:1.2rem">
+              ${['🦁','🐯','🐺','🦊','🐸','🐼','🦄','🐉','🦅','⭐'].map(e=>
+                `<option ${p.avatar===e?'selected':''}>${e}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="color:rgba(255,255,255,0.6);font-size:0.8rem">Groep:</label>
+            <select id="pgrade-edit-${i}"
+              style="padding:6px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
+              background:#1a2744;color:white;font-family:'Fredoka One',cursive;flex:1">
+              ${[1,2,3,4,5,6,7,8].map(g=>
+                `<option value="${g}" ${(p.grade||2)===g?'selected':''}>Groep ${g}</option>`
+              ).join('')}
+            </select>
+          </div>
+        </div>`).join('')}
+      <button onclick="saveFamilySettings()"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#e94560);
+        color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+        font-size:0.95rem;cursor:pointer;margin-top:4px">
+        💾 Opslaan
+      </button>
+      <button onclick="addNewChild()" style="width:100%;padding:10px;background:rgba(87,199,133,0.2);
+        border:1px solid #57c785;border-radius:12px;color:#57c785;font-family:'Fredoka One',cursive;
+        font-size:0.9rem;cursor:pointer;margin-top:6px">
+        ➕ Kind toevoegen
+      </button>
+    </div>`;
+}
+
+function saveFamilySettings() {
+  state.players.forEach((p, i) => {
+    const name   = document.getElementById(`pname-edit-${i}`)?.value?.trim();
+    const avatar = document.getElementById(`pavatar-edit-${i}`)?.value;
+    const grade  = parseInt(document.getElementById(`pgrade-edit-${i}`)?.value || '2');
+    if (name)   p.name   = name;
+    if (avatar) p.avatar = avatar;
+    p.grade = grade;
+  });
+  saveState();
+  renderParentReport();
+  renderHome();
+  showToast('✅ Familie instellingen opgeslagen!');
+}
+
+function addNewChild() {
+  if (state.players.length >= 4) { showToast('Max 4 kinderen', true); return; }
+  state.players.push({
+    name:'Kind ' + (state.players.length + 1), avatar:'⭐', grade:2,
+    level:0, coins:0, stars:{}, skills:{spell:50,math:50,lang:50},
+    history:[], badges:[], streakData:{lastDate:null,streak:0,totalDays:0},
+    completedMissions:{}, pendingMissions:{}, perfectCount:0,
+    totalCoinsEarned:0, staalCount:0, seenStories:[],
+    wallet:{savings:0,investments:{},goal:'limousine',goalSaved:0,lastTick:null},
+    equipped:{head:null,outfit:null,accessory:null,pet:null,bg:null},
+  });
+  state.ownedAvatarItems.push([]);
+  state.ownedItems.push([]);
+  saveState();
+  renderParentReport();
+  showToast('✅ Kind toegevoegd!');
+}
+
+// ===== 💡 IDEEËNBUS =====
+let ideaLoading = false;
+
+async function showIdeaBox() {
+  const overlay = document.createElement('div');
+  overlay.id = 'idea-overlay';
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:998;
+    background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(4px);padding:16px`;
+  overlay.innerHTML = `
+    <div style="background:#1a1a2e;border-radius:24px;padding:20px;max-width:360px;width:100%;
+      border:2px solid #57c785;box-shadow:0 0 30px rgba(87,199,133,0.3)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1.2rem">
+          💡 Ideeënbus
+        </div>
+        <button onclick="document.getElementById('idea-overlay').remove()"
+          style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:1.4rem;cursor:pointer">✕</button>
+      </div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
+        Heb je een idee om de app beter te maken? Laat het weten!
+      </div>
+      <textarea id="idea-text" placeholder="Mijn idee voor TitansPad..."
+        style="width:100%;height:100px;padding:10px;border-radius:12px;border:1px solid rgba(87,199,133,0.3);
+        background:#0f3460;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;
+        resize:none;box-sizing:border-box;line-height:1.5"></textarea>
+      <select id="idea-cat" style="width:100%;padding:10px;border-radius:10px;margin-top:8px;
+        border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;
+        font-family:'Fredoka One',cursive;font-size:0.9rem">
+        <option value="gameplay">🎮 Spelonderdeel</option>
+        <option value="leren">📚 Leren/educatie</option>
+        <option value="design">🎨 Uiterlijk/design</option>
+        <option value="beloning">🏆 Beloningen</option>
+        <option value="technisch">🔧 Technisch probleem</option>
+        <option value="anders">💬 Iets anders</option>
+      </select>
+      <button onclick="submitIdea()" id="idea-btn"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#57c785,#2e7d32);
+        color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+        font-size:1rem;cursor:pointer;margin-top:10px">
+        📬 Verstuur Idee!
+      </button>
+      <div id="idea-response" style="margin-top:10px;font-size:0.82rem;color:rgba(255,255,255,0.7);
+        min-height:20px;text-align:center"></div>
+
+      <!-- Eerdere ideeën -->
+      ${getLocalIdeas().length > 0 ? `
+      <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.85rem;margin-bottom:6px">
+          📋 Jouw eerdere ideeën
+        </div>
+        ${getLocalIdeas().slice(-3).reverse().map(idea => `
+          <div style="background:#0f3460;border-radius:10px;padding:8px;margin-bottom:6px">
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.8)">${idea.text.slice(0,80)}${idea.text.length>80?'...':''}</div>
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.35);margin-top:2px">${idea.date} · ${idea.cat}</div>
+          </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function getLocalIdeas() {
+  try { return JSON.parse(localStorage.getItem('tp_ideas') || '[]'); } catch(e) { return []; }
+}
+
+function saveLocalIdea(idea) {
+  const ideas = getLocalIdeas();
+  ideas.push(idea);
+  if (ideas.length > 20) ideas.shift();
+  try { localStorage.setItem('tp_ideas', JSON.stringify(ideas)); } catch(e) {}
+}
+
+async function submitIdea() {
+  const text = document.getElementById('idea-text')?.value?.trim();
+  const cat  = document.getElementById('idea-cat')?.value;
+  if (!text || text.length < 10) { showToast('Schrijf eerst je idee!', true); return; }
+  if (ideaLoading) return;
+
+  ideaLoading = true;
+  const btn = document.getElementById('idea-btn');
+  const res = document.getElementById('idea-response');
+  if (btn) { btn.textContent = '⏳ Even wachten...'; btn.disabled = true; }
+
+  // Sla op lokaal
+  const idea = { text, cat, date: new Date().toLocaleDateString('nl-NL'), fid: getFamilyId() };
+  saveLocalIdea(idea);
+
+  // Stuur naar Claude API voor een leuke reactie
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:150,
+        messages:[{
+          role:'user',
+          content:`Je bent Professor Finn uit TitansPad, een leer-app voor kinderen. 
+Reageer enthousiast en positief op dit idee voor de app (max 2 zinnen, in het Nederlands, Titans Go stijl):
+Categorie: ${cat}
+Idee: "${text}"
+Begin met "Professor Finn: " en gebruik emoji's.`
+        }]
+      })
+    });
+    const data = await response.json();
+    const msg = data.content?.[0]?.text || 'Geweldig idee! We kijken ernaar! ⚡';
+    if (res) res.innerHTML = `<div style="background:rgba(87,199,133,0.15);border:1px solid #57c785;border-radius:10px;padding:8px;font-size:0.82rem;color:#57c785">${msg}</div>`;
+  } catch(e) {
+    if (res) res.innerHTML = `<div style="color:#57c785">✅ Idee ontvangen! Dank je! ⚡</div>`;
+  }
+
+  if (btn) { btn.textContent = '✅ Verstuurd!'; btn.disabled = false; }
+  ideaLoading = false;
+  if (document.getElementById('idea-text')) document.getElementById('idea-text').value = '';
+
+  // Toon in ouder rapport
+  showToast('💡 Idee verstuurd! Dank je!');
+}
+
 // ===== INIT =====
 // PWA: Service Worker registreren
 if ('serviceWorker' in navigator) {
@@ -5149,6 +6795,7 @@ state.players.forEach(p => {
   if (!p.perfectCount)       p.perfectCount       = 0;
   if (!p.totalCoinsEarned)   p.totalCoinsEarned   = 0;
   if (!p.staalCount)         p.staalCount         = 0;
+  if (!p.seenStories)        p.seenStories        = [];
 });
 
 // DOM-afhankelijke init — wacht tot DOM klaar is
@@ -5161,6 +6808,11 @@ function initApp() {
     selectPlayer(0);
     setTimeout(() => { updateMusicBtn(); updateSfxBtn(); }, 100);
     setTimeout(() => checkAndAwardBadges(), 1500);
+    // Check tijdslimiet elke minuut
+    setInterval(() => checkTimeLimit(), 60000);
+    // Finn tip elke 8 minuten
+    setInterval(() => { if(document.getElementById('home-screen')?.classList.contains('active')) showFinnTip('algemeen'); }, 480000);
+    checkFamilySetup();
   } catch(e) {
     console.error('Init fout:', e);
   }
