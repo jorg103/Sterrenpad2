@@ -6994,31 +6994,34 @@ function saveRegistration(reg) {
 }
 
 function checkRegistration() {
-  // 1. Bestaande gebruiker met speldata → altijd toegang
-  if (hasExistingGameData()) {
+  // ALTIJD doorgaan als er AL iets in localStorage staat van de app
+  // (bestaande gebruikers zoals jij met Mila & Dewi)
+  const hasAnyData = !!localStorage.getItem('sterrenpad_v4') ||
+                     !!localStorage.getItem('sterrenpad_v3') ||
+                     !!localStorage.getItem('sterrenpad_v2') ||
+                     !!localStorage.getItem('sp_au4');
+  if (hasAnyData) {
+    // Markeer als goedgekeurd zodat dit nooit meer gevraagd wordt
     const reg = getRegistration();
-    if (!reg) {
-      // Sla op als goedgekeurd zodat dit maar 1x hoeft
-      saveRegistration({ approved: true, existing: true,
-        familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
-    } else if (!reg.approved) {
-      reg.approved = true;
-      saveRegistration(reg);
+    if (!reg || !reg.approved) {
+      saveRegistration({
+        approved: true, existing: true,
+        familyId: getFamilyId(),
+        date: new Date().toLocaleDateString('nl-NL')
+      });
     }
     return true;
   }
 
-  // 2. Al eerder geregistreerd en goedgekeurd
+  // Nieuw apparaat — check registratie status
   const reg = getRegistration();
   if (reg && reg.approved) return true;
-
-  // 3. Wacht op goedkeuring
   if (reg && !reg.approved) {
     setTimeout(() => showPendingScreen(reg), 400);
     return false;
   }
 
-  // 4. Helemaal nieuw → registratiescherm
+  // Splinternieuw — toon registratie
   setTimeout(() => showRegistrationScreen(), 400);
   return false;
 }
