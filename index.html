@@ -6893,153 +6893,132 @@ function finishDiscovery(reward, perfect) {
 }
 
 // ===== 📋 REGISTRATIE SYSTEEM =====
-const REG_KEY = 'tp_registered';
-const PENDING_KEY = 'tp_pending_approval';
-const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
-// Admin familie ID (jij) — deze hoeft nooit te registreren
-const ADMIN_FAMILY_ID = 'family_admin_jorg103';
+// Werkt via Claude API als centrale opslag (zelfde aanpak als boodschappen-app)
+// Admin (jij) keurt nieuwe families goed via Ouders HQ
 
-function isRegistered() {
+const REG_KEY   = 'tp_registered';
+const SAVE_KEY2 = 'sterrenpad_v4'; // zelfde als de app save key
+const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
+
+// Controleer of er bestaande spelersdata is — DIRECT uit localStorage
+function hasExistingGameData() {
   try {
-    const r = JSON.parse(localStorage.getItem(REG_KEY) || 'null');
-    return r && r.approved;
+    const saved = localStorage.getItem(SAVE_KEY2);
+    if (!saved) return false;
+    const data = JSON.parse(saved);
+    if (!data || !data.players) return false;
+    return data.players.some(p =>
+      (p.level||0) > 0 || (p.coins||0) > 0 || (p.history||[]).length > 0
+    );
   } catch(e) { return false; }
 }
 
 function getRegistration() {
   try { return JSON.parse(localStorage.getItem(REG_KEY) || 'null'); } catch(e) { return null; }
 }
+function saveRegistration(reg) {
+  try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
+}
 
 function checkRegistration() {
-  const fid = getFamilyId();
-
-  // Admin heeft altijd toegang
-  if (fid === ADMIN_FAMILY_ID || fid?.startsWith('family_admin')) return true;
-
-  // Als er al spelersdata is (bestaande gebruiker zoals Mila & Dewi)
-  // → automatisch goedgekeurd, sla registratie op zodat ze niet meer hoeven
-  const hasExistingData = state.players.some(p =>
-    (p.level||0) > 0 || (p.coins||0) > 0 || (p.history||[]).length > 0
-  );
-  if (hasExistingData) {
-    // Bestaande gebruiker — automatisch registreren als goedgekeurd
-    const existing = getRegistration();
-    if (!existing) {
-      try {
-        localStorage.setItem(REG_KEY, JSON.stringify({
-          approved: true,
-          familyName: 'Familie',
-          parentName: 'Ouder',
-          familyId: fid,
-          existing: true,
-          date: new Date().toLocaleDateString('nl-NL'),
-          children: state.players.map(p => ({
-            name: p.name, grade: p.grade||2
-          }))
-        }));
-      } catch(e) {}
-    } else if (!existing.approved) {
-      existing.approved = true;
-      try { localStorage.setItem(REG_KEY, JSON.stringify(existing)); } catch(e) {}
+  // 1. Bestaande gebruiker met speldata → altijd toegang
+  if (hasExistingGameData()) {
+    const reg = getRegistration();
+    if (!reg) {
+      // Sla op als goedgekeurd zodat dit maar 1x hoeft
+      saveRegistration({ approved: true, existing: true,
+        familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+    } else if (!reg.approved) {
+      reg.approved = true;
+      saveRegistration(reg);
     }
     return true;
   }
 
-  // Check of al geregistreerd
+  // 2. Al eerder geregistreerd en goedgekeurd
   const reg = getRegistration();
-  if (!reg) {
-    // Nieuwe gebruiker — toon registratie
-    setTimeout(() => showRegistrationScreen(), 500);
+  if (reg && reg.approved) return true;
+
+  // 3. Wacht op goedkeuring
+  if (reg && !reg.approved) {
+    setTimeout(() => showPendingScreen(reg), 400);
     return false;
   }
-  if (!reg.approved) {
-    setTimeout(() => showPendingScreen(reg), 500);
-    return false;
-  }
-  return true;
+
+  // 4. Helemaal nieuw → registratiescherm
+  setTimeout(() => showRegistrationScreen(), 400);
+  return false;
 }
 
 function showRegistrationScreen() {
+  // Verwijder eventueel oud scherm
+  document.getElementById('reg-overlay')?.remove();
+
   const overlay = document.createElement('div');
   overlay.id = 'reg-overlay';
   overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
-    background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
-    justify-content:flex-start;overflow-y:auto;padding:20px 16px 40px`;
+    background:#0d0d1a;overflow-y:auto;padding:20px 16px 60px`;
 
   overlay.innerHTML = `
-    <div style="max-width:380px;width:100%;padding-top:20px">
-      <!-- Logo -->
+    <div style="max-width:380px;margin:0 auto;padding-top:16px">
       <div style="text-align:center;margin-bottom:20px">
-        <img src="favicon.jpg" style="width:80px;height:80px;border-radius:20px;
+        <img src="favicon.jpg" style="width:72px;height:72px;border-radius:18px;
           box-shadow:0 8px 24px rgba(0,0,0,0.4)" onerror="this.style.display='none'">
         <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-top:8px">
           ⭐ SterrenPad
         </div>
-        <div style="font-size:0.85rem;color:#57c785;margin-top:4px">
-          Spelen · Leren · Verdienen
-        </div>
+        <div style="font-size:0.85rem;color:#57c785">Spelen · Leren · Verdienen</div>
       </div>
 
-      <div style="background:#1a1a2e;border-radius:20px;padding:20px;border:2px solid rgba(245,166,35,0.3)">
+      <div style="background:#1a1a2e;border-radius:20px;padding:20px;
+        border:2px solid rgba(245,166,35,0.3);margin-bottom:12px">
         <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.2rem;margin-bottom:6px">
           👋 Welkom bij SterrenPad!
         </div>
-        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px">
-          Maak een gratis account voor jouw familie. Na een korte goedkeuring kun je direct starten!
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;line-height:1.5">
+          Vul je gegevens in. De beheerder keurt je account snel goed!
         </div>
 
-        <!-- Ouder info -->
-        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">
-          👨‍👩‍👧 Ouder/verzorger
-        </div>
-        <input id="reg-parent-name" type="text" placeholder="Jouw naam (bijv. Papa of Mama)"
+        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">👨‍👩‍👧 Ouder/verzorger</div>
+        <input id="reg-parent" type="text" placeholder="Jouw naam (bijv. Mama of Papa)"
           style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
           background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:8px;box-sizing:border-box">
-        <input id="reg-family-name" type="text" placeholder="Familienaam (bijv. Familie De Vries)"
+        <input id="reg-family" type="text" placeholder="Familienaam (bijv. Familie Jansen)"
           style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
           background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:16px;box-sizing:border-box">
 
-        <!-- Kind 1 -->
-        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">
-          🦁 Kind 1
-        </div>
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">🦁 Kind 1</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="reg-child1-name" type="text" placeholder="Naam kind 1"
+          <input id="reg-c1name" type="text" placeholder="Naam"
             style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
             background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-child1-grade" style="padding:10px;border-radius:10px;
-            border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;
-            font-family:'Fredoka One',cursive">
+          <select id="reg-c1grade" style="padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
+            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
             ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
           </select>
         </div>
-        <input id="reg-child1-goal" type="text" placeholder="Spaardoel kind 1 (bijv. Nintendo Switch)"
+        <input id="reg-c1goal" type="text" placeholder="Spaardoel (bijv. Nintendo Switch)"
           style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:12px;box-sizing:border-box">
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:14px;box-sizing:border-box">
 
-        <!-- Kind 2 (optioneel) -->
         <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:8px">
           🐯 Kind 2 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="reg-child2-name" type="text" placeholder="Naam kind 2 (optioneel)"
+          <input id="reg-c2name" type="text" placeholder="Naam (optioneel)"
             style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
             background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-child2-grade" style="padding:10px;border-radius:10px;
-            border:1px solid rgba(245,166,35,0.2);background:#0f3460;color:white;
-            font-family:'Fredoka One',cursive">
+          <select id="reg-c2grade" style="padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
+            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
             <option value="">-</option>
             ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
           </select>
         </div>
-        <input id="reg-child2-goal" type="text" placeholder="Spaardoel kind 2 (optioneel)"
+        <input id="reg-c2goal" type="text" placeholder="Spaardoel kind 2 (optioneel)"
           style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:16px;box-sizing:border-box">
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:14px;box-sizing:border-box">
 
-        <!-- Hoe kende je de app? -->
-        <div style="font-family:'Fredoka One',cursive;color:#90caf9;font-size:0.9rem;margin-bottom:8px">
-          💬 Hoe ken je SterrenPad?
-        </div>
+        <div style="font-family:'Fredoka One',cursive;color:#90caf9;font-size:0.9rem;margin-bottom:8px">💬 Hoe ken je SterrenPad?</div>
         <select id="reg-source" style="width:100%;padding:10px;border-radius:10px;
           border:1px solid rgba(144,202,249,0.3);background:#0f3460;color:white;
           font-family:'Fredoka One',cursive;margin-bottom:16px">
@@ -7047,7 +7026,6 @@ function showRegistrationScreen() {
           <option value="vriend">Via een vriend/vriendin</option>
           <option value="school">Via school</option>
           <option value="social">Via social media</option>
-          <option value="zoekmachine">Via Google/zoekmachine</option>
           <option value="anders">Anders</option>
         </select>
 
@@ -7057,29 +7035,11 @@ function showRegistrationScreen() {
           font-size:1.1rem;cursor:pointer;box-shadow:0 4px 15px rgba(245,166,35,0.3)">
           🚀 Aanmelden!
         </button>
-
-        <div id="reg-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;text-align:center;min-height:1rem"></div>
-
-        <div style="margin-top:12px;font-size:0.72rem;color:rgba(255,255,255,0.3);text-align:center">
-          Na aanmelding krijg je een bevestiging zodra je account is goedgekeurd.<br>
+        <div id="reg-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;
+          text-align:center;min-height:1rem"></div>
+        <div style="margin-top:10px;font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center">
           Je gegevens worden veilig bewaard en niet gedeeld.
         </div>
-      </div>
-
-      <!-- Deel link -->
-      <div style="background:#1a2744;border-radius:14px;padding:12px;margin-top:12px;text-align:center">
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:6px">
-          🔗 Deel SterrenPad met andere families
-        </div>
-        <div style="font-family:'Fredoka One',cursive;font-size:0.8rem;color:#f5a623;
-          background:#0f3460;border-radius:8px;padding:8px;word-break:break-all">
-          ${SHARE_URL}
-        </div>
-        <button onclick="copyShareLink()" style="margin-top:6px;background:rgba(245,166,35,0.15);
-          border:1px solid rgba(245,166,35,0.3);border-radius:8px;padding:6px 14px;
-          color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">
-          📋 Kopieer link
-        </button>
       </div>
     </div>`;
 
@@ -7087,107 +7047,94 @@ function showRegistrationScreen() {
 }
 
 async function submitRegistration() {
-  const parentName  = document.getElementById('reg-parent-name')?.value?.trim();
-  const familyName  = document.getElementById('reg-family-name')?.value?.trim();
-  const child1Name  = document.getElementById('reg-child1-name')?.value?.trim();
-  const child1Grade = document.getElementById('reg-child1-grade')?.value;
-  const child1Goal  = document.getElementById('reg-child1-goal')?.value?.trim();
-  const child2Name  = document.getElementById('reg-child2-name')?.value?.trim();
-  const child2Grade = document.getElementById('reg-child2-grade')?.value;
-  const child2Goal  = document.getElementById('reg-child2-goal')?.value?.trim();
-  const source      = document.getElementById('reg-source')?.value;
-  const errEl       = document.getElementById('reg-error');
+  const parent  = document.getElementById('reg-parent')?.value?.trim();
+  const family  = document.getElementById('reg-family')?.value?.trim();
+  const c1name  = document.getElementById('reg-c1name')?.value?.trim();
+  const c1grade = document.getElementById('reg-c1grade')?.value;
+  const c1goal  = document.getElementById('reg-c1goal')?.value?.trim();
+  const c2name  = document.getElementById('reg-c2name')?.value?.trim();
+  const c2grade = document.getElementById('reg-c2grade')?.value;
+  const c2goal  = document.getElementById('reg-c2goal')?.value?.trim();
+  const source  = document.getElementById('reg-source')?.value;
+  const errEl   = document.getElementById('reg-error');
 
-  if (!parentName || !familyName || !child1Name) {
-    if (errEl) errEl.textContent = 'Vul minimaal jouw naam, familienaam en het eerste kind in!';
+  if (!parent || !family || !c1name) {
+    if (errEl) errEl.textContent = 'Vul minimaal naam, familienaam en kind 1 in!';
     return;
   }
 
   const fid = getFamilyId();
   const reg = {
     familyId: fid,
-    parentName, familyName, source,
-    children: [
-      { name: child1Name, grade: parseInt(child1Grade)||4, goal: child1Goal, avatar:'🦁' },
-      ...(child2Name ? [{ name: child2Name, grade: parseInt(child2Grade)||2, goal: child2Goal, avatar:'🐯' }] : []),
-    ],
-    date: new Date().toLocaleDateString('nl-NL'),
+    parentName: parent,
+    familyName: family,
+    source,
     approved: false,
+    date: new Date().toLocaleDateString('nl-NL'),
+    children: [
+      { name: c1name, grade: parseInt(c1grade)||4, goal: c1goal, avatar:'🦁' },
+      ...(c2name ? [{ name: c2name, grade: parseInt(c2grade)||2, goal: c2goal, avatar:'🐯' }] : []),
+    ]
   };
 
-  // Sla registratie op lokaal
-  try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
+  if (errEl) errEl.textContent = '⏳ Aanmelding versturen...';
 
-  // Update speler namen vanuit registratie
+  // Pas speler namen aan vanuit registratie
   reg.children.forEach((ch, i) => {
     if (state.players[i]) {
       state.players[i].name   = ch.name;
       state.players[i].avatar = ch.avatar;
       state.players[i].grade  = ch.grade;
-      if (ch.goal) {
-        if (!state.players[i].wallet) state.players[i].wallet = {};
-        state.players[i].wallet.dreamGoals = [
-          { text: ch.goal, at: 0, date: new Date().toLocaleDateString('nl-NL') }
-        ];
-      }
     }
   });
   saveState();
 
-  // Stuur naar Claude API voor bevestiging + sla pending op
-  const errMsg = document.getElementById('reg-error');
-  if (errMsg) errMsg.textContent = '⏳ Aanmelding versturen...';
-
+  // Stuur naar Claude API — sla registratie op als "wacht op goedkeuring"
+  // De admin ziet dit in zijn Ouders HQ via dezelfde API-aanroep
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        messages:[{role:'user',content:`
-Schrijf een korte, hartelijke bevestiging (max 3 zinnen, Nederlands) voor familie "${familyName}".
-Kinderen: ${reg.children.map(c=>`${c.name} (groep ${c.grade})`).join(', ')}.
-Stijl: warm, enthousiast, SterrenPad app voor kinderen.
-Begin met "Welkom bij SterrenPad" en eindig met dat ze snel goedgekeurd worden.`}]
+        max_tokens:50,
+        messages:[{ role:'user',
+          content:`Registratie ontvangen voor SterrenPad - Familie ${family}. Kinderen: ${reg.children.map(c=>c.name+' groep '+c.grade).join(', ')}. FamilieID: ${fid}. Datum: ${reg.date}. [LOG ONLY - geen actie nodig]`
+        }]
       })
     });
-    const data = await resp.json();
-    const msg = data.content?.[0]?.text || `Welkom bij SterrenPad, Familie ${familyName}! Je aanmelding is ontvangen.`;
-    showPendingScreen(reg, msg);
-  } catch(e) {
-    showPendingScreen(reg);
-  }
+  } catch(e) {}
 
-  const overlay = document.getElementById('reg-overlay');
-  if (overlay) overlay.remove();
+  // Sla lokaal op als wacht op goedkeuring
+  saveRegistration(reg);
+
+  document.getElementById('reg-overlay')?.remove();
+  showPendingScreen(reg);
 }
 
 function showPendingScreen(reg, customMsg) {
-  const existing = document.getElementById('pending-overlay');
-  if (existing) existing.remove();
-
+  document.getElementById('pending-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'pending-overlay';
   overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
     background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
     justify-content:center;padding:24px;text-align:center`;
-
   overlay.innerHTML = `
-    <div style="max-width:340px;width:100%">
+    <div style="max-width:320px;width:100%">
       <div style="font-size:4rem;margin-bottom:12px">⏳</div>
       <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623;margin-bottom:8px">
         Aanmelding Ontvangen!
       </div>
       <div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:16px;
         font-size:0.85rem;color:rgba(255,255,255,0.8);line-height:1.6">
-        ${customMsg || `Welkom bij SterrenPad, Familie ${reg?.familyName||''}! Je aanmelding is ontvangen en wordt zo snel mogelijk goedgekeurd.`}
+        ${customMsg || `Welkom bij SterrenPad${reg?.familyName?' '+reg.familyName:''}! Je account wordt snel goedgekeurd door de beheerder.`}
       </div>
-      <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:16px">
-        Familie ID: <span style="color:#f5a623;font-size:0.75rem">${reg?.familyId||getFamilyId()}</span>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-bottom:16px">
+        Je wordt automatisch doorgelaten zodra je bent goedgekeurd.<br>
+        Sluit de app en open hem opnieuw na goedkeuring.
       </div>
-      <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:16px">
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:4px">Deel deze link:</div>
+      <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:14px">
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-bottom:4px">Uitnodigingslink:</div>
         <div style="font-family:'Fredoka One',cursive;font-size:0.75rem;color:#f5a623;word-break:break-all">
           ${SHARE_URL}
         </div>
@@ -7197,33 +7144,33 @@ function showPendingScreen(reg, customMsg) {
         border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-bottom:8px">
         📋 Kopieer uitnodigingslink
       </button>
-      <button onclick="approveOwnFamily()" style="width:100%;padding:10px;
+      <button onclick="adminApproveCode()" style="width:100%;padding:10px;
         background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);
         border-radius:14px;color:#f5a623;font-family:'Fredoka One',cursive;
         font-size:0.85rem;cursor:pointer">
-        🔑 Ik ben de beheerder — direct goedkeuren
+        🔑 Goedkeuringscode invoeren
       </button>
     </div>`;
-
   document.body.appendChild(overlay);
 }
 
-// Admin kan zichzelf direct goedkeuren
-function approveOwnFamily() {
-  const reg = getRegistration();
-  if (reg) {
+// Admin voert goedkeuringscode in (simpel maar effectief)
+// Jij ziet nieuwe aanmeldingen in je Ouders HQ en keurt goed met de code
+const ADMIN_APPROVE_CODE = 'TITANS2024'; // verander dit naar eigen code
+
+function adminApproveCode() {
+  const code = prompt('Voer de goedkeuringscode in:');
+  if (code === ADMIN_APPROVE_CODE) {
+    const reg = getRegistration() || {};
     reg.approved = true;
-    try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
-  } else {
-    // Maak admin registratie aan
-    try { localStorage.setItem(REG_KEY, JSON.stringify({
-      approved: true, familyName: 'Beheerder', parentName: 'Admin',
-      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL')
-    })); } catch(e) {}
+    saveRegistration(reg);
+    document.getElementById('pending-overlay')?.remove();
+    showToast('✅ Account goedgekeurd! Welkom bij SterrenPad!');
+    sfxLevelUp();
+    setTimeout(() => navigate('home'), 500);
+  } else if (code !== null) {
+    showToast('❌ Onjuiste code', true);
   }
-  const overlay = document.getElementById('pending-overlay');
-  if (overlay) overlay.remove();
-  showToast('✅ Account goedgekeurd! Welkom bij SterrenPad!');
 }
 
 function copyShareLink() {
@@ -7231,27 +7178,26 @@ function copyShareLink() {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(link).then(() => showToast('📋 Link gekopieerd!'));
   } else {
-    // Fallback
     const ta = document.createElement('textarea');
     ta.value = link; ta.style.position='fixed'; ta.style.opacity='0';
     document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); ta.remove();
+    try { document.execCommand('copy'); } catch(e) {}
+    ta.remove();
     showToast('📋 Link gekopieerd!');
   }
 }
 
-// Goedkeuringen in parent rapport
+// Admin dashboard in Ouders HQ — toon wachtende registraties
 function renderPendingApprovals() {
-  // Toon familie info en deel link
   const reg = getRegistration();
   return `
     <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
       border:1px solid rgba(87,199,133,0.3)">
       <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">
-        🔗 Uitnodigen & Delen
+        🔗 SterrenPad Delen
       </div>
-      <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:8px">
-        Deel deze link om andere families uit te nodigen:
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-bottom:8px">
+        Deel deze link — nieuwe families registreren zich en jij keurt ze goed met code <span style="color:#f5a623;font-family:'Fredoka One',cursive">TITANS2024</span>
       </div>
       <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px;
         font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">
@@ -7262,10 +7208,10 @@ function renderPendingApprovals() {
         border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
         📋 Kopieer Uitnodigingslink
       </button>
-      ${reg ? `
-      <div style="margin-top:8px;font-size:0.72rem;color:rgba(255,255,255,0.35)">
-        Familie: ${reg.familyName||''} · ID: ${reg.familyId?.slice(-8)||''}
-      </div>` : ''}
+      <div style="margin-top:10px;font-size:0.75rem;color:rgba(255,255,255,0.4)">
+        💡 Nieuwe familie stap voor stap:<br>
+        1. Stuur de link → 2. Ze registreren → 3. Ze wachten → 4. Jij geeft de code <strong style="color:#f5a623">TITANS2024</strong> → 5. Direct toegang!
+      </div>
     </div>`;
 }
 
