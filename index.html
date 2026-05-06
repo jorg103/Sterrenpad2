@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TitansPad">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/jpeg" href="favicon.jpg">
+<link rel="shortcut icon" href="favicon.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -65,8 +67,30 @@
   .coin-count { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--sun); }
 
   /* ===== SCREENS ===== */
-  .screen { display: none; min-height: calc(100vh - 60px); }
+  /* ===== 3D SCHERM TRANSITIE ===== */
+  .screen { display: none; min-height: calc(100vh - 60px); overflow-y: auto; }
   .screen.active { display: block; }
+
+  @keyframes slide-in-3d {
+    0%   { opacity:0; transform: perspective(800px) rotateY(-15deg) translateX(60px) scale(0.95); }
+    100% { opacity:1; transform: perspective(800px) rotateY(0deg) translateX(0) scale(1); }
+  }
+  @keyframes slide-out-3d {
+    0%   { opacity:1; transform: perspective(800px) rotateY(0deg) translateX(0) scale(1); }
+    100% { opacity:0; transform: perspective(800px) rotateY(15deg) translateX(-60px) scale(0.95); }
+  }
+  @keyframes world-enter {
+    0%   { opacity:0; transform: perspective(600px) rotateX(20deg) translateY(40px) scale(0.9); }
+    100% { opacity:1; transform: perspective(600px) rotateX(0deg) translateY(0) scale(1); }
+  }
+  .screen-entering {
+    animation: slide-in-3d 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    transform-origin: center center;
+  }
+  .world-entering {
+    animation: world-enter 0.4s cubic-bezier(0.34, 1.1, 0.64, 1) forwards;
+  }
+
 
   /* ===== HOME SCREEN ===== */
   #home-screen {
@@ -1277,14 +1301,27 @@ const AVATAR_ITEMS = [
 
 // ===== NAVIGATION =====
 function navigate(screen) {
+  const prev = document.querySelector('.screen.active');
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(screen + '-screen').classList.add('active');
+
+  const el = document.getElementById(screen + '-screen');
+  if (el) {
+    el.classList.add('active');
+    el.scrollTop = 0;
+    // 3D transitie animatie
+    el.classList.remove('screen-entering');
+    void el.offsetWidth; // reflow
+    el.classList.add('screen-entering');
+    setTimeout(() => el.classList.remove('screen-entering'), 400);
+  }
+  window.scrollTo(0, 0);
+
   const navBtn = document.getElementById('nav-' + screen);
   if (navBtn) navBtn.classList.add('active');
-  if (screen === 'map') renderMap();
-  if (screen === 'shop') renderShop();
-  if (screen === 'home') renderHome();
+  if (screen === 'map')    renderMap();
+  if (screen === 'shop')   renderShop();
+  if (screen === 'home')   renderHome();
   if (screen === 'avatar') renderAvatarBuilder();
   if (screen === 'wallet') renderWallet();
   if (screen === 'parent') renderParentReport();
@@ -1562,11 +1599,66 @@ function renderMap() {
       star.textContent = p.stars[absLevel] ? '⭐' : '✓';
       btn.appendChild(star);
     }
+    // Toon mini-avatar op het huidige level
+    if (current) {
+      const avatarEl = document.createElement('div');
+      avatarEl.style.cssText = `position:absolute;top:-52px;left:50%;transform:translateX(-50%);
+        pointer-events:none;animation:tt-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1)`;
+      avatarEl.innerHTML = buildMiniAvatarSVG(p);
+      node.style.position = 'relative';
+      node.appendChild(avatarEl);
+    }
     if (done || current) btn.onclick = () => openChallenge(i, currentWorldIdx);
     node.appendChild(btn);
     track.appendChild(node);
   });
 }
+
+function buildMiniAvatarSVG(p) {
+  const color = p.avatarColor || '#E91E63';
+  const equipped = p.equipped || {};
+  const headItem   = equipped.head   ? AVATAR_ITEMS.find(x=>x.id===equipped.head)   : null;
+  const outfitItem = equipped.outfit ? AVATAR_ITEMS.find(x=>x.id===equipped.outfit) : null;
+  // Mini versie van de avatar — 40px hoog
+  return `<svg viewBox="0 0 80 110" xmlns="http://www.w3.org/2000/svg" width="40" height="55">
+    <!-- Schoenen -->
+    <ellipse cx="29" cy="104" rx="9" ry="5" fill="${color}"/>
+    <ellipse cx="51" cy="104" rx="9" ry="5" fill="${color}"/>
+    <!-- Benen -->
+    <rect x="22" y="76" width="11" height="30" rx="5" fill="${color}bb"/>
+    <rect x="44" y="76" width="11" height="30" rx="5" fill="${color}bb"/>
+    <!-- Lichaam -->
+    <rect x="19" y="48" width="42" height="33" rx="8" fill="${color}"/>
+    ${outfitItem ? `<text x="40" y="70" text-anchor="middle" font-size="14">${outfitItem.emoji}</text>` : ''}
+    <!-- Armen -->
+    <rect x="6" y="49" width="14" height="26" rx="6" fill="${color}bb"/>
+    <rect x="60" y="49" width="14" height="26" rx="6" fill="${color}bb"/>
+    <!-- Hoofd -->
+    <ellipse cx="40" cy="30" rx="20" ry="21" fill="#FDBCB4"/>
+    <!-- Haar -->
+    <ellipse cx="40" cy="13" rx="20" ry="10" fill="#5D4037"/>
+    <rect x="20" y="10" width="40" height="13" fill="#5D4037"/>
+    <ellipse cx="21" cy="27" rx="5" ry="12" fill="#5D4037"/>
+    <ellipse cx="59" cy="27" rx="5" ry="12" fill="#5D4037"/>
+    <!-- Ogen -->
+    <circle cx="33" cy="29" r="4" fill="white"/>
+    <circle cx="47" cy="29" r="4" fill="white"/>
+    <circle cx="33" cy="30" r="2.2" fill="#333"/>
+    <circle cx="47" cy="30" r="2.2" fill="#333"/>
+    <circle cx="34" cy="29" r="0.9" fill="white"/>
+    <circle cx="48" cy="29" r="0.9" fill="white"/>
+    <!-- Mond -->
+    <path d="M 34 40 Q 40 46 46 40" stroke="#c0735a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Wangen -->
+    <ellipse cx="26" cy="37" rx="5" ry="4" fill="#ffb6b6" opacity="0.5"/>
+    <ellipse cx="54" cy="37" rx="5" ry="4" fill="#ffb6b6" opacity="0.5"/>
+    <!-- Hoofddeksel -->
+    ${headItem ? `<text x="40" y="6" text-anchor="middle" font-size="16">${headItem.emoji}</text>` : ''}
+    <!-- Pijltje onder avatar -->
+    <polygon points="40,108 36,102 44,102" fill="#f5a623"/>
+  </svg>`;
+}
+
 
 function selectWorld(worldIdx) {
   const p = getPlayer();
@@ -1574,9 +1666,33 @@ function selectWorld(worldIdx) {
     showToast('Missie vergrendeld, Titan!', true);
     return;
   }
-  currentWorldIdx = worldIdx; // update globale variabele
+  currentWorldIdx = worldIdx;
   LEVELS = getLevelsForWorld(worldIdx);
+
+  // 3D world entry flash effect
+  const mapScreen = document.getElementById('map-screen');
+  if (mapScreen) {
+    mapScreen.style.transition = 'background 0.3s';
+    const world = WORLDS[worldIdx];
+    mapScreen.style.background = world.color + '44';
+    setTimeout(() => { mapScreen.style.background = ''; }, 300);
+  }
+
   renderMap();
+
+  // Voeg world-entering animatie toe aan de level nodes
+  setTimeout(() => {
+    document.querySelectorAll('.node-btn').forEach((n, i) => {
+      n.style.animation = 'none';
+      n.style.opacity = '0';
+      setTimeout(() => {
+        n.style.animation = '';
+        n.style.opacity = '1';
+        n.classList.add('world-entering');
+        setTimeout(() => n.classList.remove('world-entering'), 500);
+      }, i * 80);
+    });
+  }, 50);
 }
 
 // ===== CHALLENGE SYSTEM =====
@@ -1845,12 +1961,142 @@ function bLoop() {
 
   bDrawMap(ctx, canvas, bCamX, bBalloons, true);
 
-  // Teken avatar
-  ctx.font = '26px serif';
+  // Teken aangeklede avatar in parcour
   const wobble = bIsRunning ? Math.sin(bFrame * 0.35) * 1.5 : 0;
-  ctx.fillText(getPlayer().avatar, bAvX - bCamX, bAvY + 22 + wobble);
+  const ax = bAvX - bCamX;
+  const ay = bAvY + wobble;
+  drawParcourAvatar(ctx, ax, ay, bIsRunning, bFrame);
 
   balloonInterval = requestAnimationFrame(bLoop);
+}
+
+function drawParcourAvatar(ctx, x, y, running, frame) {
+  const p = getPlayer();
+  const color = p.avatarColor || '#E91E63';
+  const equipped = p.equipped || {};
+  const outfitItem  = equipped.outfit    ? AVATAR_ITEMS.find(i=>i.id===equipped.outfit)    : null;
+  const headItem    = equipped.head      ? AVATAR_ITEMS.find(i=>i.id===equipped.head)      : null;
+  const accessItem  = equipped.accessory ? AVATAR_ITEMS.find(i=>i.id===equipped.accessory) : null;
+
+  // Schaal: klein maar zichtbaar in het parcour
+  const s = 0.45;
+  ctx.save();
+  ctx.translate(x - 36*s, y - 185*s);
+  ctx.scale(s, s);
+
+  // Leg rennen animatie in body tilt
+  if (running) {
+    ctx.translate(36, 92);
+    ctx.rotate(Math.sin(frame * 0.4) * 0.08);
+    ctx.translate(-36, -92);
+  }
+
+  // Schoenen
+  ctx.fillStyle = darkenColor(color);
+  ctx.beginPath(); ctx.ellipse(58, 208, 18, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(102, 208, 18, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.ellipse(57, 205, 15, 7, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(101, 205, 15, 7, 0, 0, Math.PI*2); ctx.fill();
+
+  // Benen met loopanimatie
+  const legSwing = running ? Math.sin(frame * 0.5) * 10 : 0;
+  ctx.fillStyle = color + 'bb';
+  ctx.save();
+  ctx.translate(59, 180); ctx.rotate(legSwing * 0.05);
+  ctx.fillRect(-11, 0, 22, 52); ctx.restore();
+  ctx.save();
+  ctx.translate(97, 180); ctx.rotate(-legSwing * 0.05);
+  ctx.fillRect(-11, 0, 22, 52); ctx.restore();
+
+  // Lichaam
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(38, 96, 84, 66, 16);
+  ctx.fill();
+
+  // Outfit emoji op lichaam
+  if (outfitItem) {
+    ctx.font = '30px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(outfitItem.emoji, 80, 137);
+  }
+
+  // Armen met zwaai animatie
+  ctx.fillStyle = color + 'bb';
+  const armSwing = running ? Math.sin(frame * 0.5) * 15 : 0;
+  ctx.save(); ctx.translate(26, 118); ctx.rotate((-armSwing) * 0.06);
+  ctx.beginPath(); ctx.roundRect(-14, -25, 28, 52, 13); ctx.fill(); ctx.restore();
+  ctx.save(); ctx.translate(134, 118); ctx.rotate((armSwing) * 0.06);
+  ctx.beginPath(); ctx.roundRect(-14, -25, 28, 52, 13); ctx.fill(); ctx.restore();
+
+  // Handen
+  ctx.fillStyle = '#FDBCB4';
+  ctx.beginPath(); ctx.arc(26, 153, 12, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(134, 153, 12, 0, Math.PI*2); ctx.fill();
+
+  // Accessoire
+  if (accessItem) {
+    ctx.font = '18px serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(136, 146);
+    ctx.rotate(0.4);
+    ctx.fillText(accessItem.emoji, 0, 0);
+    ctx.restore();
+  }
+
+  // Nek
+  ctx.fillStyle = '#FDBCB4';
+  ctx.beginPath(); ctx.roundRect(68, 83, 24, 18, 7); ctx.fill();
+
+  // Hoofd
+  ctx.beginPath(); ctx.ellipse(80, 64, 40, 42, 0, 0, Math.PI*2); ctx.fill();
+
+  // Haar
+  const hairColor = '#5D4037';
+  ctx.fillStyle = hairColor;
+  ctx.beginPath(); ctx.ellipse(80, 28, 40, 20, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillRect(40, 24, 80, 25);
+  ctx.beginPath(); ctx.ellipse(41, 57, 10, 24, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(119, 57, 10, 24, 0, 0, Math.PI*2); ctx.fill();
+
+  // Ogen
+  ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.ellipse(65, 62, 8, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(95, 62, 8, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.ellipse(66, 63, 4.5, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(96, 63, 4.5, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'white';
+  ctx.beginPath(); ctx.arc(68, 61, 1.8, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(98, 61, 1.8, 0, Math.PI*2); ctx.fill();
+
+  // Wangen
+  ctx.fillStyle = 'rgba(255,182,182,0.45)';
+  ctx.beginPath(); ctx.ellipse(53, 77, 11, 8, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(107, 77, 11, 8, 0, 0, Math.PI*2); ctx.fill();
+
+  // Mond
+  ctx.strokeStyle = '#c0735a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(67, 85); ctx.quadraticCurveTo(80, 96, 93, 85); ctx.stroke();
+
+  // Hoofddeksel
+  if (headItem) {
+    ctx.font = '34px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(headItem.emoji, 80, 18);
+  }
+
+  ctx.restore();
+}
+
+function darkenColor(hex) {
+  try {
+    const n=parseInt(hex.slice(1),16);
+    const r=Math.max(0,(n>>16)-40),g=Math.max(0,((n>>8)&255)-40),b=Math.max(0,(n&255)-40);
+    return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  } catch(e){return hex;}
 }
 
 function bDrawMap(ctx, canvas, camX, balloons, running) {
@@ -2034,7 +2280,8 @@ function showSpell() {
   const p = getPlayer();
   const skill = Math.round((p.skills||{}).spell || 50);
   const skillColor = skill > 65 ? '#27ae60' : skill < 35 ? '#e74c3c' : '#f7971e';
-  const skillLabel = skill > 65 ? '🔥 Moeilijk niveau' : skill < 35 ? '🌱 Oefenniveau' : '⚡ Standaard';
+  const skillLabel = skill >= 110 ? '🌀 TITAN NIVEAU' : skill >= 100 ? '🏆 Expert Niveau' : skill > 65 ? '🔥 Moeilijk' : skill < 35 ? '🌱 Oefenen' : '⚡ Standaard';
+  const skillColor2 = skill >= 110 ? '#ce93d8' : skill >= 100 ? '#f5a623' : skillColor;
 
   const box = document.getElementById('challenge-content');
   box.innerHTML = `
@@ -2122,7 +2369,7 @@ function showMath() {
   const p = getPlayer();
   const skill = Math.round((p.skills||{}).math || 50);
   const skillColor = skill > 65 ? '#27ae60' : skill < 35 ? '#e74c3c' : '#f7971e';
-  const skillLabel = skill > 65 ? '🔥 Moeilijk' : skill < 35 ? '🌱 Oefenen' : '⚡ Standaard';
+  const skillLabel = skill >= 110 ? '🌀 TITAN NIVEAU' : skill >= 100 ? '🏆 Expert Niveau' : skill > 65 ? '🔥 Moeilijk' : skill < 35 ? '🌱 Oefenen' : '⚡ Standaard';
 
   const box = document.getElementById('challenge-content');
   box.innerHTML = `
@@ -3605,45 +3852,150 @@ function recordAnswer(type, correct, ms) {
 
   const fast = ms < FAST_MS;
   const slow = ms > SLOW_MS;
+  const currentSkill = p.skills[type] || 50;
 
+  // Hogere skill = harder to gain, easier to lose (meer uitdaging bij topniveau)
+  const atTop = currentSkill >= 90;
   let delta = 0;
-  if (correct && fast)  delta = +8;   // snel en goed → steile stijging
-  else if (correct)     delta = +4;   // goed maar langzaam → kleine stijging
-  else if (!correct && slow) delta = -6; // fout en langzaam → stap terug
-  else if (!correct)    delta = -3;   // fout maar snel geprobeerd → kleine stap terug
+  if (correct && fast)  delta = atTop ? +3 : +8;
+  else if (correct)     delta = atTop ? +2 : +4;
+  else if (!correct && slow) delta = atTop ? -4 : -6;
+  else if (!correct)    delta = atTop ? -3 : -3;
 
-  p.skills[type] = Math.max(5, Math.min(100, (p.skills[type]||50) + delta));
-  p.history.push({ type, correct, ms, delta });
-  if (p.history.length > 30) p.history.shift();
+  // Skills kunnen nu tot 120 gaan (Expert=100-110, Titan=110-120)
+  p.skills[type] = Math.max(5, Math.min(120, currentSkill + delta));
+  p.history.push({ type, correct, ms, delta, skill: p.skills[type] });
+  if (p.history.length > 50) p.history.shift();
 
-  // Bonus challenge check: elke 3 voltooide levels
   p.bonusDue = (p.bonusDue||0) + 1;
+
+  // Check voor niveau-upgrade melding
+  const prev = currentSkill;
+  const next = p.skills[type];
+  if (prev < 100 && next >= 100) {
+    setTimeout(() => showLevelUpgrade(type, 'Expert'), 1500);
+  } else if (prev < 110 && next >= 110) {
+    setTimeout(() => showLevelUpgrade(type, 'Titan'), 1500);
+  }
 
   saveState();
   return p.skills[type];
 }
 
-// Kies vragen op basis van vaardigheid
+function showLevelUpgrade(type, tier) {
+  const icons = { spell:'✏️', math:'🔢', lang:'🌍' };
+  const labels = { spell:'Spellen', math:'Rekenen', lang:'Taal' };
+  const tierColors = { Expert:'#f5a623', Titan:'#ce93d8' };
+  const tierEmoji = tier === 'Titan' ? '🌀' : '🏆';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+    z-index:600;background:#1a1a2e;border:3px solid ${tierColors[tier]};border-radius:24px;
+    padding:24px;text-align:center;max-width:280px;width:90%;
+    box-shadow:0 0 40px ${tierColors[tier]}66;
+    animation:tt-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1)`;
+  overlay.innerHTML = `
+    <div style="font-size:3.5rem;margin-bottom:8px">${tierEmoji}</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:${tierColors[tier]}">
+      ${tier} Titan!
+    </div>
+    <div style="font-family:'Fredoka One',cursive;color:white;font-size:1rem;margin:8px 0">
+      ${icons[type]} ${labels[type]} niveau ${tier}!
+    </div>
+    <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin:8px 0">
+      ${tier === 'Titan'
+        ? '🌀 Raven is onder de indruk! Maximaal niveau bereikt!'
+        : '🏆 Je bent nu een Expert! Moeilijkere vragen wachten!'}
+    </div>
+    <button onclick="this.parentElement.remove()" style="margin-top:10px;
+      background:linear-gradient(135deg,${tierColors[tier]},#e94560);color:white;
+      border:none;border-radius:12px;padding:10px 24px;font-family:'Fredoka One',cursive;
+      font-size:0.95rem;cursor:pointer">BOOYAH! ⚡</button>`;
+  document.body.appendChild(overlay);
+  sfxLevelUp();
+  setTimeout(() => overlay.remove(), 5000);
+}
+
+// Kies vragen op basis van vaardigheid — inclusief Expert en Titan niveau
 function getAdaptiveWords(playerIdx, worldIdx) {
   const p = state.players[playerIdx];
   const skill = (p.skills||{}).spell || 50;
   const allWords = WORDS_BY_WORLD[playerIdx][worldIdx % 10];
 
-  // Categoriseer: skill < 35 = makkelijk, 35-65 = midden, >65 = moeilijk
-  if (skill < 35) return allWords.slice(0, 3);       // eerste 3 (makkelijkst)
-  if (skill > 65) return allWords.slice(3);           // laatste 3 (moeilijkst)
-  return allWords;                                     // alles
+  if (skill < 35)  return allWords.slice(0, 3);   // Oefenen
+  if (skill < 65)  return allWords;                // Standaard
+  if (skill < 100) return allWords.slice(3);       // Moeilijk
+
+  // Expert (100-110): gebruik moeilijkste woorden + voeg dt-regel/verdubbeling toe
+  if (skill < 110) return [...allWords.slice(3), ...getExpertWords(playerIdx)];
+
+  // Titan (110+): alleen Expert woorden, sneller en complexer
+  return getExpertWords(playerIdx);
+}
+
+function getExpertWords(playerIdx) {
+  // Extra moeilijke woorden voor expert niveau
+  const expertGroep4 = [
+    {word:'SCHRIJVEN', hint:'Met een pen iets maken', level:'expert'},
+    {word:'GROENTEN', hint:'Gezonde dingen eten', level:'expert'},
+    {word:'VERRASSING', hint:'Je weet het niet van tevoren!', level:'expert'},
+    {word:'VLIEGTUIG', hint:'Vliegt hoog in de lucht', level:'expert'},
+    {word:'BIBLIOTHEEK', hint:'Veel boeken op één plek', level:'expert'},
+    {word:'ONMOGELIJK', hint:'Kan niet! Of toch?', level:'expert'},
+  ];
+  const expertGroep2 = [
+    {word:'SCHOOL', hint:'Hier leer je', level:'expert'},
+    {word:'BLOKKEN', hint:'Spelen met...', level:'expert'},
+    {word:'ZWEMMEN', hint:'In het water bewegen', level:'expert'},
+  ];
+  return playerIdx === 0 ? expertGroep4 : expertGroep2;
 }
 
 function getAdaptiveMath(playerIdx, worldIdx) {
   const p = state.players[playerIdx];
   const skill = (p.skills||{}).math || 50;
   const allMath = MATH_BY_WORLD[playerIdx][worldIdx % 10];
+  const noDivision = p.noDivision !== false;
 
-  if (skill < 35) return allMath.slice(0, 2);
-  if (skill > 65) return allMath.slice(2);
-  return allMath;
+  if (skill < 35)  return allMath.slice(0, 2);
+  if (skill < 65)  return allMath;
+  if (skill < 100) return allMath.slice(2);
+
+  // Expert niveau — complexere sommen
+  if (skill < 110) return [...allMath.slice(2), ...getExpertMath(playerIdx, noDivision)];
+
+  // Titan niveau
+  return getExpertMath(playerIdx, noDivision);
 }
+
+function getExpertMath(playerIdx, noDivision) {
+  const isGroep4 = playerIdx === 0;
+  if (isGroep4) {
+    const expert = [
+      {q:'47 + 38 = ?', a:85, opts:[85,83,87,84]},
+      {q:'125 - 67 = ?', a:58, opts:[58,62,54,68]},
+      {q:'8 × 9 = ?', a:72, opts:[72,63,81,56]},
+      {q:'7 × 12 = ?', a:84, opts:[84,82,88,96]},
+      {q:'15 × 4 = ?', a:60, opts:[60,56,64,50]},
+    ];
+    if (!noDivision) {
+      expert.push(
+        {q:'72 ÷ 8 = ?', a:9, opts:[9,8,7,6]},
+        {q:'56 ÷ 7 = ?', a:8, opts:[8,7,9,6]},
+        {q:'144 ÷ 12 = ?', a:12, opts:[12,11,13,14]},
+      );
+    }
+    return expert;
+  } else {
+    return [
+      {q:'18 + 7 = ?', a:25, opts:[25,24,26,23]},
+      {q:'20 - 8 = ?', a:12, opts:[12,11,13,14]},
+      {q:'5 × 4 = ?', a:20, opts:[20,15,25,18]},
+      {q:'3 × 6 = ?', a:18, opts:[18,15,21,12]},
+    ];
+  }
+}
+
 
 // Voortgangsrapportje voor kind
 function getSkillFeedback(playerIdx) {
@@ -3661,7 +4013,7 @@ function getSkillFeedback(playerIdx) {
   const spellTrend = getSkillTrend(p.history, 'spell');
   const mathTrend  = getSkillTrend(p.history, 'math');
   return { msg, correctCount, avgMs, spellTrend, mathTrend,
-           spell: Math.round(p.skills.spell||50), math: Math.round(p.skills.math||50), lang: Math.round(p.skills.lang||50) };
+           spell: Math.round(((p.skills.spell||50)/120)*12*10)/10, math: Math.round(((p.skills.math||50)/120)*12*10)/10, lang: Math.round(((p.skills.lang||50)/120)*12*10)/10 };
 }
 
 function getSkillTrend(history, type) {
@@ -4187,6 +4539,9 @@ function renderParentReport() {
       color:#aaa;font-size:0.82rem;text-align:center">
       📅 Titans HQ Briefing — ${dateStr}
     </div>`;
+
+  // ===== UITNODIGING & REGISTRATIE =====
+  html += renderPendingApprovals();
 
   // ===== IDEEËNBUS & FAMILIE =====
   html += `<div style="display:flex;gap:8px;margin-bottom:14px">
@@ -5711,7 +6066,7 @@ function renderSkillSliders(p, idx) {
         ['math',  '🔢 Rekenen', isGroep4 ? 'optellen, aftrekken, tafels (geen delen!)' : 'tellen, optellen tot 20'],
         ['lang',  '🌍 Taal/Staal', isGroep4 ? 'begrijpend lezen, zinsbouw' : 'letterherkenning, klanken'],
       ].map(([key, label, desc]) => {
-        const val = Math.round(((skills[key]||50) / 100) * 10);
+        const val = Math.round(((skills[key]||50) / 120) * 12);
         return `
           <div style="margin-bottom:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -5723,7 +6078,7 @@ function renderSkillSliders(p, idx) {
                 ${val}/10
               </div>
             </div>
-            <input type="range" min="1" max="10" value="${val}"
+            <input type="range" min="1" max="12" value="${val}"
               style="width:100%;accent-color:#f5a623;cursor:pointer"
               oninput="updateSkillSlider(${idx},'${key}',this.value)"
               onchange="applySkillSlider(${idx},'${key}',this.value)">
@@ -5746,7 +6101,7 @@ function updateSkillSlider(playerIdx, skill, value) {
 function applySkillSlider(playerIdx, skill, value) {
   const p = state.players[playerIdx];
   if (!p.skills) p.skills = {spell:50, math:50, lang:50};
-  p.skills[skill] = Math.round((parseInt(value) / 10) * 100);
+  p.skills[skill] = Math.round((parseInt(value) / 12) * 120);
   saveState();
   showToast(`✅ ${p.name} ${skill} niveau bijgesteld naar ${value}/10`);
 }
@@ -6537,6 +6892,353 @@ function finishDiscovery(reward, perfect) {
   completeChallenge(reward, perfect);
 }
 
+// ===== 📋 REGISTRATIE SYSTEEM =====
+const REG_KEY = 'tp_registered';
+const PENDING_KEY = 'tp_pending_approval';
+const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
+// Admin familie ID (jij) — deze hoeft nooit te registreren
+const ADMIN_FAMILY_ID = 'family_admin_jorg103';
+
+function isRegistered() {
+  try {
+    const r = JSON.parse(localStorage.getItem(REG_KEY) || 'null');
+    return r && r.approved;
+  } catch(e) { return false; }
+}
+
+function getRegistration() {
+  try { return JSON.parse(localStorage.getItem(REG_KEY) || 'null'); } catch(e) { return null; }
+}
+
+function checkRegistration() {
+  const fid = getFamilyId();
+  // Admin heeft altijd toegang
+  if (fid === ADMIN_FAMILY_ID || fid?.startsWith('family_admin')) return true;
+  // Check of eerste keer
+  const reg = getRegistration();
+  if (!reg) {
+    // Eerste keer — toon registratie scherm
+    setTimeout(() => showRegistrationScreen(), 500);
+    return false;
+  }
+  if (!reg.approved) {
+    // Wacht op goedkeuring
+    setTimeout(() => showPendingScreen(reg), 500);
+    return false;
+  }
+  return true;
+}
+
+function showRegistrationScreen() {
+  const overlay = document.createElement('div');
+  overlay.id = 'reg-overlay';
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
+    background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
+    justify-content:flex-start;overflow-y:auto;padding:20px 16px 40px`;
+
+  overlay.innerHTML = `
+    <div style="max-width:380px;width:100%;padding-top:20px">
+      <!-- Logo -->
+      <div style="text-align:center;margin-bottom:20px">
+        <img src="favicon.jpg" style="width:80px;height:80px;border-radius:20px;
+          box-shadow:0 8px 24px rgba(0,0,0,0.4)" onerror="this.style.display='none'">
+        <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-top:8px">
+          ⭐ SterrenPad
+        </div>
+        <div style="font-size:0.85rem;color:#57c785;margin-top:4px">
+          Spelen · Leren · Verdienen
+        </div>
+      </div>
+
+      <div style="background:#1a1a2e;border-radius:20px;padding:20px;border:2px solid rgba(245,166,35,0.3)">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.2rem;margin-bottom:6px">
+          👋 Welkom bij SterrenPad!
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px">
+          Maak een gratis account voor jouw familie. Na een korte goedkeuring kun je direct starten!
+        </div>
+
+        <!-- Ouder info -->
+        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">
+          👨‍👩‍👧 Ouder/verzorger
+        </div>
+        <input id="reg-parent-name" type="text" placeholder="Jouw naam (bijv. Papa of Mama)"
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:8px;box-sizing:border-box">
+        <input id="reg-family-name" type="text" placeholder="Familienaam (bijv. Familie De Vries)"
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:16px;box-sizing:border-box">
+
+        <!-- Kind 1 -->
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">
+          🦁 Kind 1
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="reg-child1-name" type="text" placeholder="Naam kind 1"
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
+            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+          <select id="reg-child1-grade" style="padding:10px;border-radius:10px;
+            border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;
+            font-family:'Fredoka One',cursive">
+            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+          </select>
+        </div>
+        <input id="reg-child1-goal" type="text" placeholder="Spaardoel kind 1 (bijv. Nintendo Switch)"
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:12px;box-sizing:border-box">
+
+        <!-- Kind 2 (optioneel) -->
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:8px">
+          🐯 Kind 2 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="reg-child2-name" type="text" placeholder="Naam kind 2 (optioneel)"
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
+            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+          <select id="reg-child2-grade" style="padding:10px;border-radius:10px;
+            border:1px solid rgba(245,166,35,0.2);background:#0f3460;color:white;
+            font-family:'Fredoka One',cursive">
+            <option value="">-</option>
+            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+          </select>
+        </div>
+        <input id="reg-child2-goal" type="text" placeholder="Spaardoel kind 2 (optioneel)"
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:16px;box-sizing:border-box">
+
+        <!-- Hoe kende je de app? -->
+        <div style="font-family:'Fredoka One',cursive;color:#90caf9;font-size:0.9rem;margin-bottom:8px">
+          💬 Hoe ken je SterrenPad?
+        </div>
+        <select id="reg-source" style="width:100%;padding:10px;border-radius:10px;
+          border:1px solid rgba(144,202,249,0.3);background:#0f3460;color:white;
+          font-family:'Fredoka One',cursive;margin-bottom:16px">
+          <option value="">Selecteer...</option>
+          <option value="vriend">Via een vriend/vriendin</option>
+          <option value="school">Via school</option>
+          <option value="social">Via social media</option>
+          <option value="zoekmachine">Via Google/zoekmachine</option>
+          <option value="anders">Anders</option>
+        </select>
+
+        <button onclick="submitRegistration()"
+          style="width:100%;padding:14px;background:linear-gradient(135deg,#f5a623,#e94560);
+          color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;
+          font-size:1.1rem;cursor:pointer;box-shadow:0 4px 15px rgba(245,166,35,0.3)">
+          🚀 Aanmelden!
+        </button>
+
+        <div id="reg-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;text-align:center;min-height:1rem"></div>
+
+        <div style="margin-top:12px;font-size:0.72rem;color:rgba(255,255,255,0.3);text-align:center">
+          Na aanmelding krijg je een bevestiging zodra je account is goedgekeurd.<br>
+          Je gegevens worden veilig bewaard en niet gedeeld.
+        </div>
+      </div>
+
+      <!-- Deel link -->
+      <div style="background:#1a2744;border-radius:14px;padding:12px;margin-top:12px;text-align:center">
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:6px">
+          🔗 Deel SterrenPad met andere families
+        </div>
+        <div style="font-family:'Fredoka One',cursive;font-size:0.8rem;color:#f5a623;
+          background:#0f3460;border-radius:8px;padding:8px;word-break:break-all">
+          ${SHARE_URL}
+        </div>
+        <button onclick="copyShareLink()" style="margin-top:6px;background:rgba(245,166,35,0.15);
+          border:1px solid rgba(245,166,35,0.3);border-radius:8px;padding:6px 14px;
+          color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">
+          📋 Kopieer link
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+async function submitRegistration() {
+  const parentName  = document.getElementById('reg-parent-name')?.value?.trim();
+  const familyName  = document.getElementById('reg-family-name')?.value?.trim();
+  const child1Name  = document.getElementById('reg-child1-name')?.value?.trim();
+  const child1Grade = document.getElementById('reg-child1-grade')?.value;
+  const child1Goal  = document.getElementById('reg-child1-goal')?.value?.trim();
+  const child2Name  = document.getElementById('reg-child2-name')?.value?.trim();
+  const child2Grade = document.getElementById('reg-child2-grade')?.value;
+  const child2Goal  = document.getElementById('reg-child2-goal')?.value?.trim();
+  const source      = document.getElementById('reg-source')?.value;
+  const errEl       = document.getElementById('reg-error');
+
+  if (!parentName || !familyName || !child1Name) {
+    if (errEl) errEl.textContent = 'Vul minimaal jouw naam, familienaam en het eerste kind in!';
+    return;
+  }
+
+  const fid = getFamilyId();
+  const reg = {
+    familyId: fid,
+    parentName, familyName, source,
+    children: [
+      { name: child1Name, grade: parseInt(child1Grade)||4, goal: child1Goal, avatar:'🦁' },
+      ...(child2Name ? [{ name: child2Name, grade: parseInt(child2Grade)||2, goal: child2Goal, avatar:'🐯' }] : []),
+    ],
+    date: new Date().toLocaleDateString('nl-NL'),
+    approved: false,
+  };
+
+  // Sla registratie op lokaal
+  try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
+
+  // Update speler namen vanuit registratie
+  reg.children.forEach((ch, i) => {
+    if (state.players[i]) {
+      state.players[i].name   = ch.name;
+      state.players[i].avatar = ch.avatar;
+      state.players[i].grade  = ch.grade;
+      if (ch.goal) {
+        if (!state.players[i].wallet) state.players[i].wallet = {};
+        state.players[i].wallet.dreamGoals = [
+          { text: ch.goal, at: 0, date: new Date().toLocaleDateString('nl-NL') }
+        ];
+      }
+    }
+  });
+  saveState();
+
+  // Stuur naar Claude API voor bevestiging + sla pending op
+  const errMsg = document.getElementById('reg-error');
+  if (errMsg) errMsg.textContent = '⏳ Aanmelding versturen...';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:200,
+        messages:[{role:'user',content:`
+Schrijf een korte, hartelijke bevestiging (max 3 zinnen, Nederlands) voor familie "${familyName}".
+Kinderen: ${reg.children.map(c=>`${c.name} (groep ${c.grade})`).join(', ')}.
+Stijl: warm, enthousiast, SterrenPad app voor kinderen.
+Begin met "Welkom bij SterrenPad" en eindig met dat ze snel goedgekeurd worden.`}]
+      })
+    });
+    const data = await resp.json();
+    const msg = data.content?.[0]?.text || `Welkom bij SterrenPad, Familie ${familyName}! Je aanmelding is ontvangen.`;
+    showPendingScreen(reg, msg);
+  } catch(e) {
+    showPendingScreen(reg);
+  }
+
+  const overlay = document.getElementById('reg-overlay');
+  if (overlay) overlay.remove();
+}
+
+function showPendingScreen(reg, customMsg) {
+  const existing = document.getElementById('pending-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pending-overlay';
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
+    background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;padding:24px;text-align:center`;
+
+  overlay.innerHTML = `
+    <div style="max-width:340px;width:100%">
+      <div style="font-size:4rem;margin-bottom:12px">⏳</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623;margin-bottom:8px">
+        Aanmelding Ontvangen!
+      </div>
+      <div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:16px;
+        font-size:0.85rem;color:rgba(255,255,255,0.8);line-height:1.6">
+        ${customMsg || `Welkom bij SterrenPad, Familie ${reg?.familyName||''}! Je aanmelding is ontvangen en wordt zo snel mogelijk goedgekeurd.`}
+      </div>
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:16px">
+        Familie ID: <span style="color:#f5a623;font-size:0.75rem">${reg?.familyId||getFamilyId()}</span>
+      </div>
+      <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:16px">
+        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:4px">Deel deze link:</div>
+        <div style="font-family:'Fredoka One',cursive;font-size:0.75rem;color:#f5a623;word-break:break-all">
+          ${SHARE_URL}
+        </div>
+      </div>
+      <button onclick="copyShareLink()" style="width:100%;padding:12px;
+        background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+        border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-bottom:8px">
+        📋 Kopieer uitnodigingslink
+      </button>
+      <button onclick="approveOwnFamily()" style="width:100%;padding:10px;
+        background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);
+        border-radius:14px;color:#f5a623;font-family:'Fredoka One',cursive;
+        font-size:0.85rem;cursor:pointer">
+        🔑 Ik ben de beheerder — direct goedkeuren
+      </button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
+// Admin kan zichzelf direct goedkeuren
+function approveOwnFamily() {
+  const reg = getRegistration();
+  if (reg) {
+    reg.approved = true;
+    try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
+  } else {
+    // Maak admin registratie aan
+    try { localStorage.setItem(REG_KEY, JSON.stringify({
+      approved: true, familyName: 'Beheerder', parentName: 'Admin',
+      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL')
+    })); } catch(e) {}
+  }
+  const overlay = document.getElementById('pending-overlay');
+  if (overlay) overlay.remove();
+  showToast('✅ Account goedgekeurd! Welkom bij SterrenPad!');
+}
+
+function copyShareLink() {
+  const link = SHARE_URL;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() => showToast('📋 Link gekopieerd!'));
+  } else {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = link; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+    showToast('📋 Link gekopieerd!');
+  }
+}
+
+// Goedkeuringen in parent rapport
+function renderPendingApprovals() {
+  // Toon familie info en deel link
+  const reg = getRegistration();
+  return `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
+      border:1px solid rgba(87,199,133,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">
+        🔗 Uitnodigen & Delen
+      </div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:8px">
+        Deel deze link om andere families uit te nodigen:
+      </div>
+      <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px;
+        font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">
+        ${SHARE_URL}
+      </div>
+      <button onclick="copyShareLink()" style="width:100%;padding:10px;
+        background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+        border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+        📋 Kopieer Uitnodigingslink
+      </button>
+      ${reg ? `
+      <div style="margin-top:8px;font-size:0.72rem;color:rgba(255,255,255,0.35)">
+        Familie: ${reg.familyName||''} · ID: ${reg.familyId?.slice(-8)||''}
+      </div>` : ''}
+    </div>`;
+}
+
 // ===== 👨‍👩‍👧 MULTI-FAMILIE SYSTEEM =====
 // Elke familie heeft eigen data via familie-code
 // Admin (jij) kan families goedkeuren
@@ -6813,6 +7515,8 @@ function initApp() {
     // Finn tip elke 8 minuten
     setInterval(() => { if(document.getElementById('home-screen')?.classList.contains('active')) showFinnTip('algemeen'); }, 480000);
     checkFamilySetup();
+    // Check registratie na korte vertraging
+    setTimeout(() => checkRegistration(), 800);
   } catch(e) {
     console.error('Init fout:', e);
   }
