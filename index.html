@@ -70,6 +70,8 @@
   /* ===== 3D SCHERM TRANSITIE ===== */
   .screen { display: none; min-height: calc(100vh - 60px); overflow-y: auto; }
   .screen.active { display: block; }
+  /* Zorg dat de body niet scrollt — alleen de screens */
+  html, body { scroll-behavior: auto !important; }
 
   @keyframes slide-in-3d {
     0%   { opacity:0; transform: perspective(800px) rotateY(-15deg) translateX(60px) scale(0.95); }
@@ -1383,11 +1385,16 @@ function navigate(screen) {
     el.scrollTop = 0;
     // 3D transitie animatie
     el.classList.remove('screen-entering');
-    void el.offsetWidth; // reflow
+    void el.offsetWidth;
     el.classList.add('screen-entering');
     setTimeout(() => el.classList.remove('screen-entering'), 400);
   }
-  window.scrollTo(0, 0);
+
+  // Forceer scroll naar boven — werkt op iOS PWA en Safari
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+  if (el) el.scrollTop = 0;
 
   const navBtn = document.getElementById('nav-' + screen);
   if (navBtn) navBtn.classList.add('active');
@@ -1397,6 +1404,14 @@ function navigate(screen) {
   if (screen === 'avatar') renderAvatarBuilder();
   if (screen === 'wallet') renderWallet();
   if (screen === 'parent') renderParentReport();
+
+  // Na render ook nog eens naar boven (content wordt soms na render geladen)
+  setTimeout(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if (el) el.scrollTop = 0;
+  }, 50);
 }
 
 function selectPlayer(i) {
