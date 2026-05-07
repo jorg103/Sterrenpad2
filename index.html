@@ -70,8 +70,9 @@
   /* ===== 3D SCHERM TRANSITIE ===== */
   .screen { display: none; min-height: calc(100vh - 60px); overflow-y: auto; }
   .screen.active { display: block; }
-  /* Zorg dat de body niet scrollt — alleen de screens */
-  html, body { scroll-behavior: auto !important; }
+  html, body { scroll-behavior: auto !important; overflow-x: hidden; }
+  /* Op iOS PWA: voorkom dat de body scrollt, alleen schermen scrollen */
+  body { position: relative; }
 
   @keyframes slide-in-3d {
     0%   { opacity:0; transform: perspective(800px) rotateY(-15deg) translateX(60px) scale(0.95); }
@@ -192,6 +193,9 @@
     backdrop-filter: blur(4px);
   }
   .modal-overlay.open { display: flex; }
+  /* Reward modal altijd bovenop challenge modal */
+  #reward-modal { z-index: 200; }
+  #parent-lock-modal { z-index: 300; }
   .modal {
     background: #1a1a2e; border-radius: 30px; padding: 30px 25px;
     max-width: 380px; width: 92%; text-align: center;
@@ -1382,7 +1386,6 @@ function navigate(screen) {
   const el = document.getElementById(screen + '-screen');
   if (el) {
     el.classList.add('active');
-    el.scrollTop = 0;
     // 3D transitie animatie
     el.classList.remove('screen-entering');
     void el.offsetWidth;
@@ -1390,28 +1393,28 @@ function navigate(screen) {
     setTimeout(() => el.classList.remove('screen-entering'), 400);
   }
 
-  // Forceer scroll naar boven — werkt op iOS PWA en Safari
-  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
-  if (el) el.scrollTop = 0;
-
-  const navBtn = document.getElementById('nav-' + screen);
-  if (navBtn) navBtn.classList.add('active');
-  if (screen === 'map')    renderMap();
-  if (screen === 'shop')   renderShop();
-  if (screen === 'home')   renderHome();
-  if (screen === 'avatar') renderAvatarBuilder();
-  if (screen === 'wallet') renderWallet();
-  if (screen === 'parent') renderParentReport();
-
-  // Na render ook nog eens naar boven (content wordt soms na render geladen)
-  setTimeout(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  // SCROLL FIX — alle methoden tegelijk voor maximale iOS compatibiliteit
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
     if (el) el.scrollTop = 0;
-  }, 50);
+  };
+  scrollToTop();
+  // Na render nogmaals (content wordt soms later geladen)
+  setTimeout(scrollToTop, 10);
+  setTimeout(scrollToTop, 100);
+  setTimeout(scrollToTop, 300);
+
+  const navBtn = document.getElementById('nav-' + screen);
+  if (navBtn) navBtn.classList.add('active');
+
+  if (screen === 'map')    { renderMap();           setTimeout(scrollToTop, 200); }
+  if (screen === 'shop')   { renderShop();          setTimeout(scrollToTop, 200); }
+  if (screen === 'home')   { renderHome();          setTimeout(scrollToTop, 200); }
+  if (screen === 'avatar') { renderAvatarBuilder(); setTimeout(scrollToTop, 200); }
+  if (screen === 'wallet') { renderWallet();        setTimeout(scrollToTop, 200); }
+  if (screen === 'parent') { renderParentReport();  setTimeout(scrollToTop, 200); }
 }
 
 function selectPlayer(i) {
