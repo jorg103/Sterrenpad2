@@ -6994,53 +6994,57 @@ function saveRegistration(reg) {
 }
 
 function checkRegistration() {
-  // Check URL voor admin bypass token
-  const urlParams = new URLSearchParams(window.location.search);
-  const adminToken = urlParams.get('admin');
-  if (adminToken === 'TITANS2024') {
-    // Admin token in URL — markeer als goedgekeurd en verwijder token uit URL
-    saveRegistration({ approved: true, admin: true, familyId: getFamilyId(),
-      date: new Date().toLocaleDateString('nl-NL') });
-    // Verwijder token uit URL zonder pagina te herladen
-    const cleanUrl = window.location.pathname;
-    window.history.replaceState({}, '', cleanUrl);
-    return true;
-  }
-
-  // Bestaande data in localStorage → altijd doorlaten
-  const hasAnyData = !!localStorage.getItem('sterrenpad_v4') ||
-                     !!localStorage.getItem('sterrenpad_v3') ||
-                     !!localStorage.getItem('sp_au4');
-  if (hasAnyData) {
-    const reg = getRegistration();
-    if (!reg || !reg.approved) {
-      saveRegistration({ approved: true, existing: true,
-        familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
-    }
-    return true;
-  }
-
-  // Al geregistreerd en goedgekeurd
+  // Stap 1: Admin code al eerder ingevoerd? → altijd door
   const reg = getRegistration();
   if (reg && reg.approved) return true;
+
+  // Stap 2: Speldata aanwezig (sterrenpad_v4)? → altijd door
+  const savedGame = localStorage.getItem('sterrenpad_v4');
+  if (savedGame) {
+    try {
+      const data = JSON.parse(savedGame);
+      // Echte data: players met namen die niet 'Speler X' zijn
+      const hasRealData = data && data.players && data.players.some(p =>
+        p.name && p.name !== 'Speler 1' && p.name !== 'Speler 2' &&
+        p.name !== 'Kind 1' && p.name !== 'Kind 2'
+      );
+      if (hasRealData) {
+        saveRegistration({ approved: true, existing: true,
+          familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+        return true;
+      }
+    } catch(e) {}
+  }
+
+  // Stap 3: Audio prefs aanwezig (sp_au4)? → bestaande gebruiker → altijd door
+  if (localStorage.getItem('sp_au4') ||
+      localStorage.getItem('tp_parent_pin') ||
+      localStorage.getItem('tp_family_id')) {
+    saveRegistration({ approved: true, existing: true,
+      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+    return true;
+  }
+
+  // Stap 4: Wacht op goedkeuring (al geregistreerd maar niet goedgekeurd)
   if (reg && !reg.approved) {
     setTimeout(() => showPendingScreen(reg), 400);
     return false;
   }
 
-  // Nieuw → registratiescherm
-  setTimeout(() => showRegistrationScreen(), 400);
+  // Stap 5: Splinternieuw apparaat → toon registratie/toegangsscherm
+  setTimeout(() => showAccessScreen(), 400);
   return false;
 }
 
-function showRegistrationScreen() {
-  // Verwijder eventueel oud scherm
+// Nieuw: gecombineerd toegangsscherm (registratie + admin code)
+function showAccessScreen() {
   document.getElementById('reg-overlay')?.remove();
+  document.getElementById('pending-overlay')?.remove();
 
   const overlay = document.createElement('div');
   overlay.id = 'reg-overlay';
-  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
-    background:#0d0d1a;overflow-y:auto;padding:20px 16px 60px`;
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;' +
+    'background:#0d0d1a;overflow-y:auto;padding:20px 16px 60px';
 
   overlay.innerHTML = `
     <div style="max-width:380px;margin:0 auto;padding-top:16px">
@@ -7053,101 +7057,126 @@ function showRegistrationScreen() {
         <div style="font-size:0.85rem;color:#57c785">Spelen · Leren · Verdienen</div>
       </div>
 
+      <!-- BEHEERDER / BESTAANDE GEBRUIKER -->
       <div style="background:#1a1a2e;border-radius:20px;padding:20px;
-        border:2px solid rgba(245,166,35,0.3);margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.2rem;margin-bottom:6px">
-          👋 Welkom bij SterrenPad!
+        border:2px solid rgba(245,166,35,0.4);margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:6px">
+          🔑 Bestaande gebruiker?
         </div>
-        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px;line-height:1.5">
-          Vul je gegevens in. De beheerder keurt je account snel goed!
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
+          Voer de toegangscode in om direct te starten:
+        </div>
+        <input id="access-code" type="text" placeholder="Toegangscode..."
+          style="width:100%;padding:14px;border-radius:12px;
+          border:2px solid rgba(245,166,35,0.4);background:#0f3460;
+          color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.4rem;
+          text-align:center;letter-spacing:6px;box-sizing:border-box"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')useAccessCode()">
+        <button onclick="useAccessCode()" style="width:100%;padding:14px;margin-top:10px;
+          background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
+          border-radius:14px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;
+          box-shadow:0 4px 15px rgba(245,166,35,0.3)">
+          ⚡ Inloggen
+        </button>
+        <div id="access-error" style="color:#e94560;font-size:0.82rem;
+          margin-top:8px;text-align:center;min-height:1rem"></div>
+      </div>
+
+      <!-- SCHEIDINGSLIJN -->
+      <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.3)">of</div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
+      </div>
+
+      <!-- NIEUWE GEBRUIKER REGISTREREN -->
+      <div style="background:#1a1a2e;border-radius:20px;padding:20px;
+        border:1px solid rgba(87,199,133,0.3)">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1.1rem;margin-bottom:6px">
+          👋 Nieuw? Registreer je familie!
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px">
+          Na registratie keurt de beheerder je account goed.
         </div>
 
-        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">👨‍👩‍👧 Ouder/verzorger</div>
         <input id="reg-parent" type="text" placeholder="Jouw naam (bijv. Mama of Papa)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
           background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:8px;box-sizing:border-box">
         <input id="reg-family" type="text" placeholder="Familienaam (bijv. Familie Jansen)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:16px;box-sizing:border-box">
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
+          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:12px;box-sizing:border-box">
 
-        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">🦁 Kind 1</div>
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">🦁 Kind 1</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input id="reg-c1name" type="text" placeholder="Naam"
             style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
             background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-c1grade" style="padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+          <select id="reg-c1grade" style="padding:10px;border-radius:10px;
+            border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;
+            font-family:'Fredoka One',cursive">
             ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
           </select>
         </div>
-        <input id="reg-c1goal" type="text" placeholder="Spaardoel (bijv. Nintendo Switch)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:14px;box-sizing:border-box">
 
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:8px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">
           🐯 Kind 2 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="display:flex;gap:8px;margin-bottom:14px">
           <input id="reg-c2name" type="text" placeholder="Naam (optioneel)"
             style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
             background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-c2grade" style="padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
-            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+          <select id="reg-c2grade" style="padding:10px;border-radius:10px;
+            border:1px solid rgba(245,166,35,0.2);background:#0f3460;color:white;
+            font-family:'Fredoka One',cursive">
             <option value="">-</option>
             ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
           </select>
         </div>
-        <input id="reg-c2goal" type="text" placeholder="Spaardoel kind 2 (optioneel)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:14px;box-sizing:border-box">
 
-        <div style="font-family:'Fredoka One',cursive;color:#90caf9;font-size:0.9rem;margin-bottom:8px">💬 Hoe ken je SterrenPad?</div>
-        <select id="reg-source" style="width:100%;padding:10px;border-radius:10px;
-          border:1px solid rgba(144,202,249,0.3);background:#0f3460;color:white;
-          font-family:'Fredoka One',cursive;margin-bottom:16px">
-          <option value="">Selecteer...</option>
-          <option value="vriend">Via een vriend/vriendin</option>
-          <option value="school">Via school</option>
-          <option value="social">Via social media</option>
-          <option value="anders">Anders</option>
-        </select>
-
-        <button onclick="submitRegistration()"
-          style="width:100%;padding:14px;background:linear-gradient(135deg,#f5a623,#e94560);
-          color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;
-          font-size:1.1rem;cursor:pointer;box-shadow:0 4px 15px rgba(245,166,35,0.3)">
-          🚀 Aanmelden!
+        <button onclick="submitRegistration()" style="width:100%;padding:14px;
+          background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+          border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
+          📋 Aanmelden voor goedkeuring
         </button>
-        <div id="reg-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;
-          text-align:center;min-height:1rem"></div>
-        <div style="margin-top:10px;font-size:0.7rem;color:rgba(255,255,255,0.25);text-align:center">
-          Je gegevens worden veilig bewaard en niet gedeeld.
-        </div>
+        <div id="reg-error" style="color:#e94560;font-size:0.82rem;
+          margin-top:8px;text-align:center;min-height:1rem"></div>
       </div>
-
-      <!-- Beheerder toegang -->
-      <div style="background:#1a1a2e;border-radius:16px;padding:14px;margin-top:8px;
-        border:1px solid rgba(245,166,35,0.2)">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">
-          🔑 Al een account? Beheerderscode:
-        </div>
-        <div style="display:flex;gap:8px">
-          <input id="reg-admin-code" type="text" placeholder="Code..."
-            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.3);
-            background:#0f3460;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1rem;
-            text-align:center;letter-spacing:3px"
-            onkeydown="if(event.key==='Enter')quickAdminAccess()">
-          <button onclick="quickAdminAccess()" style="padding:10px 16px;
-            background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
-            border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
-            ⚡ OK
-          </button>
-        </div>
-      </div>
-    </div>\`;
+    </div>`;
 
   document.body.appendChild(overlay);
+  // Focus op de code input
+  setTimeout(() => document.getElementById('access-code')?.focus(), 300);
 }
+
+function useAccessCode() {
+  const code = (document.getElementById('access-code')?.value || '').trim().toUpperCase();
+  const errEl = document.getElementById('access-error');
+
+  if (code === 'TITANS2024') {
+    saveRegistration({ approved: true, admin: true,
+      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+    document.getElementById('reg-overlay')?.remove();
+    document.getElementById('pending-overlay')?.remove();
+    showToast('✅ Welkom! Je bent ingelogd als beheerder.');
+    sfxLevelUp();
+    updateCoinDisplay(); setWorldForPlayer(); renderHome();
+  } else if (code.length > 0) {
+    if (errEl) errEl.textContent = '❌ Onjuiste code. Vraag de beheerder om de code.';
+    const input = document.getElementById('access-code');
+    if (input) { input.value = ''; input.style.borderColor = '#e94560'; }
+    sfxWrong();
+    setTimeout(() => {
+      if (errEl) errEl.textContent = '';
+      const inp = document.getElementById('access-code');
+      if (inp) inp.style.borderColor = 'rgba(245,166,35,0.4)';
+    }, 2000);
+  } else {
+    if (errEl) errEl.textContent = 'Voer eerst een code in.';
+  }
+}
+
+
 
 async function submitRegistration() {
   const parent  = document.getElementById('reg-parent')?.value?.trim();
@@ -7252,7 +7281,7 @@ function showPendingScreen(reg, customMsg) {
           background:#1a2744;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.2rem;
           text-align:center;box-sizing:border-box;letter-spacing:4px"
           onkeydown="if(event.key==='Enter')checkAdminCode()">
-        <button onclick="checkAdminCode()" style="width:100%;padding:12px;margin-top:8px;
+        <button onclick="useAccessCode()" style="width:100%;padding:12px;margin-top:8px;
           background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
           border-radius:12px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
           ⚡ Toegang krijgen
@@ -7276,50 +7305,7 @@ function showPendingScreen(reg, customMsg) {
   setTimeout(() => document.getElementById('admin-code-input')?.focus(), 300);
 }
 
-function quickAdminAccess() {
-  const code = document.getElementById('reg-admin-code')?.value?.trim().toUpperCase();
-  if (code === 'TITANS2024') {
-    saveRegistration({ approved: true, admin: true, familyId: getFamilyId(),
-      date: new Date().toLocaleDateString('nl-NL') });
-    document.getElementById('reg-overlay')?.remove();
-    showToast('✅ Welkom terug!');
-    sfxLevelUp();
-    updateCoinDisplay(); setWorldForPlayer(); renderHome();
-  } else {
-    showToast('❌ Onjuiste code', true);
-  }
-}
 
-function checkAdminCode() {
-  const input = document.getElementById('admin-code-input');
-  const code = input?.value?.trim().toUpperCase();
-  const errEl = document.getElementById('code-error');
-
-  if (code === 'TITANS2024') {
-    // Juiste code — markeer als goedgekeurd
-    const reg = getRegistration() || {};
-    reg.approved = true;
-    reg.familyId = getFamilyId();
-    reg.date = new Date().toLocaleDateString('nl-NL');
-    saveRegistration(reg);
-
-    document.getElementById('pending-overlay')?.remove();
-    showToast('✅ Welkom! Toegang verleend!');
-    sfxLevelUp();
-    // Herlaad app data
-    updateCoinDisplay();
-    setWorldForPlayer();
-    renderHome();
-  } else {
-    if (errEl) errEl.textContent = '❌ Onjuiste code. Vraag de beheerder.';
-    if (input) { input.value = ''; input.style.borderColor = '#e94560'; }
-    sfxWrong();
-    setTimeout(() => {
-      if (errEl) errEl.textContent = '';
-      if (input) input.style.borderColor = 'rgba(245,166,35,0.4)';
-    }, 2000);
-  }
-}
 
 async function checkApprovalFromCloud() {
   showToast('⏳ Status controleren...');
