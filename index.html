@@ -555,16 +555,20 @@
 </div>
 
 <!-- ========== REWARD MODAL ========== -->
-<div class="modal-overlay" id="reward-modal">
-  <div class="modal">
+<div class="modal-overlay" id="reward-modal" onclick="handleRewardClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="reward-screen-inner">
       <div style="font-size:4rem" id="reward-emoji">🎉</div>
       <div class="coins-earned" id="reward-coins">+5 🪙</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:var(--purple);margin:10px 0" id="reward-msg">Super gedaan!</div>
+      <div id="reward-bonus-tag" style="display:none;background:linear-gradient(135deg,#f5a623,#e94560);
+        border-radius:20px;padding:4px 14px;font-family:'Fredoka One',cursive;
+        font-size:0.85rem;color:white;margin:4px auto;display:inline-block"></div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#f5a623;margin:10px 0" id="reward-msg">Super gedaan!</div>
       <div class="stars-row" id="reward-stars">
         <span class="star-big">⭐</span><span class="star-big">⭐</span><span class="star-big">⭐</span>
       </div>
-      <button class="btn-primary" style="margin-top:20px" onclick="closeReward()">TITANS GO! ⚡</button>
+      <button class="btn-primary" style="margin-top:20px;position:relative;z-index:999"
+        ontouchend="closeReward()" onclick="closeReward()">TITANS GO! ⚡</button>
     </div>
   </div>
 </div>
@@ -2599,12 +2603,33 @@ function completeChallenge(coins, perfect) {
   if (perfect && !wasCompleted) {
     p.perfectCount = (p.perfectCount||0) + 1;
   }
-  const earned = wasCompleted ? Math.floor(coins/2) : coins;
+  // Slim beloningssysteem — meer bij zwakste vaardigheid
+  const earned = getSmartReward(coins, LEVELS[currentLevelIdx]?.type || 'spell', wasCompleted);
   p.totalCoinsEarned = (p.totalCoinsEarned||0) + earned;
   addCoins(earned);
+
+  // Toon bonus tag als er een multiplier was
+  if (!wasCompleted) {
+    const base = coins;
+    if (earned > base) {
+      const tag = document.getElementById('reward-bonus-tag');
+      if (tag) { tag.textContent = '⭐ +50% Bonus! Zwakste vaardigheid!'; tag.style.display='inline-block'; }
+    } else {
+      const tag = document.getElementById('reward-bonus-tag');
+      if (tag) tag.style.display = 'none';
+    }
+  }
   if (perfect && !wasCompleted) setTimeout(sfxPerfect, 200);
   setTimeout(() => checkAndAwardBadges(), 1500);
   checkTimeLimit();
+
+  // Dagdoel bijhouden
+  if (!wasCompleted) {
+    const daily = updateDailyProgress();
+    if (daily.justReached) {
+      setTimeout(() => showDailyGoalCelebration(getPlayer().name), 1500);
+    }
+  }
   if (!wasCompleted && (p.level||0) % 5 === 0) setTimeout(() => showWistJeDat(), 2500);
   if (!wasCompleted && (p.level||0) % 10 === 0) setTimeout(() => showMopje(), 4000);
 
@@ -3960,12 +3985,15 @@ function recordAnswer(type, correct, ms) {
   p.bonusDue = (p.bonusDue||0) + 1;
 
   // Check voor niveau-upgrade melding
-  const prev = currentSkill;
+  const prevSkill = currentSkill;
   const next = p.skills[type];
-  if (prev < 100 && next >= 100) {
-    setTimeout(() => showLevelUpgrade(type, 'Expert'), 1500);
-  } else if (prev < 110 && next >= 110) {
-    setTimeout(() => showLevelUpgrade(type, 'Titan'), 1500);
+  const breakthrough = checkBreakthrough(type, prevSkill, next);
+  if (breakthrough === 100 || breakthrough === 110) {
+    const tier = breakthrough >= 110 ? 'Titan' : 'Expert';
+    setTimeout(() => showLevelUpgrade(type, tier), 1500);
+    setTimeout(() => showBreakthroughCelebration(type, breakthrough), 2500);
+  } else if (breakthrough) {
+    setTimeout(() => showBreakthroughCelebration(type, breakthrough), 1500);
   }
 
   saveState();
@@ -4355,7 +4383,25 @@ function renderHome() {
           </div>`).join('')}
       </div>
       ${fb.msg ? `<div style="margin-top:8px;font-size:0.8rem;color:#57c785;text-align:center">${fb.msg}</div>` : ''}
-    </div>`;
+      <!-- Dagdoel voortgang -->
+      ${(() => {
+        const daily = getDailyProgress();
+        const pct = Math.min(100, Math.round((daily.levelsToday / DAILY_GOAL_LEVELS) * 100));
+        return `<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:#ce93d8">
+              🎯 Dagdoel
+            </span>
+            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:${daily.goalReached?'#57c785':'#f5a623'}">
+              ${daily.levelsToday}/${DAILY_GOAL_LEVELS} ${daily.goalReached?'✅':''}
+            </span>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:6px;height:6px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${daily.goalReached?'#57c785':'linear-gradient(90deg,#ce93d8,#f5a623)'};border-radius:6px;transition:width 0.3s"></div>
+          </div>
+        </div>`;
+      })()}
+    </div>\`;
 }
 
 // ===== 🎁 VERRASSING & BONUS CHALLENGES =====
@@ -6209,127 +6255,195 @@ function getMathFilter(playerIdx, worldIdx) {
 // 5a. PRIJZENWIEL
 function showPrizeWheel() {
   const prizes = [
-    {label:'5 coins', coins:5, color:'#f5a623'},
-    {label:'10 coins', coins:10, color:'#57c785'},
-    {label:'20 coins', coins:20, color:'#e94560'},
-    {label:'2 coins', coins:2, color:'#ce93d8'},
-    {label:'15 coins', coins:15, color:'#0f3460'},
-    {label:'JACKPOT 50!', coins:50, color:'#f5a623'},
-    {label:'8 coins', coins:8, color:'#57c785'},
-    {label:'3 coins', coins:3, color:'#e94560'},
+    {label:'5 coins',    coins:5,  color:'#f5a623'},
+    {label:'10 coins',   coins:10, color:'#57c785'},
+    {label:'20 coins',   coins:20, color:'#e94560'},
+    {label:'2 coins',    coins:2,  color:'#ce93d8'},
+    {label:'15 coins',   coins:15, color:'#1565c0'},
+    {label:'JACKPOT 50', coins:50, color:'#f5a623'},
+    {label:'8 coins',    coins:8,  color:'#57c785'},
+    {label:'3 coins',    coins:3,  color:'#c62828'},
   ];
-  const box = document.getElementById('challenge-content');
-  let spinning = false;
-  let angle = 0;
-  let targetAngle = 0;
-  let animFrame = null;
 
+  const box = document.getElementById('challenge-content');
   box.innerHTML = `
     <div style="text-align:center">
       <div style="font-size:1.5rem;font-family:'Fredoka One',cursive;color:#f5a623;margin-bottom:10px">
         🎡 Titans Prijzenwiel!
       </div>
       <div style="position:relative;width:240px;height:240px;margin:0 auto 16px">
-        <canvas id="wheel-canvas" width="240" height="240"></canvas>
-        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:1.8rem">▼</div>
+        <canvas id="wheel-canvas" width="240" height="240" style="display:block"></canvas>
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+          font-size:2rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))">▼</div>
       </div>
-      <div id="wheel-result" style="font-family:'Fredoka One',cursive;font-size:1.1rem;color:#57c785;min-height:1.5rem;margin-bottom:12px"></div>
-      <button id="wheel-btn" onclick="spinWheel()" class="btn-primary" style="font-size:1rem;padding:12px 28px">
+      <div id="wheel-result" style="font-family:'Fredoka One',cursive;font-size:1.2rem;
+        color:#57c785;min-height:1.8rem;margin-bottom:12px"></div>
+      <button id="wheel-btn" class="btn-primary"
+        style="font-size:1rem;padding:12px 28px;position:relative;z-index:10"
+        ontouchend="wheelBtnTap(event)" onclick="wheelBtnTap(event)">
         🎡 DRAAIEN!
       </button>
-      <br><button onclick="closeChallenge()" class="btn-secondary" style="margin-top:8px">← Terug</button>
+      <br>
+      <button ontouchend="closeChallenge()" onclick="closeChallenge()"
+        class="btn-secondary" style="margin-top:8px">← Terug</button>
     </div>`;
 
-  drawWheel(angle, prizes);
+  // Initialiseer wheel state
+  window._wheel = {
+    prizes,
+    angle: 0,
+    spinning: false,
+    done: false,
+    winCoins: 0,
+    winLabel: '',
+    rafId: null,
+  };
 
-  window._wheelPrizes = prizes;
-  window._wheelAngle = 0;
-  window._wheelSpinning = false;
+  // Teken initial wheel
+  wheelDraw(0, prizes);
 }
 
-function drawWheel(angle, prizes) {
+function wheelDraw(angle, prizes) {
   const canvas = document.getElementById('wheel-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const cx = 120, cy = 120, r = 115;
+  const cx = 120, cy = 120, r = 112;
   const seg = (Math.PI * 2) / prizes.length;
-  ctx.clearRect(0,0,240,240);
+  ctx.clearRect(0, 0, 240, 240);
+
   prizes.forEach((p, i) => {
     const start = angle + i * seg;
+    const end = start + seg;
+    // Segment
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, start, start + seg);
+    ctx.arc(cx, cy, r, start, end);
     ctx.closePath();
     ctx.fillStyle = p.color;
     ctx.fill();
     ctx.strokeStyle = '#0d0d1a';
     ctx.lineWidth = 2;
     ctx.stroke();
-    // Text
+    // Tekst
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(start + seg/2);
+    ctx.rotate(start + seg / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 11px Fredoka One, sans-serif';
-    ctx.fillText(p.label, r - 8, 4);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 3;
+    ctx.fillText(p.label, r - 6, 4);
     ctx.restore();
   });
-  // Center circle
+
+  // Middencirkel
   ctx.beginPath();
-  ctx.arc(cx, cy, 18, 0, Math.PI*2);
+  ctx.arc(cx, cy, 20, 0, Math.PI * 2);
   ctx.fillStyle = '#0d0d1a';
   ctx.fill();
+  ctx.strokeStyle = '#f5a623';
+  ctx.lineWidth = 2;
+  ctx.stroke();
   ctx.fillStyle = '#f5a623';
-  ctx.font = 'bold 14px sans-serif';
+  ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('⚡', cx, cy+5);
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⚡', cx, cy);
+  ctx.textBaseline = 'alphabetic';
 }
 
-function spinWheel() {
-  if (window._wheelSpinning) return;
-  window._wheelSpinning = true;
-  const btn = document.getElementById('wheel-btn');
-  if (btn) btn.disabled = true;
+function wheelBtnTap(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const w = window._wheel;
+  if (!w) return;
+
+  if (w.done) {
+    // Claim beloning
+    closeChallenge();
+    const reward = LEVELS[currentLevelIdx]?.reward || 10;
+    const finalCoins = w.winCoins;
+    addCoins(finalCoins);
+    showToast(`🎡 ${w.winLabel} gewonnen! +${finalCoins} coins!`);
+    return;
+  }
+
+  if (w.spinning) return;
+  w.spinning = true;
   sfxBonus();
 
-  const prizes = window._wheelPrizes;
-  const extraSpins = 5 + Math.floor(Math.random() * 5); // 5-9 rondes
-  const randSegment = Math.floor(Math.random() * prizes.length);
-  const segAngle = (Math.PI * 2) / prizes.length;
-  const target = window._wheelAngle + (extraSpins * Math.PI * 2) + (randSegment * segAngle);
+  const btn = document.getElementById('wheel-btn');
+  if (btn) { btn.textContent = '⏳ Draait...'; btn.disabled = true; }
 
-  let start = null;
-  const duration = 3500;
+  const segCount = w.prizes.length;
+  const segAngle = (Math.PI * 2) / segCount;
 
-  function animate(ts) {
-    if (!start) start = ts;
-    const elapsed = ts - start;
+  // Kies willekeurig winnend segment
+  const winIdx = Math.floor(Math.random() * segCount);
+
+  // Bereken doelhoek: meerdere rondes + landing op winnend segment
+  const extraRounds = 5 + Math.floor(Math.random() * 4);
+  const startAngle = w.angle;
+  const targetAngle = startAngle + (extraRounds * Math.PI * 2) + (winIdx * segAngle) + (segAngle * 0.5);
+
+  const duration = 4000;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    // Ease out
-    const ease = 1 - Math.pow(1 - progress, 4);
-    window._wheelAngle = target * ease;
-    drawWheel(window._wheelAngle, prizes);
+
+    // Cubic ease-out
+    const ease = 1 - Math.pow(1 - progress, 3);
+    w.angle = startAngle + (targetAngle - startAngle) * ease;
+
+    wheelDraw(w.angle, w.prizes);
 
     if (progress < 1) {
-      requestAnimationFrame(animate);
+      w.rafId = requestAnimationFrame(animate);
     } else {
-      // Bepaal winnend segment
-      const normalized = ((window._wheelAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-      const winIdx = Math.floor(((Math.PI*2 - normalized) % (Math.PI*2)) / segAngle) % prizes.length;
-      const prize = prizes[winIdx];
+      // Animatie klaar
+      w.angle = targetAngle;
+      w.spinning = false;
+      w.done = true;
+
+      const prize = w.prizes[winIdx];
+      w.winCoins = prize.coins;
+      w.winLabel = prize.label;
+
+      // Toon resultaat
       const res = document.getElementById('wheel-result');
-      if (res) res.textContent = `🎉 ${prize.label}!`;
+      if (res) res.innerHTML = `🎉 <strong>${prize.label}</strong>!`;
+
       sfxLevelUp();
-      window._wheelSpinning = false;
+
       if (btn) {
-        btn.textContent = 'CLAIM! 🎁';
+        btn.textContent = `🎁 CLAIM ${prize.coins} coins!`;
         btn.disabled = false;
-        btn.onclick = () => { closeChallenge(); addCoins(prize.coins); showToast(`🎡 ${prize.label} gewonnen!`); };
+        btn.style.background = 'linear-gradient(135deg,#57c785,#2e7d32)';
       }
     }
   }
-  requestAnimationFrame(animate);
+
+  w.rafId = requestAnimationFrame(animate);
+
+  // Failsafe: als animatie niet afloopt na 6 sec (bijv. iOS background)
+  setTimeout(() => {
+    if (!w.done) {
+      w.spinning = false;
+      w.done = true;
+      const prize = w.prizes[winIdx];
+      w.winCoins = prize.coins;
+      w.winLabel = prize.label;
+      wheelDraw(w.angle, w.prizes);
+      const res = document.getElementById('wheel-result');
+      if (res) res.innerHTML = `🎉 <strong>${prize.label}</strong>!`;
+      const b = document.getElementById('wheel-btn');
+      if (b) { b.textContent = `🎁 CLAIM ${prize.coins} coins!`; b.disabled = false; }
+      sfxLevelUp();
+    }
+  }, 6000);
 }
 
 // 5b. MEMORY KAARTJES (2 of a kind)
@@ -7012,6 +7126,14 @@ function saveRegistration(reg) {
 }
 
 function checkRegistration() {
+  // Invite link: ?invite=1 → altijd registratiescherm tonen (nieuwe familie)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('invite') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    setTimeout(() => showAccessScreen(), 400);
+    return false;
+  }
+
   // Stap 1: Admin code al eerder ingevoerd? → altijd door
   const reg = getRegistration();
   if (reg && reg.approved) return true;
@@ -7778,6 +7900,210 @@ Begin met "Professor Finn: " en gebruik emoji's.`
 
   // Toon in ouder rapport
   showToast('💡 Idee verstuurd! Dank je!');
+}
+
+// ===== 🔧 REWARD MODAL FIX =====
+function handleRewardClick(e) {
+  // Tik buiten modal = ook sluiten
+  if (e.target.id === 'reward-modal') closeReward();
+}
+
+// ===== 🎯 DAGDOEL & DUOLINGO VIERING =====
+const DAILY_GOAL_LEVELS = 3; // 3 levels per dag = dagdoel
+const DAILY_GOAL_KEY = 'tp_daily_goal';
+
+function getDailyProgress() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DAILY_GOAL_KEY) || '{}');
+    const today = new Date().toDateString();
+    const pid = state.currentPlayer;
+    if (!d[pid] || d[pid].date !== today) {
+      return { date: today, levelsToday: 0, goalReached: false };
+    }
+    return d[pid];
+  } catch(e) { return { date: new Date().toDateString(), levelsToday: 0, goalReached: false }; }
+}
+
+function updateDailyProgress() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DAILY_GOAL_KEY) || '{}');
+    const today = new Date().toDateString();
+    const pid = state.currentPlayer;
+    if (!d[pid] || d[pid].date !== today) {
+      d[pid] = { date: today, levelsToday: 0, goalReached: false };
+    }
+    d[pid].levelsToday++;
+    const justReached = d[pid].levelsToday === DAILY_GOAL_LEVELS && !d[pid].goalReached;
+    if (justReached) d[pid].goalReached = true;
+    localStorage.setItem(DAILY_GOAL_KEY, JSON.stringify(d));
+    return { levelsToday: d[pid].levelsToday, justReached };
+  } catch(e) { return { levelsToday: 0, justReached: false }; }
+}
+
+function showDailyGoalCelebration(playerName) {
+  sfxLevelUp();
+  setTimeout(() => sfxPerfect(), 300);
+  setTimeout(() => sfxLevelUp(), 600);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'daily-cel';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;' +
+    'background:rgba(0,0,0,0.9);display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:center;text-align:center;padding:20px';
+
+  // Confetti canvas
+  const canvas = document.createElement('canvas');
+  canvas.id = 'daily-confetti';
+  canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none';
+  overlay.appendChild(canvas);
+
+  overlay.innerHTML += `
+    <div style="position:relative;z-index:2">
+      <!-- Toeter animatie -->
+      <div style="font-size:5rem;animation:tt-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1)">🎉</div>
+      <div style="font-size:3rem;margin:8px 0;animation:tt-bounce 0.5s 0.1s both">🎊🥳🎊</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2.2rem;color:#f5a623;
+        text-shadow:0 0 20px rgba(245,166,35,0.8);margin:10px 0;
+        animation:tt-bounce 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both">
+        DAGDOEL GEHAALD!
+      </div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.2rem;color:#57c785;margin-bottom:8px">
+        ⚡ ${playerName} heeft ${DAILY_GOAL_LEVELS} levels gespeeld!
+      </div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.7);margin-bottom:16px">
+        Wat een geweldige Titan! BOOYAH! 🏆
+      </div>
+      <!-- Titans reageren -->
+      <div style="font-size:2.5rem;margin-bottom:20px;animation:tt-bounce 0.5s 0.4s both">
+        🐦⭐🐸🌀🤖
+      </div>
+      <button onclick="document.getElementById('daily-cel').remove()"
+        style="padding:16px 40px;background:linear-gradient(135deg,#f5a623,#e94560);
+        color:white;border:none;border-radius:30px;font-family:'Fredoka One',cursive;
+        font-size:1.3rem;cursor:pointer;
+        box-shadow:0 6px 20px rgba(245,166,35,0.5);animation:pulse 1.5s infinite">
+        ⚡ TITANS GO! ⚡
+      </button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Start confetti
+  setTimeout(() => {
+    const c = document.getElementById('daily-confetti');
+    if (!c) return;
+    c.width = window.innerWidth; c.height = window.innerHeight;
+    const ctx = c.getContext('2d');
+    const pieces = Array.from({length:120}, () => ({
+      x: Math.random()*c.width, y: -20,
+      w: 8+Math.random()*10, h: 4+Math.random()*6,
+      color: ['#f5a623','#e94560','#57c785','#ce93d8','#90caf9','#fff'][Math.floor(Math.random()*6)],
+      vx: (Math.random()-0.5)*6, vy: 3+Math.random()*4,
+      rot: Math.random()*360, rotS: (Math.random()-0.5)*8,
+    }));
+    let frame = 0;
+    function draw() {
+      if (!document.getElementById('daily-confetti')) return;
+      ctx.clearRect(0,0,c.width,c.height);
+      pieces.forEach(p => {
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+        p.x+=p.vx; p.y+=p.vy; p.rot+=p.rotS; p.vy+=0.08;
+        if(p.y>c.height+20){p.y=-20;p.x=Math.random()*c.width;}
+      });
+      if(++frame<240) requestAnimationFrame(draw);
+    }
+    draw();
+  }, 100);
+
+  // Auto-sluiten na 8 seconden
+  setTimeout(() => document.getElementById('daily-cel')?.remove(), 8000);
+}
+
+// ===== 💰 SLIM BELONINGSSYSTEEM =====
+// Meer coins bij zwakste vaardigheid, extra feest bij doorbraak
+function getSmartReward(baseReward, type, wasCompleted) {
+  if (wasCompleted) return Math.floor(baseReward / 2);
+  const p = getPlayer();
+  const skills = p.skills || { spell:50, math:50, lang:50 };
+
+  // Bepaal zwakste vaardigheid
+  const skillMap = { spell: skills.spell||50, math: skills.math||50, lang: skills.lang||50 };
+  const typeSkillMap = { spell:'spell', math:'math', staal:'lang', topo:'lang',
+    boss:'math', speed:'math', memory:'spell', ontdekking:'lang' };
+  const relevantSkill = typeSkillMap[type] || 'spell';
+  const minSkill = Math.min(...Object.values(skillMap));
+  const isWeakest = skillMap[relevantSkill] === minSkill && minSkill < 70;
+
+  // Bonus multiplier voor zwakste vaardigheid
+  let multiplier = 1.0;
+  if (isWeakest) multiplier = 1.5; // 50% meer bij zwakste vaardigheid
+
+  return Math.round(baseReward * multiplier);
+}
+
+function checkBreakthrough(type, oldSkill, newSkill) {
+  // Doorbraak: over een drempel heen (35, 65, 100, 110)
+  const thresholds = [35, 65, 100, 110];
+  for (const t of thresholds) {
+    if (oldSkill < t && newSkill >= t) return t;
+  }
+  return null;
+}
+
+function showBreakthroughCelebration(type, threshold) {
+  const labels = { spell:'Spellen', math:'Rekenen', lang:'Taal', staal:'Taal' };
+  const levels = { 35:'⚡ Standaard', 65:'🔥 Moeilijk', 100:'🏆 Expert', 110:'🌀 Titan' };
+  const label = labels[type] || 'Vaardigheid';
+  const level = levels[threshold] || 'Nieuw niveau';
+
+  sfxLevelUp();
+  setTimeout(() => sfxPerfect(), 400);
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
+    'z-index:1500;background:#1a1a2e;border:3px solid #f5a623;border-radius:24px;' +
+    'padding:24px 20px;text-align:center;max-width:280px;width:90%;' +
+    'box-shadow:0 0 50px rgba(245,166,35,0.5);' +
+    'animation:tt-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+  overlay.innerHTML = `
+    <div style="font-size:3.5rem;margin-bottom:8px">🚀</div>
+    <div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#f5a623">
+      DOORBRAAK!
+    </div>
+    <div style="font-family:'Fredoka One',cursive;color:white;font-size:1rem;margin:8px 0">
+      ${label}: ${level}!
+    </div>
+    <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin:8px 0">
+      Je hebt een nieuw niveau bereikt! 🎉<br>
+      <span style="color:#f5a623">+50% bonus coins</span> bij ${label} opdrachten!
+    </div>
+    <button onclick="this.parentElement.remove()"
+      style="margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#f5a623,#e94560);
+      color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+      font-size:0.95rem;cursor:pointer">
+      BOOYAH! ⚡
+    </button>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 6000);
+}
+
+// ===== 🔗 DEELLINK FIX =====
+// Genereer een invite link die NIET de eigen data laadt
+const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
+const INVITE_URL = SHARE_URL + '?invite=1';
+
+function copyShareLink() {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(INVITE_URL).then(() => showToast('📋 Uitnodigingslink gekopieerd!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = INVITE_URL; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    ta.remove();
+    showToast('📋 Link gekopieerd!');
+  }
 }
 
 // ===== INIT =====
