@@ -514,23 +514,8 @@
   <div class="home-content">
     <div class="welcome-title">⚡ TitansPad</div>
     <div class="welcome-sub" id="home-sub">Tik op jouw naam!</div>
-    <div class="player-select">
-      <div class="player-card" onclick="selectAndStart(0)" id="card-0">
-        <div class="player-avatar" id="av-0">🦁</div>
-        <div class="player-name" id="pname-0">Speler 1</div>
-        <div class="player-info" id="info-0">Groep 4</div>
-        <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
-          Tik om te spelen!
-        </div>
-      </div>
-      <div class="player-card" onclick="selectAndStart(1)" id="card-1">
-        <div class="player-avatar" id="av-1">🐯</div>
-        <div class="player-name" id="pname-1">Speler 2</div>
-        <div class="player-info" id="info-1">Groep 2</div>
-        <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
-          Tik om te spelen!
-        </div>
-      </div>
+    <div class="player-select" id="player-select-container">
+      <!-- Wordt gevuld door renderHome() -->
     </div>
     <div id="home-progress" style="margin-top:12px"></div>
   </div>
@@ -763,13 +748,29 @@ function loadState() {
 
 loadState();
 
-// Fix: als opgeslagen namen generiek zijn, herstel de echte namen
-if (state.players[0] && (state.players[0].name === 'Speler 1' || state.players[0].name === 'Kind 1')) {
-  state.players[0].name = 'Mila'; state.players[0].avatar = '🦁';
-}
-if (state.players[1] && (state.players[1].name === 'Speler 2' || state.players[1].name === 'Kind 2')) {
-  state.players[1].name = 'Dewi'; state.players[1].avatar = '🐯';
-}
+// NAAM FIX: herstel echte namen als de opgeslagen namen generiek zijn
+// Dit kan gebeuren als het registratiesysteem generieke namen heeft opgeslagen
+(function fixNames() {
+  const genericNames = ['Speler 1','Speler 2','Speler 3','Speler 4',
+                        'Kind 1','Kind 2','Kind 3','Kind 4',''];
+  const defaults = [
+    { name:'Mila', avatar:'🦁', grade:4 },
+    { name:'Dewi', avatar:'🐯', grade:2 },
+  ];
+  let changed = false;
+  state.players.forEach((p, i) => {
+    if (defaults[i] && (!p.name || genericNames.includes(p.name))) {
+      p.name   = defaults[i].name;
+      p.avatar = defaults[i].avatar;
+      if (!p.grade) p.grade = defaults[i].grade;
+      changed = true;
+    }
+  });
+  // Sla direct op zodat dit niet steeds opnieuw gebeurt
+  if (changed) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e) {}
+  }
+})();
 
 function getPlayer() { return state.players[state.currentPlayer]; }
 function getCoins() { return getPlayer().coins; }
@@ -1390,7 +1391,6 @@ const AVATAR_ITEMS = [
 
 // ===== NAVIGATION =====
 function navigate(screen) {
-function navigate(screen) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
@@ -1822,10 +1822,6 @@ function closeChallenge() {
 }
 
 // LIVES HTML
-
-function closeChallenge() {
-  document.getElementById('challenge-modal').classList.remove('open');
-}
 
 // LIVES HTML
 function livesHtml(lives) {
@@ -2557,26 +2553,6 @@ function skipBonusAndContinue() {
 
 // Override langAnswered to call callback
 const _origLangAnswered = langAnswered;
-function langAnswered(done) {
-  if (!done) {
-    showToast(`Zeg het hardop! 🗣️`);
-    return;
-  }
-  const ms = Date.now() - (langStartTime||Date.now());
-  const ch = currentLangChallenge;
-  recordAnswer('lang', true, ms);
-  closeChallenge();
-  const cb = window._bonusCallback;
-  window._bonusCallback = null;
-  if (cb) {
-    cb();
-    setTimeout(() => completeChallenge(ch.reward, true), 300);
-  } else {
-    completeChallenge(ch.reward, true);
-  }
-  showToast(`🌍 +${ch.reward} muntjes! Super ${ch.langName}!`);
-}
-
 function shuffleArr(arr) {
   for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
   return arr;
@@ -4327,35 +4303,36 @@ function renderHome() {
   const p = getPlayer();
   const worldIdx = Math.min(Math.floor((p.level||0)/5),49);
   const world = WORLDS[worldIdx];
-  const prog = document.getElementById('home-progress');
   const sd = p.streakData || {};
   const fb = getSkillFeedback(state.currentPlayer);
 
-  // Update alle speler kaarten dynamisch
-  state.players.forEach((pl, i) => {
-    const nameEl = document.getElementById(`pname-${i}`);
-    const avEl   = document.getElementById(`av-${i}`);
-    const infoEl = document.getElementById(`info-${i}`);
-    const wIdx   = Math.min(Math.floor((pl.level||0)/5),49);
-    const w      = WORLDS[wIdx];
-    if (nameEl) nameEl.textContent = pl.name || `Speler ${i+1}`;
-    if (avEl)   avEl.textContent   = pl.avatar || '⭐';
-    if (infoEl) {
-      if (i === state.currentPlayer) {
-        infoEl.textContent = `${w.icon} Wereld ${wIdx+1} · 🪙${pl.coins}`;
-      } else {
-        infoEl.textContent = `Groep ${pl.grade||2}`;
-      }
-    }
-    // Highlight geselecteerde kaart
-    const card = document.getElementById(`card-${i}`);
-    if (card) {
-      card.style.borderColor = i === state.currentPlayer ? '#f5a623' : 'transparent';
-      card.style.background  = i === state.currentPlayer ? '#1a3060' : '#1a2744';
-    }
-  });
+  // Bouw speler kaarten direct vanuit state (geen DOM-update nodig)
+  const container = document.getElementById('player-select-container');
+  if (container) {
+    container.innerHTML = state.players.map((pl, i) => {
+      const wIdx = Math.min(Math.floor((pl.level||0)/5),49);
+      const w = WORLDS[wIdx];
+      const isSelected = i === state.currentPlayer;
+      return `
+        <div class="player-card" id="card-${i}"
+          onclick="selectAndStart(${i})"
+          style="border-color:${isSelected?'#f5a623':'transparent'};
+                 background:${isSelected?'#1a3060':'#1a2744'}">
+          <div class="player-avatar" id="av-${i}">${pl.avatar||'⭐'}</div>
+          <div class="player-name" id="pname-${i}">${pl.name||'Speler '+(i+1)}</div>
+          <div class="player-info" id="info-${i}">
+            ${isSelected ? `${w.icon} Wereld ${wIdx+1} · 🪙${pl.coins||0}` : `Groep ${pl.grade||2}`}
+          </div>
+          <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
+            Tik om te spelen!
+          </div>
+        </div>`;
+    }).join('');
+  }
 
+  const prog = document.getElementById('home-progress');
   if (!prog) return;
+
   prog.innerHTML = `
     <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:left">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -4379,26 +4356,24 @@ function renderHome() {
           </div>`).join('')}
       </div>
       ${fb.msg ? `<div style="margin-top:8px;font-size:0.8rem;color:#57c785;text-align:center">${fb.msg}</div>` : ''}
-      <!-- Dagdoel voortgang -->
-      ${(() => {
-        const daily = getDailyProgress();
-        const pct = Math.min(100, Math.round((daily.levelsToday / DAILY_GOAL_LEVELS) * 100));
-        return `<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:#ce93d8">
-              🎯 Dagdoel
-            </span>
+      <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        ${(() => {
+          const daily = getDailyProgress();
+          const pct = Math.min(100, Math.round((daily.levelsToday / DAILY_GOAL_LEVELS) * 100));
+          return `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:#ce93d8">🎯 Dagdoel</span>
             <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:${daily.goalReached?'#57c785':'#f5a623'}">
               ${daily.levelsToday}/${DAILY_GOAL_LEVELS} ${daily.goalReached?'✅':''}
             </span>
           </div>
           <div style="background:rgba(255,255,255,0.1);border-radius:6px;height:6px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${daily.goalReached?'#57c785':'linear-gradient(90deg,#ce93d8,#f5a623)'};border-radius:6px;transition:width 0.3s"></div>
-          </div>
-        </div>`;
-      })()}
-    </div>\`;
+            <div style="width:${pct}%;height:100%;background:${daily.goalReached?'#57c785':'linear-gradient(90deg,#ce93d8,#f5a623)'};border-radius:6px"></div>
+          </div>`;
+        })()}
+      </div>
+    </div>`;
 }
+
 
 // ===== 🎁 VERRASSING & BONUS CHALLENGES =====
 
@@ -7099,7 +7074,6 @@ function finishDiscovery(reward, perfect) {
 
 const REG_KEY   = 'tp_registered';
 const SAVE_KEY2 = 'sterrenpad_v4'; // zelfde als de app save key
-const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
 
 // Controleer of er bestaande spelersdata is — DIRECT uit localStorage
 function hasExistingGameData() {
@@ -7472,20 +7446,6 @@ function adminApproveCode() {
     setTimeout(() => navigate('home'), 500);
   } else if (code !== null) {
     showToast('❌ Onjuiste code', true);
-  }
-}
-
-function copyShareLink() {
-  const link = SHARE_URL;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(link).then(() => showToast('📋 Link gekopieerd!'));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = link; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    ta.remove();
-    showToast('📋 Link gekopieerd!');
   }
 }
 
