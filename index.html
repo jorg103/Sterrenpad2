@@ -4090,7 +4090,8 @@ function getExpertMath(playerIdx, noDivision) {
 // Voortgangsrapportje voor kind
 function getSkillFeedback(playerIdx) {
   const p = state.players[playerIdx];
-  if (!p.skills) return '';
+  const defaultFb = { msg:'', correctCount:0, avgMs:0, spellTrend:0, mathTrend:0, spell:5, math:5, lang:5 };
+  if (!p || !p.skills) return defaultFb;
   const recent = (p.history||[]).slice(-10);
   const correctCount = recent.filter(r=>r.correct).length;
   const avgMs = recent.length ? Math.round(recent.reduce((s,r)=>s+r.ms,0)/recent.length/1000) : 0;
@@ -4103,7 +4104,9 @@ function getSkillFeedback(playerIdx) {
   const spellTrend = getSkillTrend(p.history, 'spell');
   const mathTrend  = getSkillTrend(p.history, 'math');
   return { msg, correctCount, avgMs, spellTrend, mathTrend,
-           spell: Math.round(((p.skills.spell||50)/120)*12*10)/10, math: Math.round(((p.skills.math||50)/120)*12*10)/10, lang: Math.round(((p.skills.lang||50)/120)*12*10)/10 };
+           spell: Math.round(((p.skills.spell||50)/120)*12*10)/10,
+           math:  Math.round(((p.skills.math||50)/120)*12*10)/10,
+           lang:  Math.round(((p.skills.lang||50)/120)*12*10)/10 };
 }
 
 function getSkillTrend(history, type) {
@@ -4300,78 +4303,95 @@ function renderProgressDashboard() {
 
 // Inject progress into home screen
 function renderHome() {
-  const p = getPlayer();
-  const worldIdx = Math.min(Math.floor((p.level||0)/5),49);
-  const world = WORLDS[worldIdx];
-  const sd = p.streakData || {};
-  const fb = getSkillFeedback(state.currentPlayer);
+  try {
+    const p = getPlayer();
+    if (!p) return;
+    const worldIdx = Math.min(Math.floor((p.level||0)/5),49);
+    const world = WORLDS[worldIdx] || WORLDS[0];
+    const sd = p.streakData || {};
+    const fb = getSkillFeedback(state.currentPlayer);
 
-  // Bouw speler kaarten direct vanuit state (geen DOM-update nodig)
-  const container = document.getElementById('player-select-container');
-  if (container) {
-    container.innerHTML = state.players.map((pl, i) => {
-      const wIdx = Math.min(Math.floor((pl.level||0)/5),49);
-      const w = WORLDS[wIdx];
-      const isSelected = i === state.currentPlayer;
-      return `
-        <div class="player-card" id="card-${i}"
-          onclick="selectAndStart(${i})"
-          style="border-color:${isSelected?'#f5a623':'transparent'};
-                 background:${isSelected?'#1a3060':'#1a2744'}">
-          <div class="player-avatar" id="av-${i}">${pl.avatar||'⭐'}</div>
+    const container = document.getElementById('player-select-container');
+    if (container) {
+      container.innerHTML = state.players.map((pl, i) => {
+        const wIdx = Math.min(Math.floor((pl.level||0)/5),49);
+        const w = WORLDS[wIdx] || WORLDS[0];
+        const isSel = i === state.currentPlayer;
+        return `<div class="player-card" id="card-${i}" onclick="selectAndStart(${i})"
+          style="border-color:${isSel?'#f5a623':'transparent'};background:${isSel?'#1a3060':'#1a2744'}">
+          <div class="player-avatar" id="av-${i}">${pl.avatar||'\u2B50'}</div>
           <div class="player-name" id="pname-${i}">${pl.name||'Speler '+(i+1)}</div>
-          <div class="player-info" id="info-${i}">
-            ${isSelected ? `${w.icon} Wereld ${wIdx+1} · 🪙${pl.coins||0}` : `Groep ${pl.grade||2}`}
-          </div>
-          <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">
-            Tik om te spelen!
-          </div>
+          <div class="player-info" id="info-${i}">${isSel?w.icon+' Wereld '+(wIdx+1)+' \u{1FA99}'+(pl.coins||0):'Groep '+(pl.grade||2)}</div>
+          <div style="font-size:0.75rem;color:#57c785;margin-top:4px;font-family:'Fredoka One',cursive">Tik om te spelen!</div>
         </div>`;
-    }).join('');
-  }
+      }).join('');
+    }
 
-  const prog = document.getElementById('home-progress');
-  if (!prog) return;
+    const prog = document.getElementById('home-progress');
+    if (!prog) return;
 
-  prog.innerHTML = `
-    <div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:left">
+    const spellVal = fb.spell || 5;
+    const mathVal  = fb.math  || 5;
+    const langVal  = fb.lang  || 5;
+    const levelPct = Math.round(((p.level||0)%5)/5*100);
+
+    let dailyBar = '';
+    try {
+      const daily = getDailyProgress();
+      const dpct = Math.min(100, Math.round((daily.levelsToday/DAILY_GOAL_LEVELS)*100));
+      dailyBar = `<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:#ce93d8">\uD83C\uDFAF Dagdoel</span>
+          <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:${daily.goalReached?'#57c785':'#f5a623'}">${daily.levelsToday}/${DAILY_GOAL_LEVELS}${daily.goalReached?' \u2705':''}</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:6px;height:6px;overflow:hidden">
+          <div style="width:${dpct}%;height:100%;background:${daily.goalReached?'#57c785':'linear-gradient(90deg,#ce93d8,#f5a623)'};border-radius:6px"></div>
+        </div>
+      </div>`;
+    } catch(e2) {}
+
+    prog.innerHTML = `<div style="background:rgba(255,255,255,0.08);border-radius:16px;padding:14px;text-align:left">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem">
-          ${world.icon} ${world.name}
-          ${isEarlyReader(state.currentPlayer) ? '<span style="font-size:0.7rem;color:#ce93d8;margin-left:6px">🔊 Voorleesmodus</span>' : ''}
-        </div>
-        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">
-          ${sd.streak>0?`🔥 ${sd.streak} dagen`:''}
-        </div>
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem">${world.icon} ${world.name}</div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">${sd.streak>0?'\uD83D\uDD25 '+sd.streak+' dagen':''}</div>
       </div>
       <div style="background:rgba(255,255,255,0.1);border-radius:8px;height:6px;margin-bottom:10px;overflow:hidden">
-        <div style="width:${Math.round(((p.level||0)%5)/5*100)}%;height:100%;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:8px"></div>
+        <div style="width:${levelPct}%;height:100%;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:8px"></div>
       </div>
       <div style="display:flex;gap:6px;justify-content:space-between">
-        ${[['⚡',fb.spell,'Spellen'],['🧠',fb.math,'Rekenen'],['🌍',fb.lang,'Taal']].map(([icon,val,label])=>`
-          <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:6px;text-align:center">
-            <div style="font-size:0.85rem">${icon}</div>
-            <div style="font-family:'Fredoka One',cursive;font-size:0.9rem;color:#f5a623">${val}</div>
-            <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">${label}</div>
-          </div>`).join('')}
+        <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:6px;text-align:center">
+          <div style="font-size:0.85rem">\u26A1</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:0.9rem;color:#f5a623">${spellVal}</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">Spellen</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:6px;text-align:center">
+          <div style="font-size:0.85rem">\uD83E\uDDE0</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:0.9rem;color:#f5a623">${mathVal}</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">Rekenen</div>
+        </div>
+        <div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:6px;text-align:center">
+          <div style="font-size:0.85rem">\uD83C\uDF0D</div>
+          <div style="font-family:'Fredoka One',cursive;font-size:0.9rem;color:#f5a623">${langVal}</div>
+          <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">Taal</div>
+        </div>
       </div>
-      ${fb.msg ? `<div style="margin-top:8px;font-size:0.8rem;color:#57c785;text-align:center">${fb.msg}</div>` : ''}
-      <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
-        ${(() => {
-          const daily = getDailyProgress();
-          const pct = Math.min(100, Math.round((daily.levelsToday / DAILY_GOAL_LEVELS) * 100));
-          return `<div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:#ce93d8">🎯 Dagdoel</span>
-            <span style="font-family:'Fredoka One',cursive;font-size:0.78rem;color:${daily.goalReached?'#57c785':'#f5a623'}">
-              ${daily.levelsToday}/${DAILY_GOAL_LEVELS} ${daily.goalReached?'✅':''}
-            </span>
-          </div>
-          <div style="background:rgba(255,255,255,0.1);border-radius:6px;height:6px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${daily.goalReached?'#57c785':'linear-gradient(90deg,#ce93d8,#f5a623)'};border-radius:6px"></div>
-          </div>`;
-        })()}
-      </div>
+      ${fb.msg?'<div style="margin-top:8px;font-size:0.8rem;color:#57c785;text-align:center">'+fb.msg+'</div>':''}
+      ${dailyBar}
     </div>`;
+  } catch(e) {
+    console.error('renderHome fout:', e);
+    // Fallback: toon minimale kaarten
+    const container = document.getElementById('player-select-container');
+    if (container) {
+      container.innerHTML = state.players.map((pl,i) =>
+        `<div class="player-card" onclick="selectAndStart(${i})">
+          <div class="player-avatar">${pl.avatar||'\u2B50'}</div>
+          <div class="player-name">${pl.name||'Speler '+(i+1)}</div>
+          <div style="color:#57c785;font-family:'Fredoka One',cursive;font-size:0.8rem">Tik om te spelen!</div>
+        </div>`
+      ).join('');
+    }
+  }
 }
 
 
