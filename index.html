@@ -36,9 +36,11 @@
   body {
     font-family: 'Nunito', sans-serif;
     background: #0d0d1a;
-    height: 100vh;
-    overflow: hidden; /* nooit body scrollen */
+    min-height: 100vh;
+    overflow-x: hidden;
     color: #e0e0e0;
+    padding-top: 62px;   /* ruimte voor fixed header */
+    padding-bottom: 70px; /* ruimte voor fixed nav */
   }
 
   /* ===== HEADER ===== */
@@ -67,19 +69,15 @@
   @keyframes spin-slow { 0%,100%{transform:rotateY(0deg)} 50%{transform:rotateY(180deg)} }
   .coin-count { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--sun); }
 
-  /* ===== SCREENS — werkende tab layout met scroll ===== */
+  /* ===== SCREENS ===== */
   html {
     scroll-behavior: auto !important;
-    overflow-x: hidden;
-  }
-  body {
-    overflow-x: hidden;
-    overflow-y: auto; /* body mag scrollen per tab */
   }
   .screen {
     display: none;
-    min-height: calc(100vh - 130px);
-    padding-bottom: 90px; /* ruimte voor nav balk */
+    padding-top: 70px;    /* ruimte voor vaste header */
+    padding-bottom: 80px; /* ruimte voor vaste nav */
+    min-height: 100vh;
   }
   .screen.active { display: block; }
 
@@ -1417,8 +1415,6 @@ function navigate(screen) {
   if (screen === 'wallet') renderWallet();
   if (screen === 'parent') renderParentReport();
 
-  // Scroll naar boven na render
-  setTimeout(() => window.scrollTo(0,0), 50);
 }
 
 function selectPlayer(i) {
