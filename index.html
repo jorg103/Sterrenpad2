@@ -67,20 +67,15 @@
   @keyframes spin-slow { 0%,100%{transform:rotateY(0deg)} 50%{transform:rotateY(180deg)} }
   .coin-count { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--sun); }
 
-  /* ===== SCREENS — echte tabs, geen body scroll ===== */
+  /* ===== SCREENS — simpele werkende tab layout ===== */
   html, body {
-    height: 100%;
-    overflow: hidden;
     scroll-behavior: auto !important;
+    overflow-x: hidden;
   }
   .screen {
     display: none;
-    position: fixed;
-    top: var(--header-h, 62px);
-    left: 0; right: 0;
-    bottom: var(--nav-h, 62px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: calc(100vh - 130px);
+    padding-bottom: 80px;
   }
   .screen.active { display: block; }
 
@@ -768,6 +763,14 @@ function loadState() {
 
 loadState();
 
+// Fix: als opgeslagen namen generiek zijn, herstel de echte namen
+if (state.players[0] && (state.players[0].name === 'Speler 1' || state.players[0].name === 'Kind 1')) {
+  state.players[0].name = 'Mila'; state.players[0].avatar = '🦁';
+}
+if (state.players[1] && (state.players[1].name === 'Speler 2' || state.players[1].name === 'Kind 2')) {
+  state.players[1].name = 'Dewi'; state.players[1].avatar = '🐯';
+}
+
 function getPlayer() { return state.players[state.currentPlayer]; }
 function getCoins() { return getPlayer().coins; }
 function addCoins(n) {
@@ -1388,16 +1391,12 @@ const AVATAR_ITEMS = [
 // ===== NAVIGATION =====
 function navigate(screen) {
 function navigate(screen) {
-  // Verberg alle schermen
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
-  // Toon gevraagd scherm
   const el = document.getElementById(screen + '-screen');
   if (el) {
     el.classList.add('active');
-    el.scrollTop = 0; // scroll dit scherm naar boven
-    // 3D transitie
     el.classList.remove('screen-entering');
     void el.offsetWidth;
     el.classList.add('screen-entering');
@@ -1407,13 +1406,15 @@ function navigate(screen) {
   const navBtn = document.getElementById('nav-' + screen);
   if (navBtn) navBtn.classList.add('active');
 
-  // Render scherm inhoud
   if (screen === 'map')    renderMap();
   if (screen === 'shop')   renderShop();
   if (screen === 'home')   renderHome();
   if (screen === 'avatar') renderAvatarBuilder();
   if (screen === 'wallet') renderWallet();
   if (screen === 'parent') renderParentReport();
+
+  // Scroll naar boven na render
+  setTimeout(() => window.scrollTo(0,0), 50);
 }
 
 function selectPlayer(i) {
@@ -8133,26 +8134,14 @@ state.players.forEach(p => {
 // DOM-afhankelijke init — wacht tot DOM klaar is
 function initApp() {
   try {
-    // Meet echte header en nav hoogte en stel CSS variabelen in
-    const setHeights = () => {
-      const header = document.querySelector('header');
-      const nav    = document.querySelector('.bottom-nav');
-      if (header) document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
-      if (nav)    document.documentElement.style.setProperty('--nav-h',    nav.offsetHeight    + 'px');
-    };
-    setHeights();
-    window.addEventListener('resize', setHeights);
-
     loadAudioPrefs();
     updateCoinDisplay();
     setWorldForPlayer();
-    renderHome();   // renders met "Speler 1/2" als placeholder
+    renderHome();
     selectPlayer(0);
 
     setTimeout(() => { updateMusicBtn(); updateSfxBtn(); }, 100);
     setTimeout(() => checkAndAwardBadges(), 1500);
-
-    // Tijdslimiet en Finn tips
     setInterval(() => checkTimeLimit(), 60000);
     setInterval(() => {
       if (document.getElementById('home-screen')?.classList.contains('active')) showFinnTip('algemeen');
@@ -8160,7 +8149,7 @@ function initApp() {
 
     checkFamilySetup();
 
-    // Laad cloud data — renderHome opnieuw daarna met echte namen
+    // Cloud sync — renderHome opnieuw met cloud namen als die er zijn
     loadFromCloud().then(loaded => {
       if (loaded) {
         state.players.forEach(p => {
@@ -8174,15 +8163,10 @@ function initApp() {
         });
         updateCoinDisplay();
         setWorldForPlayer();
-        renderHome(); // nu met echte namen
-        selectPlayer(0);
+        renderHome();
       }
       setTimeout(() => checkRegistration(), 300);
-    }).catch(() => {
-      // Geen cloud — gebruik lokale data (namen staan al in state via loadState)
-      renderHome(); // opnieuw renderen met lokale namen
-      setTimeout(() => checkRegistration(), 300);
-    });
+    }).catch(() => setTimeout(() => checkRegistration(), 300));
 
   } catch(e) {
     console.error('Init fout:', e);
