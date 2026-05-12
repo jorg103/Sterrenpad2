@@ -67,15 +67,19 @@
   @keyframes spin-slow { 0%,100%{transform:rotateY(0deg)} 50%{transform:rotateY(180deg)} }
   .coin-count { font-family: 'Fredoka One', cursive; font-size: 1.3rem; color: var(--sun); }
 
-  /* ===== SCREENS — simpele werkende tab layout ===== */
-  html, body {
+  /* ===== SCREENS — werkende tab layout met scroll ===== */
+  html {
     scroll-behavior: auto !important;
     overflow-x: hidden;
+  }
+  body {
+    overflow-x: hidden;
+    overflow-y: auto; /* body mag scrollen per tab */
   }
   .screen {
     display: none;
     min-height: calc(100vh - 130px);
-    padding-bottom: 80px;
+    padding-bottom: 90px; /* ruimte voor nav balk */
   }
   .screen.active { display: block; }
 
@@ -7469,6 +7473,39 @@ function adminApproveCode() {
   }
 }
 
+function shareViaWhatsApp() {
+  const msg = `Hé! 👋
+
+Mijn kinderen gebruiken *SterrenPad* — een leuke leer-app waarbij ze Titan Coins verdienen door sommen, spelling en mini-spelletjes te doen. Ze kunnen sparen voor echte beloningen!
+
+📲 Download de app hier:
+${INVITE_URL}
+
+*Hoe werkt het?*
+1. Open de link op je telefoon
+2. Registreer je familie (naam + kinderen)
+3. Stuur mij een berichtje zodat ik je kan goedkeuren
+4. Voer de code in die je krijgt → direct aan de slag! ⚡
+
+Vragen? Gewoon sturen! 😊`;
+
+  const encoded = encodeURIComponent(msg);
+  const url = `https://wa.me/?text=${encoded}`;
+  window.open(url, '_blank');
+}
+
+function shareViaNative() {
+  const msg = `Hé! 👋 Mijn kinderen gebruiken SterrenPad — een leuke leer-app met Titan Coins, sommen en mini-spelletjes!\n\nDownload hier: ${INVITE_URL}\n\nRegistreer je, stuur mij een berichtje en ik geef je de toegangscode! ⚡`;
+  if (navigator.share) {
+    navigator.share({ title: 'SterrenPad', text: msg, url: INVITE_URL })
+      .catch(() => shareViaWhatsApp());
+  } else {
+    shareViaWhatsApp();
+  }
+}
+
+
+
 async function renderPendingApprovals() {
   const reg = getRegistration();
 
@@ -7488,22 +7525,36 @@ async function renderPendingApprovals() {
     <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
       border:1px solid rgba(87,199,133,0.3)">
       <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">
-        🔗 SterrenPad Delen
+        \uD83D\uDD17 Uitnodigen & Delen
       </div>
-      <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px;
+      <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:10px;
         font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">
-        ${SHARE_URL}
+        ${INVITE_URL}
       </div>
-      <button onclick="copyShareLink()" style="width:100%;padding:10px;
-        background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
-        border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;margin-bottom:8px">
-        📋 Kopieer Uitnodigingslink
-      </button>
-      <div style="font-size:0.75rem;color:rgba(255,255,255,0.4)">
-        Code voor nieuwe families: <strong style="color:#f5a623">TITANS2024</strong>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button onclick="shareViaWhatsApp()"
+          style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#25D366,#128C7E);
+          color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+          font-size:0.82rem;cursor:pointer">
+          \uD83D\uDCAC WhatsApp
+        </button>
+        <button onclick="shareViaNative()"
+          style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#1565c0,#42a5f5);
+          color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
+          font-size:0.82rem;cursor:pointer">
+          \uD83D\uDCE4 Deel via...
+        </button>
+        <button onclick="copyShareLink()"
+          style="flex:1;padding:11px 6px;background:rgba(245,166,35,0.2);
+          border:1px solid rgba(245,166,35,0.4);border-radius:12px;color:#f5a623;
+          font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">
+          \uD83D\uDCCB Kopieer
+        </button>
+      </div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">
+        Nieuwe familie voert code <strong style="color:#f5a623">TITANS2024</strong> in voor toegang
       </div>
     </div>
-
     ${pendingFamilies.length > 0 ? `
     <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
       border:2px solid #f5a623">
