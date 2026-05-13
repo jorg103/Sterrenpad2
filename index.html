@@ -6506,12 +6506,23 @@ function wheelClaimAll(e) {
   const w = window._wheel;
   if (!w) return;
   const total = w.totalCoins || 0;
-  closeChallenge();
+  const spinsUsed = (w.spinsTotal || 1) - (w.spinsLeft || 0);
+  const perfect = w.spinsTotal >= 3 && total >= 30;
+
+  // Sluit modal EN voltooi het level correct
+  document.getElementById('reward-modal')?.classList.remove('open');
+  document.getElementById('challenge-modal')?.classList.remove('open');
+  bStopGame?.();
+
+  // Voeg coins toe en voltooi level
   if (total > 0) {
     addCoins(total);
     showToast(`🎡 +${total} coins gewonnen! BOOYAH!`);
     sfxLevelUp();
   }
+
+  // Markeer level als voltooid zodat je verder kunt
+  completeChallenge(0, perfect); // 0 extra coins want al via addCoins gedaan
 }
 
 // Aankondiging in challenge dat extra draaibeurten gewonnen kunnen worden
@@ -6558,9 +6569,9 @@ function showMemoryCards() {
   window._memTimeout = setTimeout(() => {
     if (document.getElementById('mem-grid')) {
       const earned = Math.max(2, Math.floor(memMatched.length / 2) * 3);
-      closeChallenge();
       addCoins(earned);
       showToast(`⏰ Tijd! ${memMatched.length/2} paren gevonden. +${earned} coins`);
+      completeChallenge(0, false);
     }
   }, 90000);
   renderMemoryCards();
@@ -6611,9 +6622,9 @@ function flipMemCard(idx) {
         const reward = Math.max(5, 40 - memMoves - Math.floor(timeSec/10));
         setTimeout(() => {
           sfxLevelUp();
-          closeChallenge();
           addCoins(reward);
           showToast(`🃏 Gewonnen in ${memMoves} zetten (${timeSec}s)! +${reward} coins!`);
+          completeChallenge(0, memMoves <= 10);
         }, 500);
       } else {
         setTimeout(renderMemoryCards, 300);
@@ -6665,9 +6676,9 @@ function startBallonPrikken() {
       const res = document.getElementById('bp-score');
       if (res) res.parentElement.style.color = '#57c785';
       setTimeout(() => {
-        closeChallenge();
         addCoins(reward);
         showToast(`🎈 ${bPrikScore} ballonnen! +${reward} coins!`);
+        completeChallenge(0, bPrikScore >= 15);
       }, 500);
     }
   }, 1000);
@@ -8353,7 +8364,7 @@ function simonTap(idx) {
     const reward = Math.max(2, (simonLevel - 1) * 4);
     const msg = document.getElementById('simon-msg');
     if (msg) msg.textContent = `❌ Fout! Je haalde ronde ${simonLevel-1}. +${reward} coins`;
-    setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🧠 Ronde ${simonLevel-1} gehaald! +${reward} coins`); }, 1200);
+    setTimeout(() => { addCoins(reward); showToast(`🧠 Ronde ${simonLevel-1} gehaald! +${reward} coins`); completeChallenge(0, false); }, 1200);
     return;
   }
 
@@ -8366,7 +8377,7 @@ function simonTap(idx) {
       const msg = document.getElementById('simon-msg');
       if (msg) msg.textContent = `🏆 GEWELDIG! Alle rondes! +${reward} coins!`;
       sfxLevelUp();
-      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🧠 Simon Says gewonnen! +${reward} coins!`); }, 1200);
+      setTimeout(() => { addCoins(reward); showToast(`🧠 Simon Says gewonnen! +${reward} coins!`); completeChallenge(0, true); }, 1200);
     } else {
       const msg = document.getElementById('simon-msg');
       if (msg) msg.textContent = `✅ Goed! Volgende ronde...`;
@@ -8452,7 +8463,7 @@ function showSnelRekenen() {
     if (current >= totalQ) {
       const elapsed = Math.round((Date.now() - window._snelStart) / 1000);
       const reward = score * 5 + (elapsed < 20 ? 10 : 0);
-      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`⚡ ${score}/${totalQ} goed! +${reward} coins!`); sfxLevelUp(); }, 800);
+      setTimeout(() => { addCoins(reward); showToast(`⚡ ${score}/${totalQ} goed! +${reward} coins!`); completeChallenge(0, score===totalQ); }, 800);
     } else {
       setTimeout(showQ, 700);
     }
@@ -8523,7 +8534,7 @@ function showKleurMatch() {
     current++;
     if (current >= total) {
       const reward = score * 5;
-      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🎨 ${score}/${total} goed! +${reward} coins!`); sfxLevelUp(); }, 700);
+      setTimeout(() => { addCoins(reward); showToast(`🎨 ${score}/${total} goed! +${reward} coins!`); completeChallenge(0, score===total); }, 700);
     } else {
       setTimeout(showQ, 600);
     }
