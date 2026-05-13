@@ -674,21 +674,29 @@ const SUPABASE_KEY = 'sb_publishable_hBS3wyE4q0eW7USKDrnUEw_nEG5MOpU';
 
 async function sbFetch(path, method='GET', body=null) {
   try {
+    const isUpsert = method === 'POST';
     const opts = {
       method,
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': method==='POST' ? 'resolution=merge-duplicates' : '',
+        'Prefer': isUpsert ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal',
       }
     };
     if (body) opts.body = JSON.stringify(body);
     const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, opts);
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const errText = await r.text();
+      console.error('Supabase fout:', r.status, errText);
+      return null;
+    }
     const text = await r.text();
     return text ? JSON.parse(text) : true;
-  } catch(e) { return null; }
+  } catch(e) {
+    console.error('sbFetch fout:', e);
+    return null;
+  }
 }
 
 // ===== 💾 STATE OPSLAAN & LADEN =====
@@ -696,37 +704,40 @@ let _syncPending = false;
 let _syncTO = null;
 
 function saveState() {
-  // Altijd lokaal opslaan (snel, offline-first)
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){}
-  // Debounce cloud sync — max 1x per 3 seconden
   if (_syncTO) clearTimeout(_syncTO);
   _syncTO = setTimeout(() => syncToCloud(), 3000);
 }
 
 async function syncToCloud() {
   const fid = getFamilyId();
-  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return; // niet geconfigureerd
+  if (!fid) return;
   if (_syncPending) return;
   _syncPending = true;
   try {
-    await sbFetch('game_data', 'POST', {
+    // Gebruik upsert via POST met merge-duplicates
+    const result = await sbFetch('game_data?on_conflict=family_id', 'POST', {
       family_id: fid,
       data: state,
       updated_at: new Date().toISOString()
     });
-  } catch(e) {}
+    if (result !== null) {
+      console.log('✅ Cloud sync OK');
+    }
+  } catch(e) {
+    console.error('syncToCloud fout:', e);
+  }
   _syncPending = false;
 }
 
 async function loadFromCloud() {
   const fid = getFamilyId();
-  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return false;
+  if (!fid) return false;
   try {
     const rows = await sbFetch("game_data?family_id=eq." + fid + "&select=data,updated_at");
     if (!rows || rows.length === 0) return false;
     const cloudData = rows[0].data;
     const cloudTime = new Date(rows[0].updated_at).getTime();
-    // Gebruik cloud data als die nieuwer is dan lokaal
     const localSaved = localStorage.getItem(SAVE_KEY + '_time');
     const localTime = localSaved ? parseInt(localSaved) : 0;
     if (cloudTime > localTime) {
@@ -735,10 +746,17 @@ async function loadFromCloud() {
         localStorage.setItem(SAVE_KEY, JSON.stringify(state));
         localStorage.setItem(SAVE_KEY + '_time', cloudTime.toString());
       } catch(e) {}
-      return true; // cloud data geladen
+      console.log('✅ Cloud data geladen');
+      return true;
     }
-  } catch(e) {}
+  } catch(e) { console.error('loadFromCloud fout:', e); }
   return false;
+}
+
+async function forceSyncNow() {
+  showToast('⏳ Synchroniseren...');
+  await syncToCloud();
+  showToast('✅ Data gesynchroniseerd met cloud!');
 }
 
 function loadState() {
@@ -1813,6 +1831,9 @@ function openChallenge(idx, worldIdx) {
   else if (lvl.type === 'topo')       { if(dewi){showDewiFriendlyChallenge('tellen');}else{showTopoChallenge(state.currentPlayer);document.getElementById('challenge-modal').classList.add('open');return;} }
   else if (lvl.type === 'ontdekking') { showTitansOntdekking(currentWorldIdx, state.currentPlayer); return; }
   else if (lvl.type === 'joke')       { showMopje(); setTimeout(()=>{ completeChallenge(lvl.reward||5, true); }, 100); return; }
+  else if (lvl.type === 'simon')      { showSimonSays(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'snelrekenen'){ showSnelRekenen(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'kleurMatch') { showKleurMatch(); document.getElementById('challenge-modal').classList.add('open'); return; }
   else showSurpriseChallenge();
   document.getElementById('challenge-modal').classList.add('open');
 }
@@ -2594,6 +2615,8 @@ function completeChallenge(coins, perfect) {
   if (perfect && !wasCompleted) setTimeout(sfxPerfect, 200);
   setTimeout(() => checkAndAwardBadges(), 1500);
   checkTimeLimit();
+  // Toon wiel teaser na challenges
+  if (!wasCompleted) setTimeout(() => { if(Math.random()>0.5) showWheelTeaser(); else showMiniGameTeaser(); }, 2000);
 
   // Dagdoel bijhouden
   if (!wasCompleted) {
@@ -6244,100 +6267,150 @@ function getMathFilter(playerIdx, worldIdx) {
 // ===== 5. TUSSENSPELLETJES =====
 
 // 5a. PRIJZENWIEL
+// ===== 🎡 PRIJZENWIEL — met progressie-gebaseerde beurten =====
+// Aantal beurten bepaald door prestatie in vorige challenges
+// Toon aankondiging bij challenges dat extra draaibeurten gewonnen kunnen worden
+
+const WHEEL_PRIZES = [
+  {label:'5 coins',    coins:5,  color:'#f5a623'},
+  {label:'10 coins',   coins:10, color:'#57c785'},
+  {label:'20 coins',   coins:20, color:'#e94560'},
+  {label:'2 coins',    coins:2,  color:'#ce93d8'},
+  {label:'15 coins',   coins:15, color:'#1565c0'},
+  {label:'JACKPOT 50', coins:50, color:'#f5a623'},
+  {label:'8 coins',    coins:8,  color:'#57c785'},
+  {label:'3 coins',    coins:3,  color:'#c62828'},
+];
+
+// Bereken aantal draaibeurten op basis van recente prestaties
+function getWheelSpins() {
+  const p = getPlayer();
+  const history = (p.history||[]).slice(-10);
+  if (history.length === 0) return 1;
+  const correct = history.filter(h=>h.correct).length;
+  const pct = correct / history.length;
+  // < 50% = 1 beurt, 50-80% = 2 beurten, > 80% = 3 beurten
+  if (pct >= 0.8) return 3;
+  if (pct >= 0.5) return 2;
+  return 1;
+}
+
 function showPrizeWheel() {
-  const prizes = [
-    {label:'5 coins',    coins:5,  color:'#f5a623'},
-    {label:'10 coins',   coins:10, color:'#57c785'},
-    {label:'20 coins',   coins:20, color:'#e94560'},
-    {label:'2 coins',    coins:2,  color:'#ce93d8'},
-    {label:'15 coins',   coins:15, color:'#1565c0'},
-    {label:'JACKPOT 50', coins:50, color:'#f5a623'},
-    {label:'8 coins',    coins:8,  color:'#57c785'},
-    {label:'3 coins',    coins:3,  color:'#c62828'},
-  ];
+  const spins = getWheelSpins();
+  const p = getPlayer();
+  const history = (p.history||[]).slice(-10);
+  const correct = history.length > 0 ? history.filter(h=>h.correct).length : 0;
+  const pct = history.length > 0 ? Math.round(correct/history.length*100) : 0;
 
   const box = document.getElementById('challenge-content');
   box.innerHTML = `
-    <div style="text-align:center">
-      <div style="font-size:1.5rem;font-family:'Fredoka One',cursive;color:#f5a623;margin-bottom:10px">
-        🎡 Titans Prijzenwiel!
+    <div style="text-align:center;padding:4px">
+      <!-- Prestatie indicator -->
+      <div style="background:#0f3460;border-radius:14px;padding:10px;margin-bottom:10px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:4px">
+          🎡 Titans Prijzenwiel
+        </div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-bottom:6px">
+          Jouw score: ${pct}% goed → ${spins} ${spins===1?'beurt':'beurten'}!
+        </div>
+        <!-- Draaibeurt bolletjes -->
+        <div style="display:flex;justify-content:center;gap:8px">
+          ${[1,2,3].map(i=>`
+            <div style="width:32px;height:32px;border-radius:50%;
+              background:${i<=spins?'linear-gradient(135deg,#f5a623,#e94560)':'rgba(255,255,255,0.1)'};
+              border:2px solid ${i<=spins?'#f5a623':'rgba(255,255,255,0.2)'};
+              display:flex;align-items:center;justify-content:center;
+              font-size:1rem">${i<=spins?'⭐':'○'}</div>
+          `).join('')}
+        </div>
       </div>
-      <div style="position:relative;width:240px;height:240px;margin:0 auto 16px">
-        <canvas id="wheel-canvas" width="240" height="240" style="display:block"></canvas>
-        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);
-          font-size:2rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))">▼</div>
+
+      <!-- Wiel -->
+      <div style="position:relative;width:220px;height:220px;margin:0 auto 10px">
+        <canvas id="wheel-canvas" width="220" height="220" style="display:block"></canvas>
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+          font-size:1.8rem;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))">▼</div>
       </div>
-      <div id="wheel-result" style="font-family:'Fredoka One',cursive;font-size:1.2rem;
-        color:#57c785;min-height:1.8rem;margin-bottom:12px"></div>
+
+      <div id="wheel-result" style="font-family:'Fredoka One',cursive;font-size:1.1rem;
+        color:#57c785;min-height:1.5rem;margin-bottom:8px"></div>
+      <div id="wheel-spins-left" style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:8px">
+        Beurten over: <strong style="color:#f5a623">${spins}</strong>
+      </div>
+
       <button id="wheel-btn" class="btn-primary"
         style="font-size:1rem;padding:12px 28px;position:relative;z-index:10"
         ontouchend="wheelBtnTap(event)" onclick="wheelBtnTap(event)">
         🎡 DRAAIEN!
       </button>
       <br>
+      <button id="wheel-claim-btn" style="display:none;margin-top:8px;padding:12px 28px;
+        background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
+        border-radius:20px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer;
+        position:relative;z-index:10"
+        ontouchend="wheelClaimAll(event)" onclick="wheelClaimAll(event)">
+        🎁 CLAIM ALLES!
+      </button>
+      <br>
       <button ontouchend="closeChallenge()" onclick="closeChallenge()"
-        class="btn-secondary" style="margin-top:8px">← Terug</button>
+        class="btn-secondary" style="margin-top:6px">← Terug</button>
     </div>`;
 
-  // Initialiseer wheel state
   window._wheel = {
-    prizes,
+    prizes: WHEEL_PRIZES,
     angle: 0,
     spinning: false,
-    done: false,
-    winCoins: 0,
-    winLabel: '',
+    spinsLeft: spins,
+    spinsTotal: spins,
+    totalCoins: 0,
+    winHistory: [],
     rafId: null,
   };
 
-  // Teken initial wheel
-  wheelDraw(0, prizes);
+  wheelDraw(0, WHEEL_PRIZES);
 }
 
 function wheelDraw(angle, prizes) {
   const canvas = document.getElementById('wheel-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const cx = 120, cy = 120, r = 112;
+  const cx = 110, cy = 110, r = 105;
   const seg = (Math.PI * 2) / prizes.length;
-  ctx.clearRect(0, 0, 240, 240);
+  ctx.clearRect(0, 0, 220, 220);
 
   prizes.forEach((p, i) => {
     const start = angle + i * seg;
-    const end = start + seg;
-    // Segment
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, start, end);
+    ctx.arc(cx, cy, r, start, start + seg);
     ctx.closePath();
     ctx.fillStyle = p.color;
     ctx.fill();
     ctx.strokeStyle = '#0d0d1a';
     ctx.lineWidth = 2;
     ctx.stroke();
-    // Tekst
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(start + seg / 2);
     ctx.textAlign = 'right';
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 3;
-    ctx.fillText(p.label, r - 6, 4);
+    ctx.fillText(p.label, r - 5, 4);
     ctx.restore();
   });
 
   // Middencirkel
   ctx.beginPath();
-  ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 18, 0, Math.PI * 2);
   ctx.fillStyle = '#0d0d1a';
   ctx.fill();
   ctx.strokeStyle = '#f5a623';
   ctx.lineWidth = 2;
   ctx.stroke();
   ctx.fillStyle = '#f5a623';
-  ctx.font = 'bold 16px sans-serif';
+  ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('⚡', cx, cy);
@@ -6345,108 +6418,151 @@ function wheelDraw(angle, prizes) {
 }
 
 function wheelBtnTap(e) {
-  e.preventDefault();
-  e.stopPropagation();
+  if (e) { e.preventDefault(); e.stopPropagation(); }
   const w = window._wheel;
-  if (!w) return;
+  if (!w || w.spinning) return;
+  if (w.spinsLeft <= 0) { wheelClaimAll(); return; }
 
-  if (w.done) {
-    // Claim beloning
-    closeChallenge();
-    const reward = LEVELS[currentLevelIdx]?.reward || 10;
-    const finalCoins = w.winCoins;
-    addCoins(finalCoins);
-    showToast(`🎡 ${w.winLabel} gewonnen! +${finalCoins} coins!`);
-    return;
-  }
-
-  if (w.spinning) return;
   w.spinning = true;
   sfxBonus();
 
   const btn = document.getElementById('wheel-btn');
-  if (btn) { btn.textContent = '⏳ Draait...'; btn.disabled = true; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Draait...'; }
 
   const segCount = w.prizes.length;
   const segAngle = (Math.PI * 2) / segCount;
-
-  // Kies willekeurig winnend segment
   const winIdx = Math.floor(Math.random() * segCount);
-
-  // Bereken doelhoek: meerdere rondes + landing op winnend segment
-  const extraRounds = 5 + Math.floor(Math.random() * 4);
+  const extraRounds = 4 + Math.floor(Math.random() * 4);
   const startAngle = w.angle;
   const targetAngle = startAngle + (extraRounds * Math.PI * 2) + (winIdx * segAngle) + (segAngle * 0.5);
-
-  const duration = 4000;
+  const duration = 3500;
   const startTime = performance.now();
+
+  // Failsafe timeout
+  const failsafe = setTimeout(() => {
+    if (w.spinning) {
+      w.spinning = false;
+      w.angle = targetAngle;
+      wheelFinishSpin(w, winIdx);
+    }
+  }, 5000);
 
   function animate(now) {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
-
-    // Cubic ease-out
     const ease = 1 - Math.pow(1 - progress, 3);
     w.angle = startAngle + (targetAngle - startAngle) * ease;
-
     wheelDraw(w.angle, w.prizes);
 
     if (progress < 1) {
       w.rafId = requestAnimationFrame(animate);
     } else {
-      // Animatie klaar
-      w.angle = targetAngle;
+      clearTimeout(failsafe);
       w.spinning = false;
-      w.done = true;
+      w.angle = targetAngle;
+      wheelFinishSpin(w, winIdx);
+    }
+  }
+  w.rafId = requestAnimationFrame(animate);
+}
 
-      const prize = w.prizes[winIdx];
-      w.winCoins = prize.coins;
-      w.winLabel = prize.label;
+function wheelFinishSpin(w, winIdx) {
+  const prize = w.prizes[winIdx];
+  w.spinsLeft--;
+  w.totalCoins += prize.coins;
+  w.winHistory.push(prize.label);
+  sfxLevelUp();
 
-      // Toon resultaat
-      const res = document.getElementById('wheel-result');
-      if (res) res.innerHTML = `🎉 <strong>${prize.label}</strong>!`;
-
-      sfxLevelUp();
-
-      if (btn) {
-        btn.textContent = `🎁 CLAIM ${prize.coins} coins!`;
-        btn.disabled = false;
-        btn.style.background = 'linear-gradient(135deg,#57c785,#2e7d32)';
-      }
+  // Update UI
+  const res = document.getElementById('wheel-result');
+  if (res) {
+    if (w.spinsLeft > 0) {
+      res.innerHTML = `🎉 <strong>${prize.label}</strong>! Totaal: ${w.totalCoins} 🪙`;
+    } else {
+      res.innerHTML = `🎉 <strong>${prize.label}</strong>! Totaal: <strong>${w.totalCoins} coins</strong>!`;
     }
   }
 
-  w.rafId = requestAnimationFrame(animate);
+  const spinEl = document.getElementById('wheel-spins-left');
+  if (spinEl) spinEl.innerHTML = `Beurten over: <strong style="color:#f5a623">${w.spinsLeft}</strong>`;
 
-  // Failsafe: als animatie niet afloopt na 6 sec (bijv. iOS background)
-  setTimeout(() => {
-    if (!w.done) {
-      w.spinning = false;
-      w.done = true;
-      const prize = w.prizes[winIdx];
-      w.winCoins = prize.coins;
-      w.winLabel = prize.label;
-      wheelDraw(w.angle, w.prizes);
-      const res = document.getElementById('wheel-result');
-      if (res) res.innerHTML = `🎉 <strong>${prize.label}</strong>!`;
-      const b = document.getElementById('wheel-btn');
-      if (b) { b.textContent = `🎁 CLAIM ${prize.coins} coins!`; b.disabled = false; }
-      sfxLevelUp();
-    }
-  }, 6000);
+  const btn = document.getElementById('wheel-btn');
+  const claimBtn = document.getElementById('wheel-claim-btn');
+
+  if (w.spinsLeft > 0) {
+    // Nog beurten over
+    if (btn) { btn.disabled = false; btn.textContent = `🎡 Nog ${w.spinsLeft}x draaien!`; }
+  } else {
+    // Geen beurten meer → toon claim knop
+    if (btn) { btn.style.display = 'none'; }
+    if (claimBtn) { claimBtn.style.display = 'inline-block'; }
+    if (spinEl) spinEl.innerHTML = `<span style="color:#57c785">✅ Alle beurten gebruikt!</span>`;
+    sfxPerfect();
+  }
 }
+
+function wheelClaimAll(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const w = window._wheel;
+  if (!w) return;
+  const total = w.totalCoins || 0;
+  closeChallenge();
+  if (total > 0) {
+    addCoins(total);
+    showToast(`🎡 +${total} coins gewonnen! BOOYAH!`);
+    sfxLevelUp();
+  }
+}
+
+// Aankondiging in challenge dat extra draaibeurten gewonnen kunnen worden
+function showWheelTeaser() {
+  const spins = getWheelSpins();
+  const needed = spins < 3 ? (spins < 2 ? '50%' : '80%') : null;
+  if (!needed) return; // al max beurten
+
+  const msg = spins === 1
+    ? `💡 Haal 50% goed → 2x draaien aan het wiel!`
+    : `💡 Haal 80% goed → 3x draaien aan het wiel!`;
+
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+    'background:linear-gradient(135deg,#1565c0,#0f3460);border:1px solid #f5a623;' +
+    'border-radius:14px;padding:10px 16px;z-index:400;max-width:300px;width:90%;' +
+    'font-family:"Fredoka One",cursive;font-size:0.82rem;color:white;text-align:center;' +
+    'animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
 
 // 5b. MEMORY KAARTJES (2 of a kind)
 let memCards = [], memFlipped = [], memMatched = [], memMoves = 0;
 
+function memCloseChallenge() { if(window._memTimeout)clearTimeout(window._memTimeout); closeChallenge(); }
+
 function showMemoryCards() {
+  // Progressie: minder paren = makkelijker, meer paren = moeilijker
+  const perf = getWheelSpins(); // hergebruik prestatie-berekening
+  const pairCount = perf >= 3 ? 8 : perf >= 2 ? 6 : 4;
   const emojis = ['🦁','🐯','🐉','⭐','🚀','🦄','🔥','💎','🌈','🐙'];
-  const pairs = [...emojis.slice(0,8), ...emojis.slice(0,8)];
+  const pairs = [...emojis.slice(0,pairCount), ...emojis.slice(0,pairCount)];
   memCards = shuffleArr(pairs);
   memFlipped = [];
   memMatched = [];
   memMoves = 0;
+  window._memPairCount = pairCount;
+  window._memStartTime = Date.now();
+  // Timeout: max 90 seconden
+  if (window._memTimeout) clearTimeout(window._memTimeout);
+  window._memTimeout = setTimeout(() => {
+    if (document.getElementById('mem-grid')) {
+      const earned = Math.max(2, Math.floor(memMatched.length / 2) * 3);
+      closeChallenge();
+      addCoins(earned);
+      showToast(`⏰ Tijd! ${memMatched.length/2} paren gevonden. +${earned} coins`);
+    }
+  }, 90000);
   renderMemoryCards();
 }
 
@@ -6471,7 +6587,7 @@ function renderMemoryCards() {
             ${memMatched.includes(i)||memFlipped.includes(i)?e:'❓'}
           </div>`).join('')}
       </div>
-      <button onclick="closeChallenge()" class="btn-secondary">← Terug</button>
+      <button onclick="memCloseChallenge()" class="btn-secondary">← Terug</button>
     </div>`;
 }
 
@@ -6490,12 +6606,14 @@ function flipMemCard(idx) {
       memFlipped = [];
       sfxCorrect();
       if (memMatched.length === memCards.length) {
-        const reward = Math.max(5, 30 - memMoves);
+        if (window._memTimeout) clearTimeout(window._memTimeout);
+        const timeSec = Math.floor((Date.now() - (window._memStartTime||Date.now())) / 1000);
+        const reward = Math.max(5, 40 - memMoves - Math.floor(timeSec/10));
         setTimeout(() => {
           sfxLevelUp();
           closeChallenge();
           addCoins(reward);
-          showToast(`🃏 Gewonnen in ${memMoves} zetten! +${reward} coins!`);
+          showToast(`🃏 Gewonnen in ${memMoves} zetten (${timeSec}s)! +${reward} coins!`);
         }, 500);
       } else {
         setTimeout(renderMemoryCards, 300);
@@ -6528,7 +6646,7 @@ function showBallonPrikken() {
       <button onclick="startBallonPrikken()" class="btn-primary" id="bp-start" style="margin-top:10px;font-size:1rem;padding:12px 24px">
         🎈 START!
       </button>
-      <br><button onclick="stopBallonPrikken();closeChallenge()" class="btn-secondary" style="margin-top:6px">← Terug</button>
+      <br><button ontouchend="stopBallonPrikken();closeChallenge()" onclick="stopBallonPrikken();closeChallenge()" class="btn-secondary" style="margin-top:6px">← Terug</button>
     </div>`;
 }
 
@@ -6543,12 +6661,14 @@ function startBallonPrikken() {
     if (el) el.textContent = bPrikTime;
     if (bPrikTime <= 0) {
       stopBallonPrikken();
-      const reward = Math.floor(bPrikScore / 2);
+      const reward = Math.min(30, Math.max(3, bPrikScore));
+      const res = document.getElementById('bp-score');
+      if (res) res.parentElement.style.color = '#57c785';
       setTimeout(() => {
         closeChallenge();
         addCoins(reward);
         showToast(`🎈 ${bPrikScore} ballonnen! +${reward} coins!`);
-      }, 300);
+      }, 500);
     }
   }, 1000);
 }
@@ -6589,6 +6709,10 @@ function spawnBallons() {
 
 function stopBallonPrikken() {
   if (bPrikTimer) { clearInterval(bPrikTimer); bPrikTimer = null; }
+  bPrikTime = 0; // stop alle spawnBallons recursie
+  // Verwijder alle ballonnen
+  const area = document.getElementById('bp-area');
+  if (area) area.innerHTML = '';
 }
 
 // ===== 6. TOPOGRAFIE MINI-GAME =====
@@ -7283,8 +7407,9 @@ function useAccessCode() {
   const code = (document.getElementById('access-code')?.value || '').trim().toUpperCase();
   const errEl = document.getElementById('access-error');
 
-  if (code === 'TITANS2024') {
-    saveRegistration({ approved: true, admin: true,
+  // TITANS2024 = eigen gezin (admin), TITANS2026 = nieuwe families
+  if (code === 'TITANS2024' || code === 'TITANS2026') {
+    saveRegistration({ approved: true, admin: (code==='TITANS2024'),
       familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
     document.getElementById('reg-overlay')?.remove();
     document.getElementById('pending-overlay')?.remove();
@@ -7452,11 +7577,12 @@ async function checkApprovalFromCloud() {
 }
 
 // Jij ziet nieuwe aanmeldingen in je Ouders HQ en keurt goed met de code
-const ADMIN_APPROVE_CODE = 'TITANS2024'; // verander dit naar eigen code
+const ADMIN_APPROVE_CODE = 'TITANS2024'; // eigen gezin
+const FAMILY_APPROVE_CODE = 'TITANS2026'; // nieuwe families
 
 function adminApproveCode() {
   const code = prompt('Voer de goedkeuringscode in:');
-  if (code === ADMIN_APPROVE_CODE) {
+  if (code === ADMIN_APPROVE_CODE || code === FAMILY_APPROVE_CODE) {
     const reg = getRegistration() || {};
     reg.approved = true;
     saveRegistration(reg);
@@ -7547,9 +7673,15 @@ async function renderPendingApprovals() {
           \uD83D\uDCCB Kopieer
         </button>
       </div>
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35)">
-        Nieuwe familie voert code <strong style="color:#f5a623">TITANS2024</strong> in voor toegang
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:8px">
+        Nieuwe familie voert code <strong style="color:#f5a623">TITANS2026</strong> in voor toegang
       </div>
+      <button onclick="forceSyncNow()" style="width:100%;padding:8px;
+        background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);
+        border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;
+        font-size:0.82rem;cursor:pointer">
+        ☁️ Nu synchroniseren met cloud
+      </button>
     </div>
     ${pendingFamilies.length > 0 ? `
     <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
@@ -7587,7 +7719,7 @@ async function renderPendingApprovals() {
       </div>
       <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.5">
         Volg de installatie-instructies om cloudsync in te schakelen.
-        Nieuwe families gebruiken nu de goedkeuringscode <strong style="color:#f5a623">TITANS2024</strong>.
+        Nieuwe families gebruiken code <strong style="color:#f5a623">TITANS2026</strong>. Eigen gezin: <strong style="color:#f5a623">TITANS2024</strong>.
       </div>
     </div>`}`;
 }
@@ -8129,6 +8261,308 @@ function copyShareLink() {
   }
 }
 
+// ===== 🎮 EXTRA MINI-GAMES =====
+
+// SIMON SAYS — onthoud de volgorde
+let simonSeq = [], simonInput = [], simonLevel = 0, simonActive = false;
+
+function showSimonSays() {
+  simonSeq = []; simonInput = []; simonLevel = 0; simonActive = false;
+  const perf = getWheelSpins();
+  const startLen = perf >= 3 ? 4 : perf >= 2 ? 3 : 2;
+  const box = document.getElementById('challenge-content');
+  const colors = ['#e94560','#57c785','#f5a623','#90caf9'];
+  const labels = ['🔴','🟢','🟡','🔵'];
+
+  box.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:4px">
+        🧠 Simon Says!
+      </div>
+      <div id="simon-msg" style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
+        Onthoud de volgorde en herhaal!
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:220px;margin:0 auto 16px">
+        ${colors.map((col,i) => `
+          <button id="simon-${i}" onclick="simonTap(${i})"
+            style="width:100px;height:100px;border-radius:20px;background:${col}44;
+            border:3px solid ${col};font-size:2.5rem;cursor:pointer;
+            transition:all 0.1s;-webkit-tap-highlight-color:transparent">
+            ${labels[i]}
+          </button>`).join('')}
+      </div>
+      <div id="simon-score" style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem">
+        Ronde: 0
+      </div>
+      <br><button onclick="closeChallenge()" class="btn-secondary" style="margin-top:8px">← Terug</button>
+    </div>`;
+
+  window._simon = { colors, startLen, maxLevel: perf >= 3 ? 6 : perf >= 2 ? 4 : 3 };
+  setTimeout(() => simonNextRound(), 800);
+}
+
+function simonNextRound() {
+  const s = window._simon;
+  simonLevel++;
+  simonInput = [];
+  simonActive = false;
+
+  // Voeg een kleur toe aan de reeks
+  simonSeq.push(Math.floor(Math.random() * 4));
+
+  const msg = document.getElementById('simon-msg');
+  if (msg) msg.textContent = `👀 Kijk goed! Ronde ${simonLevel}`;
+  const sc = document.getElementById('simon-score');
+  if (sc) sc.textContent = `Ronde: ${simonLevel}`;
+
+  // Speel reeks af
+  let delay = 600;
+  simonSeq.forEach((idx, i) => {
+    setTimeout(() => simonFlash(idx), delay + i * 700);
+  });
+  setTimeout(() => {
+    simonActive = true;
+    if (msg) msg.textContent = '👆 Jouw beurt!';
+  }, delay + simonSeq.length * 700 + 200);
+}
+
+function simonFlash(idx) {
+  const btn = document.getElementById(`simon-${idx}`);
+  if (!btn) return;
+  const s = window._simon;
+  btn.style.background = s.colors[idx];
+  btn.style.transform = 'scale(0.92)';
+  sfxClick();
+  setTimeout(() => {
+    btn.style.background = s.colors[idx] + '44';
+    btn.style.transform = 'scale(1)';
+  }, 350);
+}
+
+function simonTap(idx) {
+  if (!simonActive) return;
+  const s = window._simon;
+  simonFlash(idx);
+  simonInput.push(idx);
+
+  const pos = simonInput.length - 1;
+  if (simonInput[pos] !== simonSeq[pos]) {
+    // Fout!
+    simonActive = false;
+    sfxWrong();
+    const reward = Math.max(2, (simonLevel - 1) * 4);
+    const msg = document.getElementById('simon-msg');
+    if (msg) msg.textContent = `❌ Fout! Je haalde ronde ${simonLevel-1}. +${reward} coins`;
+    setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🧠 Ronde ${simonLevel-1} gehaald! +${reward} coins`); }, 1200);
+    return;
+  }
+
+  if (simonInput.length === simonSeq.length) {
+    simonActive = false;
+    sfxCorrect();
+    if (simonLevel >= s.maxLevel) {
+      // Gewonnen!
+      const reward = simonLevel * 6;
+      const msg = document.getElementById('simon-msg');
+      if (msg) msg.textContent = `🏆 GEWELDIG! Alle rondes! +${reward} coins!`;
+      sfxLevelUp();
+      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🧠 Simon Says gewonnen! +${reward} coins!`); }, 1200);
+    } else {
+      const msg = document.getElementById('simon-msg');
+      if (msg) msg.textContent = `✅ Goed! Volgende ronde...`;
+      setTimeout(() => simonNextRound(), 1000);
+    }
+  }
+}
+
+// SNEL REKENEN — zo snel mogelijk 5 sommen beantwoorden
+function showSnelRekenen() {
+  const perf = getWheelSpins();
+  const difficulty = perf >= 3 ? 'hard' : perf >= 2 ? 'medium' : 'easy';
+  const totalQ = 5;
+  let current = 0, score = 0, startTime = Date.now();
+  window._snelR = { difficulty, totalQ, current, score };
+
+  function getQ() {
+    if (difficulty === 'easy') {
+      const a = Math.floor(Math.random()*10)+1;
+      const b = Math.floor(Math.random()*10)+1;
+      return { q:`${a} + ${b}`, a: a+b };
+    } else if (difficulty === 'medium') {
+      const a = Math.floor(Math.random()*20)+5;
+      const b = Math.floor(Math.random()*10)+1;
+      const ops = [
+        { q:`${a} + ${b}`, a: a+b },
+        { q:`${a} - ${b}`, a: a-b },
+      ];
+      return ops[Math.floor(Math.random()*ops.length)];
+    } else {
+      const a = Math.floor(Math.random()*10)+2;
+      const b = Math.floor(Math.random()*10)+2;
+      return { q:`${a} × ${b}`, a: a*b };
+    }
+  }
+
+  function showQ() {
+    const box = document.getElementById('challenge-content');
+    if (!box) return;
+    const q = getQ();
+    window._snelR.currentQ = q;
+    const wrong = [q.a+1, q.a-1, q.a+2, q.a-2, q.a+3].filter(x=>x!==q.a&&x>0);
+    const opts = shuffleArr([q.a, ...wrong.slice(0,3)]);
+
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:6px">
+          ⚡ Snel Rekenen!
+        </div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
+          Vraag ${current+1}/${totalQ} · Score: ${score}/${current}
+        </div>
+        <div style="background:#0f3460;border-radius:16px;padding:20px;margin-bottom:14px">
+          <div style="font-family:'Fredoka One',cursive;font-size:2.5rem;color:white">${q.q} = ?</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          ${opts.map(o => `
+            <button onclick="snelCheck(this,${o},${q.a})"
+              style="padding:16px;font-family:'Fredoka One',cursive;font-size:1.6rem;
+              background:#1a2744;color:#f5a623;border:2px solid rgba(245,166,35,0.3);
+              border-radius:14px;cursor:pointer">${o}</button>`).join('')}
+        </div>
+        <button onclick="closeChallenge()" class="btn-secondary">← Terug</button>
+      </div>`;
+  }
+
+  window._snelShowQ = showQ;
+  window._snelStart = Date.now();
+  showQ();
+
+  window._snelCheck = function(btn, answer, correct) {
+    document.querySelectorAll('[onclick^="snelCheck"]').forEach(b => b.onclick = null);
+    if (answer === correct) {
+      btn.style.background = '#57c785'; sfxCorrect(); score++;
+    } else {
+      btn.style.background = '#e94560'; sfxWrong();
+      document.querySelectorAll('[onclick^="snelCheck"]').forEach(b => {
+        if (parseInt(b.textContent) === correct) b.style.background = '#57c785';
+      });
+    }
+    current++;
+    window._snelR.current = current; window._snelR.score = score;
+    if (current >= totalQ) {
+      const elapsed = Math.round((Date.now() - window._snelStart) / 1000);
+      const reward = score * 5 + (elapsed < 20 ? 10 : 0);
+      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`⚡ ${score}/${totalQ} goed! +${reward} coins!`); sfxLevelUp(); }, 800);
+    } else {
+      setTimeout(showQ, 700);
+    }
+  };
+  showQ();
+}
+
+function snelCheck(btn, answer, correct) {
+  if (window._snelCheck) window._snelCheck(btn, answer, correct);
+}
+
+// KLEUR MATCH — tik het goede woord
+function showKleurMatch() {
+  const kleuren = [
+    {woord:'ROOD',   kleur:'#e94560'},
+    {woord:'BLAUW',  kleur:'#1565c0'},
+    {woord:'GROEN',  kleur:'#57c785'},
+    {woord:'GEEL',   kleur:'#f5a623'},
+    {woord:'PAARS',  kleur:'#ce93d8'},
+  ];
+  let score = 0, total = 6, current = 0;
+  window._kleurStart = Date.now();
+
+  function showQ() {
+    const box = document.getElementById('challenge-content');
+    if (!box) return;
+    // Woord en kleur zijn NIET hetzelfde (Stroop effect!)
+    const word = kleuren[Math.floor(Math.random()*kleuren.length)];
+    const colorKleur = kleuren.filter(k=>k.woord!==word.woord)[Math.floor(Math.random()*(kleuren.length-1))];
+    const correct = colorKleur.woord; // antwoord = naam van de KLEUR (niet het woord)
+    const opts = shuffleArr(kleuren.map(k=>k.woord));
+
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:6px">
+          🎨 Kleur Match!
+        </div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-bottom:6px">
+          Tik de KLEUR van het woord! ${current+1}/${total}
+        </div>
+        <div style="background:#1a2744;border-radius:16px;padding:24px;margin-bottom:14px">
+          <div style="font-family:'Fredoka One',cursive;font-size:3rem;color:${colorKleur.kleur}">
+            ${word.woord}
+          </div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:6px">
+            Welke kleur zie je?
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          ${opts.map(o => `
+            <button onclick="kleurCheck(this,'${o}','${correct}')"
+              style="padding:12px;font-family:'Fredoka One',cursive;font-size:1rem;
+              background:${kleuren.find(k=>k.woord===o).kleur}44;
+              border:2px solid ${kleuren.find(k=>k.woord===o).kleur};
+              border-radius:12px;cursor:pointer;color:white">${o}</button>`).join('')}
+        </div>
+        <div style="font-size:0.8rem;color:#57c785">Score: ${score}/${current}</div>
+        <br><button onclick="closeChallenge()" class="btn-secondary" style="margin-top:6px">← Terug</button>
+      </div>`;
+
+    window._kleurData = { correct, score, current, total };
+  }
+
+  window._kleurShowQ = showQ;
+  window._kleurScore = () => score;
+  window._kleurNext = function(isCorrect) {
+    if (isCorrect) { score++; sfxCorrect(); } else sfxWrong();
+    current++;
+    if (current >= total) {
+      const reward = score * 5;
+      setTimeout(() => { closeChallenge(); addCoins(reward); showToast(`🎨 ${score}/${total} goed! +${reward} coins!`); sfxLevelUp(); }, 700);
+    } else {
+      setTimeout(showQ, 600);
+    }
+  };
+  showQ();
+}
+
+function kleurCheck(btn, answer, correct) {
+  document.querySelectorAll('[onclick^="kleurCheck"]').forEach(b => b.onclick = null);
+  const isCorrect = answer === correct;
+  btn.style.opacity = '0.6';
+  btn.style.transform = 'scale(0.95)';
+  if (isCorrect) { btn.style.borderWidth = '4px'; }
+  if (window._kleurNext) window._kleurNext(isCorrect);
+}
+
+// ===== TEASER BERICHTEN NA CHALLENGES =====
+function showMiniGameTeaser() {
+  const perf = getWheelSpins();
+  const spins = perf;
+  const teasers = [
+    `🎡 Haal 50%+ goed → 2x draaien aan het wiel!`,
+    `🧠 Goed bezig! Nog beter doen → meer Simon Says rondes!`,
+    `⚡ Snel antwoorden = meer coins bij Snel Rekenen!`,
+    `🎨 Klaar voor Kleur Match? Doe 80%+ goed!`,
+    `🃏 Betere score = meer kaartparen bij Memory!`,
+  ];
+  const msg = teasers[Math.floor(Math.random()*teasers.length)];
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
+    'background:linear-gradient(135deg,#0f3460,#1a2744);border:1px solid #f5a623;' +
+    'border-radius:14px;padding:10px 16px;z-index:400;max-width:300px;width:90%;' +
+    'font-family:"Fredoka One",cursive;font-size:0.82rem;color:#f5a623;text-align:center;' +
+    'box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
 // ===== INIT =====
 // PWA: Service Worker registreren
 if ('serviceWorker' in navigator) {
@@ -8175,6 +8609,8 @@ function initApp() {
     }, 480000);
 
     checkFamilySetup();
+    // Direct sync bij opstarten
+    setTimeout(() => syncToCloud(), 2000);
 
     // Cloud sync — renderHome opnieuw met cloud namen als die er zijn
     loadFromCloud().then(loaded => {
