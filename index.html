@@ -663,8 +663,8 @@ let state = {
     }
   ],
   currentPlayer: 0,
-  ownedItems: [[], []],
-  ownedAvatarItems: [[], []]
+  ownedItems: [[], [], [], []],
+  ownedAvatarItems: [[], [], [], []]
 };
 
 // ===== ☁️ SUPABASE CONFIG =====
@@ -1835,9 +1835,10 @@ function openChallenge(idx, worldIdx) {
   else if (lvl.type === 'topo')       { if(dewi){showDewiFriendlyChallenge('tellen');}else{showTopoChallenge(state.currentPlayer);document.getElementById('challenge-modal').classList.add('open');return;} }
   else if (lvl.type === 'ontdekking') { showTitansOntdekking(currentWorldIdx, state.currentPlayer); return; }
   else if (lvl.type === 'joke') {
+    // Mopje: toon grap, voltooi level direct zonder reward modal
+    const reward = lvl.reward || 5;
+    advanceLevelSilently(reward);
     showMopje();
-    // Voltooi het level na 500ms zodat de kaart verder kan ook als mopje open blijft
-    setTimeout(() => completeChallenge(lvl.reward||5, true), 500);
     return;
   }
 
@@ -2772,7 +2773,12 @@ function completeChallenge(coins, perfect) {
   setTimeout(() => checkAndAwardBadges(), 1500);
   checkTimeLimit();
   // Toon wiel teaser na challenges
-  if (!wasCompleted) setTimeout(() => { if(Math.random()>0.5) showWheelTeaser(); else showMiniGameTeaser(); }, 2000);
+  if (!wasCompleted) setTimeout(() => {
+    // Alleen teasers tonen nadat reward modal gesloten is
+    if (!document.getElementById('reward-modal')?.classList.contains('open')) {
+      if(Math.random()>0.5) showWheelTeaser(); else showMiniGameTeaser();
+    }
+  }, 3000);
 
   // Dagdoel bijhouden
   if (!wasCompleted) {
@@ -6212,6 +6218,8 @@ const FREEK_FACTS = [
 ];
 
 function showFinnTip(type) {
+  if (document.getElementById('challenge-modal')?.classList.contains('open')) return;
+  if (document.getElementById('reward-modal')?.classList.contains('open')) return;
   const tips = type ? FINN_TIPS.filter(t => t.type === type || t.type === 'algemeen') : FINN_TIPS;
   const tip = tips[Math.floor(Math.random() * tips.length)];
   const overlay = document.createElement('div');
@@ -6236,26 +6244,49 @@ function showFinnTip(type) {
 }
 
 function showWistJeDat() {
+  // Toon NIET als er een challenge open is
+  if (document.getElementById('challenge-modal')?.classList.contains('open')) return;
+  if (document.getElementById('reward-modal')?.classList.contains('open')) return;
+
   const allFacts = [...WIST_JE_DAT, ...FREEK_FACTS];
   const fact = allFacts[Math.floor(Math.random() * allFacts.length)];
+
+  // Verwijder eventuele oude popup
+  document.getElementById('wistjedat-overlay')?.remove();
+
   const overlay = document.createElement('div');
-  overlay.style.cssText = `position:fixed;top:80px;left:50%;transform:translateX(-50%);
-    background:linear-gradient(135deg,#1a3a1a,#0f3060);border:2px solid #57c785;
-    border-radius:20px;padding:16px;z-index:400;max-width:320px;width:90%;
-    box-shadow:0 8px 30px rgba(0,0,0,0.5);animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    text-align:center`;
+  overlay.id = 'wistjedat-overlay';
+  // Volledige achtergrond overlay zodat klik buiten ook sluit
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;' +
+    'z-index:250;display:flex;align-items:center;justify-content:center;padding:20px;' +
+    'background:rgba(0,0,0,0.5)';
+
   overlay.innerHTML = `
-    <div style="font-size:2.5rem;margin-bottom:6px">${fact.emoji}</div>
-    <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">
-      🧑‍🏫 Wist je dat...
-    </div>
-    <div style="font-size:0.85rem;color:white;line-height:1.5">${fact.fact}</div>
-    <button onclick="this.parentElement.remove()"
-      style="margin-top:10px;background:rgba(87,199,133,0.2);border:1px solid #57c785;
-      border-radius:10px;padding:6px 16px;color:#57c785;font-family:'Fredoka One',cursive;
-      font-size:0.85rem;cursor:pointer">Cool! 😎</button>`;
+    <div style="background:linear-gradient(135deg,#1a3a1a,#0f3060);border:2px solid #57c785;
+      border-radius:20px;padding:20px;max-width:300px;width:100%;
+      box-shadow:0 8px 30px rgba(0,0,0,0.6);text-align:center;
+      animation:tt-bounce 0.4s cubic-bezier(0.34,1.56,0.64,1)">
+      <div style="font-size:2.5rem;margin-bottom:8px">${fact.emoji}</div>
+      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">
+        🧑‍🏫 Wist je dat...
+      </div>
+      <div style="font-size:0.85rem;color:white;line-height:1.5;margin-bottom:14px">${fact.fact}</div>
+      <button ontouchend="document.getElementById('wistjedat-overlay')?.remove()"
+        onclick="document.getElementById('wistjedat-overlay')?.remove()"
+        style="background:rgba(87,199,133,0.2);border:1px solid #57c785;
+        border-radius:10px;padding:10px 24px;color:#57c785;font-family:'Fredoka One',cursive;
+        font-size:0.9rem;cursor:pointer;width:100%">Cool! 😎</button>
+    </div>`;
+
+  // Klik op achtergrond sluit ook
+  overlay.addEventListener('click', (e) => { if(e.target===overlay) overlay.remove(); });
+  overlay.addEventListener('touchend', (e) => { if(e.target===overlay) overlay.remove(); });
+
   document.body.appendChild(overlay);
+  // Auto-sluiten na 15 seconden
+  setTimeout(() => document.getElementById('wistjedat-overlay')?.remove(), 15000);
 }
+
 
 // ===== 2. SPIEKBRIEFJE (2 munten) =====
 function showHint(challengeType) {
@@ -7024,10 +7055,28 @@ function mopjeReveal() {
 function sluitMopje() {
   if (window._mopjeTO) clearTimeout(window._mopjeTO);
   document.getElementById('mopje-overlay')?.remove();
-  // Zorg dat de challenge modal ook gesloten is
   document.getElementById('challenge-modal')?.classList.remove('open');
   document.getElementById('reward-modal')?.classList.remove('open');
+  // Herlaad de kaart zodat het volgende level zichtbaar is
+  if (document.getElementById('map-screen')?.classList.contains('active')) {
+    renderMap();
+  }
 }
+
+// Voltooi een level zonder reward modal (voor mopjes, etc.)
+function advanceLevelSilently(coins) {
+  const p = getPlayer();
+  const absLevel = currentWorldIdx * 5 + currentLevelIdx;
+  if ((p.level||0) <= absLevel) {
+    p.level = absLevel + 1;
+  }
+  if (coins > 0) addCoins(coins);
+  const daily = updateDailyProgress();
+  if (daily.justReached) setTimeout(() => showDailyGoalCelebration(p.name), 500);
+  saveState();
+  setTimeout(() => checkAndAwardBadges(), 500);
+}
+
 
 
 // ===== AVATAR UITBREIDEN — CARNAVAL OUTFITS =====
@@ -7419,729 +7468,263 @@ function finishDiscovery(reward, perfect) {
   completeChallenge(reward, perfect);
 }
 
-// ===== 📋 REGISTRATIE SYSTEEM =====
-// Werkt via Claude API als centrale opslag (zelfde aanpak als boodschappen-app)
-// Admin (jij) keurt nieuwe families goed via Ouders HQ
-
+// ===== 📋 REGISTRATIE & GOEDKEURING VIA SUPABASE =====
 const REG_KEY   = 'tp_registered';
-const SAVE_KEY2 = 'sterrenpad_v4'; // zelfde als de app save key
+const FAMILY_KEY = 'tp_family_id';
+const SHARE_URL  = 'https://jorg103.github.io/Sterrenpad2';
+const INVITE_URL = SHARE_URL + '?invite=1';
+const ADMIN_APPROVE_CODE = 'TITANS2024';
+const FAMILY_APPROVE_CODE = 'TITANS2026';
 
-// Controleer of er bestaande spelersdata is — DIRECT uit localStorage
-function hasExistingGameData() {
+function getFamilyId() {
   try {
-    const saved = localStorage.getItem(SAVE_KEY2);
-    if (!saved) return false;
-    const data = JSON.parse(saved);
-    if (!data || !data.players) return false;
-    return data.players.some(p =>
-      (p.level||0) > 0 || (p.coins||0) > 0 || (p.history||[]).length > 0
-    );
-  } catch(e) { return false; }
+    let id = localStorage.getItem(FAMILY_KEY);
+    if (!id) { id = 'fam_' + Math.random().toString(36).slice(2,10); localStorage.setItem(FAMILY_KEY, id); }
+    return id;
+  } catch(e) { return 'fam_local'; }
 }
-
-function getRegistration() {
-  try { return JSON.parse(localStorage.getItem(REG_KEY) || 'null'); } catch(e) { return null; }
-}
-function saveRegistration(reg) {
-  try { localStorage.setItem(REG_KEY, JSON.stringify(reg)); } catch(e) {}
-}
+function setFamilyId(id) { try { localStorage.setItem(FAMILY_KEY, id); } catch(e) {} }
+function getRegistration() { try { return JSON.parse(localStorage.getItem(REG_KEY)||'null'); } catch(e) { return null; } }
+function saveRegistration(r) { try { localStorage.setItem(REG_KEY, JSON.stringify(r)); } catch(e) {} }
 
 function checkRegistration() {
-  // Invite link: ?invite=1 → altijd registratiescherm tonen (nieuwe familie)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('invite') === '1') {
+    // Nieuwe familie via deellink — wis lokale data en toon registratie
     window.history.replaceState({}, '', window.location.pathname);
+    try {
+      localStorage.removeItem('sterrenpad_v4');
+      localStorage.removeItem(REG_KEY);
+      localStorage.removeItem(FAMILY_KEY);
+    } catch(e) {}
+    // Reset state naar leeg (geen Mila/Dewi)
+    state.players = [];
+    state.ownedItems = [];
+    state.ownedAvatarItems = [];
     setTimeout(() => showAccessScreen(), 400);
     return false;
   }
 
-  // Stap 1: Admin code al eerder ingevoerd? → altijd door
+  // Bestaande gebruiker met eigen data → altijd door
+  const hasData = !!localStorage.getItem('sterrenpad_v4');
   const reg = getRegistration();
-  if (reg && reg.approved) return true;
-
-  // Stap 2: Speldata aanwezig (sterrenpad_v4)? → altijd door
-  const savedGame = localStorage.getItem('sterrenpad_v4');
-  if (savedGame) {
-    try {
-      const data = JSON.parse(savedGame);
-      // Echte data: players met namen die niet 'Speler X' zijn
-      const hasRealData = data && data.players && data.players.some(p =>
-        p.name && p.name !== 'Speler 1' && p.name !== 'Speler 2' &&
-        p.name !== 'Kind 1' && p.name !== 'Kind 2'
-      );
-      if (hasRealData) {
-        saveRegistration({ approved: true, existing: true,
-          familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
-        return true;
-      }
-    } catch(e) {}
-  }
-
-  // Stap 3: Audio prefs aanwezig (sp_au4)? → bestaande gebruiker → altijd door
-  if (localStorage.getItem('sp_au4') ||
-      localStorage.getItem('tp_parent_pin') ||
-      localStorage.getItem('tp_family_id')) {
-    saveRegistration({ approved: true, existing: true,
-      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+  if (hasData) {
+    if (!reg || !reg.approved) saveRegistration({ approved:true, existing:true, familyId:getFamilyId(), date:new Date().toLocaleDateString('nl-NL') });
     return true;
   }
-
-  // Stap 4: Wacht op goedkeuring (al geregistreerd maar niet goedgekeurd)
-  if (reg && !reg.approved) {
-    setTimeout(() => showPendingScreen(reg), 400);
-    return false;
-  }
-
-  // Stap 5: Splinternieuw apparaat → toon registratie/toegangsscherm
+  if (reg && reg.approved) return true;
+  if (reg && !reg.approved) { setTimeout(() => showPendingScreen(reg), 400); return false; }
+  // Splinternieuw apparaat zonder data → registratie
   setTimeout(() => showAccessScreen(), 400);
   return false;
 }
 
-// Nieuw: gecombineerd toegangsscherm (registratie + admin code)
 function showAccessScreen() {
   document.getElementById('reg-overlay')?.remove();
-  document.getElementById('pending-overlay')?.remove();
-
   const overlay = document.createElement('div');
   overlay.id = 'reg-overlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;' +
-    'background:#0d0d1a;overflow-y:auto;padding:20px 16px 60px';
-
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:#0d0d1a;overflow-y:auto;padding:20px 16px 60px';
   overlay.innerHTML = `
     <div style="max-width:380px;margin:0 auto;padding-top:16px">
       <div style="text-align:center;margin-bottom:20px">
-        <img src="favicon.jpg" style="width:72px;height:72px;border-radius:18px;
-          box-shadow:0 8px 24px rgba(0,0,0,0.4)" onerror="this.style.display='none'">
-        <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-top:8px">
-          ⭐ SterrenPad
-        </div>
+        <img src="favicon.jpg" style="width:72px;height:72px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,0.4)" onerror="this.style.display='none'">
+        <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-top:8px">⭐ SterrenPad</div>
         <div style="font-size:0.85rem;color:#57c785">Spelen · Leren · Verdienen</div>
       </div>
-
-      <!-- BEHEERDER / BESTAANDE GEBRUIKER -->
-      <div style="background:#1a1a2e;border-radius:20px;padding:20px;
-        border:2px solid rgba(245,166,35,0.4);margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:6px">
-          🔑 Bestaande gebruiker?
-        </div>
-        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:12px">
-          Voer de toegangscode in om direct te starten:
-        </div>
+      <div style="background:#1a1a2e;border-radius:20px;padding:20px;border:2px solid rgba(245,166,35,0.4);margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:6px">🔑 Bestaande gebruiker?</div>
         <input id="access-code" type="text" placeholder="Toegangscode..."
-          style="width:100%;padding:14px;border-radius:12px;
-          border:2px solid rgba(245,166,35,0.4);background:#0f3460;
-          color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.4rem;
-          text-align:center;letter-spacing:6px;box-sizing:border-box"
-          oninput="this.value=this.value.toUpperCase()"
-          onkeydown="if(event.key==='Enter')useAccessCode()">
-        <button onclick="useAccessCode()" style="width:100%;padding:14px;margin-top:10px;
-          background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
-          border-radius:14px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;
-          box-shadow:0 4px 15px rgba(245,166,35,0.3)">
-          ⚡ Inloggen
-        </button>
-        <div id="access-error" style="color:#e94560;font-size:0.82rem;
-          margin-top:8px;text-align:center;min-height:1rem"></div>
+          style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(245,166,35,0.4);background:#0f3460;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.4rem;text-align:center;letter-spacing:6px;box-sizing:border-box;margin-bottom:10px"
+          oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')useAccessCode()">
+        <button onclick="useAccessCode()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer">⚡ Inloggen</button>
+        <div id="access-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;text-align:center;min-height:1rem"></div>
       </div>
-
-      <!-- SCHEIDINGSLIJN -->
       <div style="display:flex;align-items:center;gap:10px;margin:16px 0">
         <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
         <div style="font-size:0.8rem;color:rgba(255,255,255,0.3)">of</div>
         <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
       </div>
-
-      <!-- NIEUWE GEBRUIKER REGISTREREN -->
-      <div style="background:#1a1a2e;border-radius:20px;padding:20px;
-        border:1px solid rgba(87,199,133,0.3)">
-        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1.1rem;margin-bottom:6px">
-          👋 Nieuw? Registreer je familie!
-        </div>
-        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px">
-          Na registratie keurt de beheerder je account goed.
-        </div>
-
+      <div style="background:#1a1a2e;border-radius:20px;padding:20px;border:1px solid rgba(87,199,133,0.3)">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1.1rem;margin-bottom:6px">👋 Nieuw? Registreer je familie!</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.6);margin-bottom:16px">Je wordt zichtbaar voor de beheerder die je goedkeurt. Geen code nodig!</div>
         <input id="reg-parent" type="text" placeholder="Jouw naam (bijv. Mama of Papa)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:8px;box-sizing:border-box">
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:8px;box-sizing:border-box">
         <input id="reg-family" type="text" placeholder="Familienaam (bijv. Familie Jansen)"
-          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-          background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:12px;box-sizing:border-box">
-
-        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">🦁 Kind 1</div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input id="reg-c1name" type="text" placeholder="Naam"
-            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);
-            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-c1grade" style="padding:10px;border-radius:10px;
-            border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;
-            font-family:'Fredoka One',cursive">
-            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
-          </select>
+          style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;font-family:'Fredoka One',cursive;margin-bottom:12px;box-sizing:border-box">
+        <div id="reg-children-container">
+          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">🦁 Kind 1</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="reg-c1name" type="text" placeholder="Naam" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);background:#0f3460;color:white;font-family:'Fredoka One',cursive">
+            <select id="reg-c1grade" style="padding:10px;border-radius:10px;border:1px solid rgba(87,199,133,0.3);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+              ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+            </select>
+          </div>
+          <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">🐯 Kind 2 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="reg-c2name" type="text" placeholder="Naam" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+            <select id="reg-c2grade" style="padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+              <option value="">-</option>${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+            </select>
+          </div>
+          <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:6px">🐼 Kind 3 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="reg-c3name" type="text" placeholder="Naam" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(206,147,216,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+            <select id="reg-c3grade" style="padding:10px;border-radius:10px;border:1px solid rgba(206,147,216,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+              <option value="">-</option>${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+            </select>
+          </div>
+          <div style="font-family:'Fredoka One',cursive;color:#90caf9;font-size:0.9rem;margin-bottom:6px">🦊 Kind 4 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input id="reg-c4name" type="text" placeholder="Naam" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(144,202,249,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+            <select id="reg-c4grade" style="padding:10px;border-radius:10px;border:1px solid rgba(144,202,249,0.2);background:#0f3060;color:white;font-family:'Fredoka One',cursive">
+              <option value="">-</option>${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
+            </select>
+          </div>
         </div>
-
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">
-          🐯 Kind 2 <span style="font-size:0.75rem;color:rgba(255,255,255,0.4)">(optioneel)</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <input id="reg-c2name" type="text" placeholder="Naam (optioneel)"
-            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(245,166,35,0.2);
-            background:#0f3460;color:white;font-family:'Fredoka One',cursive">
-          <select id="reg-c2grade" style="padding:10px;border-radius:10px;
-            border:1px solid rgba(245,166,35,0.2);background:#0f3460;color:white;
-            font-family:'Fredoka One',cursive">
-            <option value="">-</option>
-            ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}">Groep ${g}</option>`).join('')}
-          </select>
-        </div>
-
-        <button onclick="submitRegistration()" style="width:100%;padding:14px;
-          background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
-          border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
-          📋 Aanmelden voor goedkeuring
+        <button onclick="submitRegistration()" style="width:100%;padding:14px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
+          📋 Aanmelden — wacht op goedkeuring
         </button>
-        <div id="reg-error" style="color:#e94560;font-size:0.82rem;
-          margin-top:8px;text-align:center;min-height:1rem"></div>
+        <div id="reg-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;text-align:center;min-height:1rem"></div>
       </div>
     </div>`;
-
   document.body.appendChild(overlay);
-  // Focus op de code input
   setTimeout(() => document.getElementById('access-code')?.focus(), 300);
 }
 
 function useAccessCode() {
-  const code = (document.getElementById('access-code')?.value || '').trim().toUpperCase();
+  const code = (document.getElementById('access-code')?.value||'').trim().toUpperCase();
   const errEl = document.getElementById('access-error');
-
-  // TITANS2024 = eigen gezin (admin), TITANS2026 = nieuwe families
-  if (code === 'TITANS2024' || code === 'TITANS2026') {
-    saveRegistration({ approved: true, admin: (code==='TITANS2024'),
-      familyId: getFamilyId(), date: new Date().toLocaleDateString('nl-NL') });
+  if (code === ADMIN_APPROVE_CODE || code === FAMILY_APPROVE_CODE) {
+    saveRegistration({ approved:true, admin:(code===ADMIN_APPROVE_CODE), familyId:getFamilyId(), date:new Date().toLocaleDateString('nl-NL') });
     document.getElementById('reg-overlay')?.remove();
-    document.getElementById('pending-overlay')?.remove();
-    showToast('✅ Welkom! Je bent ingelogd als beheerder.');
+    showToast('✅ Welkom! Je bent ingelogd.');
     sfxLevelUp();
     updateCoinDisplay(); setWorldForPlayer(); renderHome();
   } else if (code.length > 0) {
-    if (errEl) errEl.textContent = '❌ Onjuiste code. Vraag de beheerder om de code.';
-    const input = document.getElementById('access-code');
-    if (input) { input.value = ''; input.style.borderColor = '#e94560'; }
+    if (errEl) errEl.textContent = '❌ Onjuiste code.';
     sfxWrong();
-    setTimeout(() => {
-      if (errEl) errEl.textContent = '';
-      const inp = document.getElementById('access-code');
-      if (inp) inp.style.borderColor = 'rgba(245,166,35,0.4)';
-    }, 2000);
+    setTimeout(() => { if(errEl) errEl.textContent=''; }, 2000);
   } else {
-    if (errEl) errEl.textContent = 'Voer eerst een code in.';
+    if (errEl) errEl.textContent = 'Voer een code in.';
   }
 }
-
-
 
 async function submitRegistration() {
-  const parent  = document.getElementById('reg-parent')?.value?.trim();
-  const family  = document.getElementById('reg-family')?.value?.trim();
-  const c1name  = document.getElementById('reg-c1name')?.value?.trim();
-  const c1grade = document.getElementById('reg-c1grade')?.value;
-  const c1goal  = document.getElementById('reg-c1goal')?.value?.trim();
-  const c2name  = document.getElementById('reg-c2name')?.value?.trim();
-  const c2grade = document.getElementById('reg-c2grade')?.value;
-  const c2goal  = document.getElementById('reg-c2goal')?.value?.trim();
-  const source  = document.getElementById('reg-source')?.value;
-  const errEl   = document.getElementById('reg-error');
+  const parent = document.getElementById('reg-parent')?.value?.trim();
+  const family = document.getElementById('reg-family')?.value?.trim();
+  const errEl  = document.getElementById('reg-error');
+  if (!parent || !family) { if(errEl) errEl.textContent='Vul naam en familienaam in!'; return; }
 
-  if (!parent || !family || !c1name) {
-    if (errEl) errEl.textContent = 'Vul minimaal naam, familienaam en kind 1 in!';
-    return;
+  const avatars = ['🦁','🐯','🐼','🦊'];
+  const children = [];
+  for (let i=1; i<=4; i++) {
+    const name  = document.getElementById(`reg-c${i}name`)?.value?.trim();
+    const grade = document.getElementById(`reg-c${i}grade`)?.value;
+    if (name) children.push({ name, grade: parseInt(grade)||2, avatar: avatars[i-1] });
   }
-
-  const fid = getFamilyId();
-  const children = [
-    { name: c1name, grade: parseInt(c1grade)||4, goal: c1goal, avatar:'🦁' },
-    ...(c2name ? [{ name: c2name, grade: parseInt(c2grade)||2, goal: c2goal, avatar:'🐯' }] : []),
-  ];
+  if (children.length === 0) { if(errEl) errEl.textContent='Voeg minimaal 1 kind toe!'; return; }
 
   if (errEl) errEl.textContent = '⏳ Aanmelding versturen...';
+  const fid = getFamilyId();
 
-  // Pas speler namen aan
-  children.forEach((ch, i) => {
-    if (state.players[i]) {
-      state.players[i].name   = ch.name;
-      state.players[i].avatar = ch.avatar;
-      state.players[i].grade  = ch.grade;
-    }
+  // Sla op in Supabase — status: pending
+  await sbFetch('families?on_conflict=id', 'POST', {
+    id: fid, family_name: family, parent_name: parent,
+    approved: false, children, created_at: new Date().toISOString()
   });
+
+  // Lokaal opslaan als pending
+  saveRegistration({ approved:false, familyId:fid, familyName:family, parentName:parent, children, date:new Date().toLocaleDateString('nl-NL') });
+
+  // Maak LEGE spelers aan — geen Mila/Dewi data
+  state.players = children.map(ch => makeDefaultPlayer(ch.name, ch.avatar, ch.grade));
+  state.currentPlayer = 0;
+  state.ownedItems = children.map(() => []);
+  state.ownedAvatarItems = children.map(() => []);
+  state.customMissions = [];
+  state.pendingChildMissions = [];
   saveState();
 
-  const reg = {
-    familyId: fid, parentName: parent, familyName: family,
-    source, approved: false,
-    date: new Date().toLocaleDateString('nl-NL'), children
-  };
-
-  // Sla op in Supabase families tabel
-  const saved = await sbFetch('families', 'POST', {
-    id: fid,
-    family_name: family,
-    parent_name: parent,
-    source,
-    approved: false,
-    children,
-    created_at: new Date().toISOString()
-  });
-
-  // Ook lokaal opslaan
-  saveRegistration(reg);
-
   document.getElementById('reg-overlay')?.remove();
-  showPendingScreen(reg);
+  showPendingScreen({ familyName: family });
 }
 
-async function checkApprovalStatus() {
-  // Controleer in Supabase of de familie goedgekeurd is
-  const fid = getFamilyId();
-  if (!fid || SUPABASE_URL === 'JOUW_SUPABASE_URL') return false;
-  try {
-    const rows = await sbFetch("families?id=eq." + fid + "&select=approved");
-    if (rows && rows.length > 0 && rows[0].approved) {
-      const reg = getRegistration() || {};
-      reg.approved = true;
-      saveRegistration(reg);
-      return true;
-    }
-  } catch(e) {}
-  return false;
+function makeDefaultPlayer(name, avatar, grade) {
+  return { name, avatar: avatar||'⭐', grade: grade||2, coins:0, level:0, stars:[], world:0,
+    avatarColor:'#E91E63', equipped:{head:null,outfit:null,accessory:null,pet:null,bg:null},
+    wallet:{savings:0,investments:{},goal:'unicorn',goalSaved:0,lastTick:null},
+    skills:{spell:50,math:50,lang:50}, history:[], bonusDue:0,
+    badges:[], streakData:{lastDate:null,streak:0,totalDays:0},
+    completedMissions:{}, pendingMissions:{}, seenStories:[] };
 }
 
-function showPendingScreen(reg, customMsg) {
+function showPendingScreen(reg) {
   document.getElementById('pending-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'pending-overlay';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;' +
-    'background:#0d0d1a;display:flex;flex-direction:column;align-items:center;' +
-    'justify-content:center;padding:24px;text-align:center';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:#0d0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center';
   overlay.innerHTML = `
     <div style="max-width:320px;width:100%">
-      <div style="font-size:4rem;margin-bottom:12px">🔐</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623;margin-bottom:8px">
-        Toegang vereist
+      <div style="font-size:4rem;margin-bottom:12px">⏳</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#f5a623;margin-bottom:8px">Wacht op goedkeuring!</div>
+      <div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:16px;font-size:0.85rem;color:rgba(255,255,255,0.8);line-height:1.6">
+        Welkom Familie ${reg?.familyName||''}!<br>Je aanmelding is ontvangen. De beheerder keurt je account goed — je krijgt dan direct toegang.
       </div>
-      <div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:16px;
-        font-size:0.85rem;color:rgba(255,255,255,0.8);line-height:1.6">
-        ${customMsg || 'Voer de beheerderscode in om toegang te krijgen.'}
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-bottom:16px">
+        Sluit de app en open hem opnieuw na goedkeuring.
       </div>
-
-      <!-- Direct code invoeren — prominent -->
-      <div style="background:#0f3460;border-radius:14px;padding:14px;margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:8px">
-          🔑 Beheerderscode
-        </div>
-        <input id="admin-code-input" type="text" placeholder="Voer code in..."
-          style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(245,166,35,0.4);
-          background:#1a2744;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.2rem;
-          text-align:center;box-sizing:border-box;letter-spacing:4px"
-          onkeydown="if(event.key==='Enter')checkAdminCode()">
-        <button onclick="useAccessCode()" style="width:100%;padding:12px;margin-top:8px;
-          background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;
-          border-radius:12px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">
-          ⚡ Toegang krijgen
-        </button>
-        <div id="code-error" style="color:#e94560;font-size:0.8rem;margin-top:6px;min-height:1rem"></div>
-      </div>
-
-      <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-bottom:12px">
-        Nieuwe gebruiker? Wacht op goedkeuring van de beheerder.<br>
-        Of vraag de beheerder om de code.
-      </div>
-
-      <button onclick="checkApprovalFromCloud()" style="width:100%;padding:10px;
-        background:rgba(87,199,133,0.1);border:1px solid rgba(87,199,133,0.3);
-        border-radius:12px;color:#57c785;font-family:'Fredoka One',cursive;
-        font-size:0.85rem;cursor:pointer">
+      <button onclick="checkApprovalFromCloud()" style="width:100%;padding:12px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-bottom:8px">
         🔄 Controleer goedkeuring
       </button>
     </div>`;
   document.body.appendChild(overlay);
-  setTimeout(() => document.getElementById('admin-code-input')?.focus(), 300);
 }
-
-
 
 async function checkApprovalFromCloud() {
-  showToast('⏳ Status controleren...');
-  const approved = await checkApprovalStatus();
-  if (approved) {
-    document.getElementById('pending-overlay')?.remove();
-    showToast('✅ Goedgekeurd! Welkom bij SterrenPad!');
-    sfxLevelUp();
-    setTimeout(() => navigate('home'), 500);
-  } else {
-    // Fallback: code invoeren
-    adminApproveCode();
-  }
-}
-
-// Jij ziet nieuwe aanmeldingen in je Ouders HQ en keurt goed met de code
-const ADMIN_APPROVE_CODE = 'TITANS2024'; // eigen gezin
-const FAMILY_APPROVE_CODE = 'TITANS2026'; // nieuwe families
-
-function adminApproveCode() {
-  const code = prompt('Voer de goedkeuringscode in:');
-  if (code === ADMIN_APPROVE_CODE || code === FAMILY_APPROVE_CODE) {
-    const reg = getRegistration() || {};
-    reg.approved = true;
-    saveRegistration(reg);
-    document.getElementById('pending-overlay')?.remove();
-    showToast('✅ Account goedgekeurd! Welkom bij SterrenPad!');
-    sfxLevelUp();
-    setTimeout(() => navigate('home'), 500);
-  } else if (code !== null) {
-    showToast('❌ Onjuiste code', true);
-  }
-}
-
-function shareViaWhatsApp() {
-  const msg = `Hé! 👋
-
-Mijn kinderen gebruiken *SterrenPad* — een leuke leer-app waarbij ze Titan Coins verdienen door sommen, spelling en mini-spelletjes te doen. Ze kunnen sparen voor echte beloningen!
-
-📲 Download de app hier:
-${INVITE_URL}
-
-*Hoe werkt het?*
-1. Open de link op je telefoon
-2. Registreer je familie (naam + kinderen)
-3. Stuur mij een berichtje zodat ik je kan goedkeuren
-4. Voer de code in die je krijgt → direct aan de slag! ⚡
-
-Vragen? Gewoon sturen! 😊`;
-
-  const encoded = encodeURIComponent(msg);
-  const url = `https://wa.me/?text=${encoded}`;
-  window.open(url, '_blank');
-}
-
-function shareViaNative() {
-  const msg = `Hé! 👋 Mijn kinderen gebruiken SterrenPad — een leuke leer-app met Titan Coins, sommen en mini-spelletjes!\n\nDownload hier: ${INVITE_URL}\n\nRegistreer je, stuur mij een berichtje en ik geef je de toegangscode! ⚡`;
-  if (navigator.share) {
-    navigator.share({ title: 'SterrenPad', text: msg, url: INVITE_URL })
-      .catch(() => shareViaWhatsApp());
-  } else {
-    shareViaWhatsApp();
-  }
-}
-
-
-
-async function renderPendingApprovals() {
-  const reg = getRegistration();
-
-  // Haal wachtende families op uit Supabase (alleen voor admin)
-  let pendingFamilies = [];
-  if (SUPABASE_URL !== 'JOUW_SUPABASE_URL') {
-    try {
-      const rows = await sbFetch('families?approved=eq.false&order=created_at.desc&limit=20');
-      if (rows) pendingFamilies = rows;
-    } catch(e) {}
-  }
-
-  const el = document.getElementById('pending-approvals-section');
-  if (!el) return '';
-
-  el.innerHTML = `
-    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
-      border:1px solid rgba(87,199,133,0.3)">
-      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">
-        \uD83D\uDD17 Uitnodigen & Delen
-      </div>
-      <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:10px;
-        font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">
-        ${INVITE_URL}
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button onclick="shareViaWhatsApp()"
-          style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#25D366,#128C7E);
-          color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
-          font-size:0.82rem;cursor:pointer">
-          \uD83D\uDCAC WhatsApp
-        </button>
-        <button onclick="shareViaNative()"
-          style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#1565c0,#42a5f5);
-          color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
-          font-size:0.82rem;cursor:pointer">
-          \uD83D\uDCE4 Deel via...
-        </button>
-        <button onclick="copyShareLink()"
-          style="flex:1;padding:11px 6px;background:rgba(245,166,35,0.2);
-          border:1px solid rgba(245,166,35,0.4);border-radius:12px;color:#f5a623;
-          font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">
-          \uD83D\uDCCB Kopieer
-        </button>
-      </div>
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:8px">
-        Nieuwe familie voert code <strong style="color:#f5a623">TITANS2026</strong> in voor toegang
-      </div>
-      <button onclick="forceSyncNow()" style="width:100%;padding:8px;
-        background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);
-        border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;
-        font-size:0.82rem;cursor:pointer">
-        ☁️ Nu synchroniseren met cloud
-      </button>
-    </div>
-    ${pendingFamilies.length > 0 ? `
-    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;
-      border:2px solid #f5a623">
-      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
-        ✋ Wacht op Goedkeuring (${pendingFamilies.length})
-      </div>
-      ${pendingFamilies.map(f => `
-        <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:8px">
-          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">
-            👨‍👩‍👧 ${f.family_name}
-          </div>
-          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:3px 0">
-            Ouder: ${f.parent_name} · ${new Date(f.created_at).toLocaleDateString('nl-NL')}
-          </div>
-          ${(f.children||[]).map(c=>`
-            <div style="font-size:0.75rem;color:#57c785">👶 ${c.name} · Groep ${c.grade}</div>
-          `).join('')}
-          <button onclick="approveFamily('${f.id}')"
-            style="width:100%;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);
-            color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;
-            font-size:0.85rem;cursor:pointer;margin-top:8px">
-            ✅ Goedkeuren
-          </button>
-        </div>`).join('')}
-    </div>` : SUPABASE_URL !== 'JOUW_SUPABASE_URL' ? `
-    <div style="background:#1a2744;border-radius:12px;padding:10px;margin-bottom:12px;
-      text-align:center;border:1px solid rgba(87,199,133,0.2)">
-      <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">✅ Geen wachtende aanmeldingen</div>
-    </div>` : `
-    <div style="background:#1a2744;border-radius:12px;padding:12px;margin-bottom:12px;
-      border:1px dashed rgba(245,166,35,0.3)">
-      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">
-        ⚙️ Supabase nog niet geconfigureerd
-      </div>
-      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.5">
-        Volg de installatie-instructies om cloudsync in te schakelen.
-        Nieuwe families gebruiken code <strong style="color:#f5a623">TITANS2026</strong>. Eigen gezin: <strong style="color:#f5a623">TITANS2024</strong>.
-      </div>
-    </div>`}`;
+  showToast('⏳ Controleren...');
+  const fid = getFamilyId();
+  try {
+    const rows = await sbFetch('families?id=eq.'+fid+'&select=approved');
+    if (rows && rows.length > 0 && rows[0].approved) {
+      const reg = getRegistration()||{};
+      reg.approved = true;
+      saveRegistration(reg);
+      document.getElementById('pending-overlay')?.remove();
+      showToast('✅ Goedgekeurd! Welkom bij SterrenPad!');
+      sfxLevelUp();
+      setTimeout(() => navigate('home'), 500);
+      return;
+    }
+  } catch(e) {}
+  showToast('⏳ Nog niet goedgekeurd. Probeer later opnieuw.');
 }
 
 async function approveFamily(familyId) {
-  const ok = await sbFetch("families?id=eq." + familyId, "PATCH", {
-    approved: true,
-    approved_at: new Date().toISOString()
-  });
-  if (ok !== null) {
-    showToast('✅ Familie goedgekeurd!');
-    sfxLevelUp();
-    renderParentReport();
-  } else {
-    showToast('❌ Fout bij goedkeuren', true);
-  }
+  const ok = await sbFetch('families?id=eq.'+familyId, 'PATCH', { approved:true, approved_at:new Date().toISOString() });
+  if (ok !== null) { showToast('✅ Familie goedgekeurd!'); sfxLevelUp(); renderParentReport(); }
+  else showToast('❌ Fout bij goedkeuren', true);
 }
 
-// ===== 👨‍👩‍👧 MULTI-FAMILIE SYSTEEM =====
-// Elke familie heeft eigen data via familie-code
-// Admin (jij) kan families goedkeuren
-
-const FAMILY_KEY  = 'tp_family_id';
-const FAMILIES_KEY = 'tp_families'; // shared storage via Claude API
-
-function getFamilyId() {
-  try { return localStorage.getItem(FAMILY_KEY); } catch(e) { return null; }
-}
-function setFamilyId(id) {
-  try { localStorage.setItem(FAMILY_KEY, id); } catch(e) {}
+function copyShareLink() {
+  const link = INVITE_URL;
+  if (navigator.clipboard) { navigator.clipboard.writeText(link).then(()=>showToast('📋 Link gekopieerd!')); }
+  else { const ta=document.createElement('textarea'); ta.value=link; ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); showToast('📋 Link gekopieerd!'); }
 }
 
-// Toon registratie scherm als eerste keer
+function shareViaWhatsApp() {
+  const msg = `Hé! 👋\n\nMijn kinderen gebruiken *SterrenPad* — een leer-app met Titan Coins, sommen en mini-spelletjes!\n\n📲 Registreer je hier:\n${INVITE_URL}\n\nVul je naam en kinderen in → ik keur je account goed → direct aan de slag! ⚡`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function shareViaNative() {
+  if (navigator.share) { navigator.share({title:'SterrenPad',text:'Leer-app met Titan Coins!',url:INVITE_URL}).catch(()=>shareViaWhatsApp()); }
+  else shareViaWhatsApp();
+}
+
+// ===== 👨‍👩‍👧 FAMILIE INSTELLINGEN (max 4 kinderen) =====
 function checkFamilySetup() {
-  // Voor nu: gebruik eigen opgeslagen staat (geen server nodig)
-  // Familie-instellingen via Ouders HQ
   const fid = getFamilyId();
-  if (!fid) {
-    // Genereer uniek ID voor deze installatie
-    const newId = 'family_' + Math.random().toString(36).slice(2,10);
-    setFamilyId(newId);
-  }
-}
-
-// Familie naam & kinderen aanpassen (via Ouders HQ)
-function renderFamilySettings() {
-  const fid = getFamilyId() || 'onbekend';
-  return `
-    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(245,166,35,0.3)">
-      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
-        👨‍👩‍👧 Familie Instellingen
-      </div>
-
-      <!-- BACKUP & HERSTEL -->
-      <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">
-          💾 Backup & Herstel
-        </div>
-        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:10px">
-          Maak een backup van alle voortgang van Mila & Dewi. Sla het bestand op in je Bestanden app.
-        </div>
-        <div style="display:flex;gap:8px">
-          <button onclick="exportBackup()" style="flex:1;padding:10px;
-            background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;
-            border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
-            📥 Backup maken
-          </button>
-          <button onclick="document.getElementById('restore-input').click()" style="flex:1;padding:10px;
-            background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);
-            border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
-            📤 Terugzetten
-          </button>
-        </div>
-        <input type="file" id="restore-input" accept=".json" style="display:none"
-          onchange="importBackup(this)">
-        <div id="backup-status" style="font-size:0.75rem;color:#57c785;margin-top:6px;min-height:1rem;text-align:center"></div>
-      </div>
-
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:10px">
-        Familie ID: ${fid}
-      </div>
-      ${state.players.map((p, i) => `
-        <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px">
-          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem;margin-bottom:6px">
-            Kind ${i+1}: ${p.avatar} ${p.name}
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:6px">
-            <input id="pname-edit-${i}" type="text" value="${p.name}" placeholder="Naam kind"
-              style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
-              background:#1a2744;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem">
-            <select id="pavatar-edit-${i}"
-              style="padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
-              background:#1a2744;color:white;font-size:1.2rem">
-              ${['🦁','🐯','🐺','🦊','🐸','🐼','🦄','🐉','🦅','⭐'].map(e=>
-                `<option ${p.avatar===e?'selected':''}>${e}</option>`
-              ).join('')}
-            </select>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <label style="color:rgba(255,255,255,0.6);font-size:0.8rem">Groep:</label>
-            <select id="pgrade-edit-${i}"
-              style="padding:6px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);
-              background:#1a2744;color:white;font-family:'Fredoka One',cursive;flex:1">
-              ${[1,2,3,4,5,6,7,8].map(g=>
-                `<option value="${g}" ${(p.grade||2)===g?'selected':''}>Groep ${g}</option>`
-              ).join('')}
-            </select>
-          </div>
-        </div>`).join('')}
-      <button onclick="saveFamilySettings()"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#e94560);
-        color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;
-        font-size:0.95rem;cursor:pointer;margin-top:4px">
-        💾 Opslaan
-      </button>
-      <button onclick="addNewChild()" style="width:100%;padding:10px;background:rgba(87,199,133,0.2);
-        border:1px solid #57c785;border-radius:12px;color:#57c785;font-family:'Fredoka One',cursive;
-        font-size:0.9rem;cursor:pointer;margin-top:6px">
-        ➕ Kind toevoegen
-      </button>
-    </div>`;
-}
-
-function exportBackup() {
-  try {
-    const backup = {
-      version: 'sterrenpad_backup_v1',
-      date: new Date().toISOString(),
-      familyId: getFamilyId(),
-      state: state,
-      registration: getRegistration(),
-    };
-    const json = JSON.stringify(backup, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const datum = new Date().toLocaleDateString('nl-NL').replace(/\//g,'-');
-    a.href = url;
-    a.download = `sterrenpad-backup-${datum}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    const el = document.getElementById('backup-status');
-    if (el) el.textContent = '✅ Backup opgeslagen! Bewaar dit bestand goed.';
-    showToast('✅ Backup gemaakt!');
-  } catch(e) {
-    showToast('❌ Backup mislukt', true);
-  }
-}
-
-function importBackup(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const backup = JSON.parse(e.target.result);
-      if (!backup.version || !backup.version.includes('sterrenpad_backup')) {
-        showToast('❌ Ongeldig backup bestand!', true);
-        return;
-      }
-      // Herstel state
-      if (backup.state) {
-        state = { ...state, ...backup.state };
-        try { localStorage.setItem('sterrenpad_v4', JSON.stringify(state)); } catch(e) {}
-      }
-      // Herstel registratie
-      if (backup.registration) {
-        saveRegistration(backup.registration);
-      }
-      // Herlaad de app
-      updateCoinDisplay();
-      setWorldForPlayer();
-      renderHome();
-      renderParentReport();
-      showToast('✅ Backup hersteld! Alle data is terug!');
-      sfxLevelUp();
-    } catch(e) {
-      showToast('❌ Fout bij herstellen: ' + e.message, true);
-    }
-  };
-  reader.readAsText(file);
-  input.value = ''; // reset
-}
-
-function saveFamilySettings() {
-  state.players.forEach((p, i) => {
-    const name   = document.getElementById(`pname-edit-${i}`)?.value?.trim();
-    const avatar = document.getElementById(`pavatar-edit-${i}`)?.value;
-    const grade  = parseInt(document.getElementById(`pgrade-edit-${i}`)?.value || '2');
-    if (name)   p.name   = name;
-    if (avatar) p.avatar = avatar;
-    p.grade = grade;
-  });
-  saveState();
-  renderParentReport();
-  renderHome();
-  showToast('✅ Familie instellingen opgeslagen!');
-}
-
-function addNewChild() {
-  if (state.players.length >= 4) { showToast('Max 4 kinderen', true); return; }
-  state.players.push({
-    name:'Kind ' + (state.players.length + 1), avatar:'⭐', grade:2,
-    level:0, coins:0, stars:{}, skills:{spell:50,math:50,lang:50},
-    history:[], badges:[], streakData:{lastDate:null,streak:0,totalDays:0},
-    completedMissions:{}, pendingMissions:{}, perfectCount:0,
-    totalCoinsEarned:0, staalCount:0, seenStories:[],
-    wallet:{savings:0,investments:{},goal:'limousine',goalSaved:0,lastTick:null},
-    equipped:{head:null,outfit:null,accessory:null,pet:null,bg:null},
-  });
-  state.ownedAvatarItems.push([]);
-  state.ownedItems.push([]);
-  saveState();
-  renderParentReport();
-  showToast('✅ Kind toegevoegd!');
+  if (!fid) setFamilyId('fam_' + Math.random().toString(36).slice(2,10));
 }
 
 // ===== 💡 IDEEËNBUS =====
@@ -8452,13 +8035,10 @@ function showBreakthroughCelebration(type, threshold) {
 
 // ===== 🔗 DEELLINK FIX =====
 // Genereer een invite link die NIET de eigen data laadt
-const SHARE_URL = 'https://jorg103.github.io/Sterrenpad2';
-const INVITE_URL = SHARE_URL + '?invite=1';
 
 function copyShareLink() {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(INVITE_URL).then(() => showToast('📋 Uitnodigingslink gekopieerd!'));
-  } else {
+    navigator.clipboard.writeText(INVITE_URL).t
     const ta = document.createElement('textarea');
     ta.value = INVITE_URL; ta.style.position='fixed'; ta.style.opacity='0';
     document.body.appendChild(ta); ta.select();
@@ -9010,6 +8590,9 @@ state.players.forEach(p => {
   if (!p.totalCoinsEarned)   p.totalCoinsEarned   = 0;
   if (!p.staalCount)         p.staalCount         = 0;
   if (!p.seenStories)        p.seenStories        = [];
+  // Ensure ownedItems has slots for all players
+  while (state.ownedItems.length < state.players.length) state.ownedItems.push([]);
+  while (state.ownedAvatarItems.length < state.players.length) state.ownedAvatarItems.push([]);
 });
 
 // DOM-afhankelijke init — wacht tot DOM klaar is
