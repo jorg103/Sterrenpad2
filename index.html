@@ -4856,6 +4856,14 @@ function renderParentReport() {
   html += '<div id="pending-approvals-section"></div>';
   setTimeout(() => renderPendingApprovals(), 100);
 
+  // ===== GEZINSHULP =====
+  html += `<button onclick="showGezinsHulp()" style="width:100%;padding:14px;
+    background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:white;border:none;
+    border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;
+    cursor:pointer;margin-bottom:12px;box-shadow:0 4px 15px rgba(106,27,154,0.4)">
+    🏠 Gezinshulp — Wie is aan de beurt?
+  </button>`;
+
   // ===== IDEEËNBUS & FAMILIE =====
   html += `<div style="display:flex;gap:8px;margin-bottom:14px">
     <button onclick="showIdeaBox()" style="flex:1;padding:12px;background:linear-gradient(135deg,#2e7d32,#57c785);
@@ -7722,9 +7730,150 @@ function shareViaNative() {
 }
 
 // ===== 👨‍👩‍👧 FAMILIE INSTELLINGEN (max 4 kinderen) =====
+function renderFamilySettings() {
+  const fid = getFamilyId() || 'onbekend';
+  const avatarOptions = ['🦁','🐯','🐼','🦊','🐸','⭐','🦄','🐉'];
+  return `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(245,166,35,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">
+        👨‍👩‍👧 Familie Instellingen
+      </div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.35);margin-bottom:10px">
+        Familie ID: ${fid.slice(-8)}
+      </div>
+
+      <!-- Backup sectie -->
+      <div style="background:#0f3460;border-radius:12px;padding:10px;margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.85rem;margin-bottom:6px">💾 Backup & Herstel</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="exportBackup()" style="flex:1;padding:9px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">📥 Backup</button>
+          <button onclick="document.getElementById('restore-input').click()" style="flex:1;padding:9px;background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">📤 Herstel</button>
+        </div>
+        <input type="file" id="restore-input" accept=".json" style="display:none" onchange="importBackup(this)">
+      </div>
+
+      ${state.players.map((p, i) => `
+        <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:8px">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem;margin-bottom:6px">Kind ${i+1}: ${p.avatar} ${p.name}</div>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <input id="pname-edit-${i}" type="text" value="${p.name}" placeholder="Naam"
+              style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);background:#1a2744;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem">
+            <select id="pavatar-edit-${i}" style="padding:8px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);background:#1a2744;color:white;font-size:1.2rem">
+              ${avatarOptions.map(e=>`<option ${p.avatar===e?'selected':''}>${e}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label style="color:rgba(255,255,255,0.6);font-size:0.8rem">Groep:</label>
+            <select id="pgrade-edit-${i}" style="padding:6px;border-radius:8px;border:1px solid rgba(245,166,35,0.3);background:#1a2744;color:white;font-family:'Fredoka One',cursive;flex:1">
+              ${[1,2,3,4,5,6,7,8].map(g=>`<option value="${g}" ${(p.grade||2)===g?'selected':''}>Groep ${g}</option>`).join('')}
+            </select>
+          </div>
+        </div>`).join('')}
+
+      <button onclick="saveFamilySettings()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#e94560);color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-top:4px">
+        💾 Opslaan
+      </button>
+      ${state.players.length < 4 ? `
+      <button onclick="addNewChild()" style="width:100%;padding:10px;background:rgba(87,199,133,0.2);border:1px solid #57c785;border-radius:12px;color:#57c785;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;margin-top:6px">
+        ➕ Kind toevoegen
+      </button>` : ''}
+    </div>`;
+}
+
+function saveFamilySettings() {
+  state.players.forEach((p, i) => {
+    const name   = document.getElementById(`pname-edit-${i}`)?.value?.trim();
+    const avatar = document.getElementById(`pavatar-edit-${i}`)?.value;
+    const grade  = parseInt(document.getElementById(`pgrade-edit-${i}`)?.value || '2');
+    if (name)   p.name   = name;
+    if (avatar) p.avatar = avatar;
+    p.grade = grade;
+  });
+  saveState();
+  renderParentReport();
+  renderHome();
+  showToast('✅ Familie instellingen opgeslagen!');
+}
+
+function addNewChild() {
+  if (state.players.length >= 4) { showToast('Max 4 kinderen', true); return; }
+  const avatars = ['🦁','🐯','🐼','🦊'];
+  const newPlayer = makeDefaultPlayer('Kind ' + (state.players.length + 1), avatars[state.players.length] || '⭐', 2);
+  state.players.push(newPlayer);
+  state.ownedAvatarItems.push([]);
+  state.ownedItems.push([]);
+  saveState();
+  renderParentReport();
+  showToast('✅ Kind toegevoegd!');
+}
+
+
 function checkFamilySetup() {
   const fid = getFamilyId();
   if (!fid) setFamilyId('fam_' + Math.random().toString(36).slice(2,10));
+}
+
+
+async function renderPendingApprovals() {
+  const el = document.getElementById('pending-approvals-section');
+  if (!el) return;
+
+  let pendingFamilies = [];
+  try {
+    const rows = await sbFetch('families?approved=eq.false&order=created_at.desc&limit=20');
+    if (rows) pendingFamilies = rows;
+  } catch(e) {}
+
+  el.innerHTML = `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(87,199,133,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:8px">🔗 Uitnodigen & Delen</div>
+      <div style="background:#0f3460;border-radius:10px;padding:10px;margin-bottom:10px;font-family:'Fredoka One',cursive;font-size:0.78rem;color:#f5a623;word-break:break-all">${INVITE_URL}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button onclick="shareViaWhatsApp()" style="flex:1;padding:10px 6px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">💬 WhatsApp</button>
+        <button onclick="shareViaNative()" style="flex:1;padding:10px 6px;background:linear-gradient(135deg,#1565c0,#42a5f5);color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">📤 Deel via...</button>
+        <button onclick="copyShareLink()" style="flex:1;padding:10px 6px;background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);border-radius:12px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">📋 Kopieer</button>
+      </div>
+      <button onclick="forceSyncNow()" style="width:100%;padding:8px;background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">☁️ Nu synchroniseren</button>
+    </div>
+    ${pendingFamilies.length > 0 ? `
+    <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:2px solid #f5a623">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">✋ Wacht op Goedkeuring (${pendingFamilies.length})</div>
+      ${pendingFamilies.map(f => `
+        <div style="background:#0f3060;border-radius:12px;padding:10px;margin-bottom:8px">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">👨‍👩‍👧 ${f.family_name}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:3px 0">Ouder: ${f.parent_name} · ${new Date(f.created_at).toLocaleDateString('nl-NL')}</div>
+          ${(f.children||[]).map(ch=>`<div style="font-size:0.75rem;color:#57c785">👶 ${ch.name} · Groep ${ch.grade}</div>`).join('')}
+          <button onclick="approveFamily('${f.id}')" style="width:100%;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;margin-top:8px">✅ Goedkeuren</button>
+        </div>`).join('')}
+    </div>` : '<div style="background:#1a2744;border-radius:12px;padding:10px;margin-bottom:12px;text-align:center;border:1px solid rgba(87,199,133,0.2)"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">✅ Geen wachtende aanmeldingen</div></div>'}`;
+}
+
+function exportBackup() {
+  try {
+    const backup = { version:'sterrenpad_backup_v1', date:new Date().toISOString(), familyId:getFamilyId(), state, registration:getRegistration() };
+    const blob = new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=`sterrenpad-backup-${new Date().toLocaleDateString('nl-NL').replace(/\//g,'-')}.json`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('✅ Backup gemaakt!');
+  } catch(e) { showToast('❌ Backup mislukt', true); }
+}
+
+function importBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.version?.includes('sterrenpad_backup')) { showToast('❌ Ongeldig backup bestand!',true); return; }
+      if (backup.state) { state={...state,...backup.state}; try{localStorage.setItem('sterrenpad_v4',JSON.stringify(state));}catch(e){} }
+      if (backup.registration) saveRegistration(backup.registration);
+      updateCoinDisplay(); setWorldForPlayer(); renderHome(); renderParentReport();
+      showToast('✅ Backup hersteld!'); sfxLevelUp();
+    } catch(e) { showToast('❌ Fout bij herstellen: '+e.message,true); }
+  };
+  reader.readAsText(file); input.value='';
 }
 
 // ===== 💡 IDEEËNBUS =====
@@ -8561,6 +8710,259 @@ function checkTimeLimit() {
   } else if (totalUsed >= tl.minutes - 2 && !_timeLimitWarned) {
     showToast(`⏰ ${naam}: nog 2 minuten over vandaag!`);
   }
+}
+
+// ===== 🏠 GEZINSHULP — VINGER RANDOMIZER =====
+function showGezinsHulp() {
+  const overlay = document.createElement('div');
+  overlay.id = 'gezinshulp-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;' +
+    'background:#0d0d1a;display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:center;text-align:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="max-width:360px;width:100%">
+      <div style="font-size:3rem;margin-bottom:12px">🏠</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#ab47bc;margin-bottom:8px">Gezinshulp</div>
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6">
+        Wie is er aan de beurt?<br><span style="color:#ab47bc">Eerlijk beslist door toeval!</span>
+      </div>
+      <button onclick="startFingerGame()"
+        style="width:100%;padding:18px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);
+        color:white;border:none;border-radius:20px;font-family:'Fredoka One',cursive;
+        font-size:1.3rem;cursor:pointer;box-shadow:0 6px 20px rgba(106,27,154,0.5);margin-bottom:12px">
+        👆 Wie is aan de beurt?
+      </button>
+      <button onclick="document.getElementById('gezinshulp-overlay').remove()"
+        style="background:rgba(255,255,255,0.08);border:none;border-radius:12px;
+        padding:10px 24px;color:rgba(255,255,255,0.5);font-family:'Fredoka One',cursive;
+        font-size:0.9rem;cursor:pointer">
+        ← Terug
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function startFingerGame() {
+  document.getElementById('gezinshulp-overlay')?.remove();
+  const el = document.createElement('div');
+  el.id = 'finger-game';
+  el.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:3000;' +
+    'background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none';
+  el.innerHTML = `
+    <canvas id="fg-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+    <div id="fg-msg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      font-family:'Fredoka One',cursive;font-size:6rem;color:white;pointer-events:none;
+      text-shadow:0 0 40px rgba(255,255,255,0.9);z-index:10;opacity:0;transition:opacity 0.3s;
+      text-align:center;width:100%"></div>
+    <div id="fg-sub" style="position:absolute;top:62%;left:50%;transform:translateX(-50%);
+      font-family:'Fredoka One',cursive;font-size:1.3rem;color:rgba(255,255,255,0.8);
+      pointer-events:none;text-align:center;z-index:10;width:90%">
+      Leg je vingers op het scherm!
+    </div>
+    <button id="fg-start" onclick="fgStart()" ontouchend="fgStart()"
+      style="position:absolute;bottom:50px;left:50%;transform:translateX(-50%);
+      background:linear-gradient(135deg,#6a1b9a,#ab47bc);color:white;border:none;
+      border-radius:20px;padding:16px 40px;font-family:'Fredoka One',cursive;
+      font-size:1.2rem;cursor:pointer;z-index:20;opacity:0;pointer-events:none;
+      transition:opacity 0.3s;white-space:nowrap">
+      ⚡ START!
+    </button>
+    <button onclick="fgClose()" style="position:absolute;top:16px;right:16px;
+      background:rgba(255,255,255,0.15);border:none;border-radius:12px;padding:8px 16px;
+      color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;z-index:20">
+      ✕
+    </button>`;
+  document.body.appendChild(el);
+
+  const canvas = document.getElementById('fg-canvas');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  window._fg = {
+    ctx: canvas.getContext('2d'),
+    canvas,
+    touches: {},
+    phase: 'waiting',
+    rafId: null,
+    countTO: null,
+    spinTO: null,
+    pulseInterval: null,
+  };
+
+  el.addEventListener('touchstart',  fgTouchStart, {passive:false});
+  el.addEventListener('touchend',    fgTouchEnd,   {passive:false});
+  el.addEventListener('touchcancel', fgTouchEnd,   {passive:false});
+  fgDraw();
+}
+
+function fgTouchStart(e) {
+  e.preventDefault();
+  const fg = window._fg;
+  if (!fg || fg.phase !== 'waiting') return;
+  Array.from(e.changedTouches).forEach(t => {
+    fg.touches[t.identifier] = { x:t.clientX, y:t.clientY, color:'#57c785', active:true, r:50 };
+  });
+  fgUpdateUI();
+}
+
+function fgTouchEnd(e) {
+  e.preventDefault();
+  const fg = window._fg;
+  if (!fg || fg.phase !== 'waiting') return;
+  Array.from(e.changedTouches).forEach(t => { delete fg.touches[t.identifier]; });
+  fgUpdateUI();
+}
+
+function fgUpdateUI() {
+  const fg = window._fg;
+  const n = Object.keys(fg.touches).length;
+  const btn = document.getElementById('fg-start');
+  const sub = document.getElementById('fg-sub');
+  if (n >= 2) {
+    if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='auto'; }
+    if (sub) sub.textContent = n + ' vingers gevonden! Druk START!';
+  } else {
+    if (btn) { btn.style.opacity='0'; btn.style.pointerEvents='none'; }
+    if (sub) sub.textContent = n === 1 ? 'Leg meer vingers! (min. 2)' : 'Leg je vingers op het scherm!';
+  }
+}
+
+function fgStart(e) {
+  if(e){e.preventDefault();e.stopPropagation();}
+  const fg = window._fg;
+  if (!fg) return;
+  const ids = Object.keys(fg.touches);
+  if (ids.length < 2) return;
+  fg.phase = 'countdown';
+  document.getElementById('fg-start').style.display = 'none';
+  document.getElementById('fg-sub').textContent = '';
+  // Alle vingers rood
+  ids.forEach(id => { fg.touches[id].color = '#e94560'; });
+
+  let n = 5;
+  const msg = document.getElementById('fg-msg');
+  if (msg) { msg.style.opacity='1'; msg.textContent=n; }
+
+  fg.countTO = setInterval(() => {
+    n--;
+    if (msg) msg.textContent = n > 0 ? n : '⚡ GO!';
+    if (n <= 0) { clearInterval(fg.countTO); setTimeout(fgSpin, 600); }
+  }, 1000);
+}
+
+function fgSpin() {
+  const fg = window._fg;
+  if (!fg) return;
+  fg.phase = 'spinning';
+  const msg = document.getElementById('fg-msg');
+  if (msg) { msg.style.opacity='0'; }
+
+  const ids = Object.keys(fg.touches);
+  let green = 0;
+  fg.touches[ids[0]].color = '#57c785';
+
+  let elapsed = 0;
+
+  function step() {
+    if (!window._fg || fg.phase !== 'spinning') return;
+    // Snelheidsverloop: opbouwen dan afbouwen
+    const p = elapsed / 7000;
+    let delay = p < 0.2 ? 250 : p < 0.5 ? 130 : p < 0.75 ? 70 : 100 + (p-0.75)*800;
+    delay = Math.max(60, Math.min(300, delay));
+
+    // Schakel groen door
+    fg.touches[ids[green]].color = '#e94560';
+    green = (green + 1) % ids.length;
+    fg.touches[ids[green]].color = '#57c785';
+
+    elapsed += delay;
+    if (elapsed < 7000) {
+      fg.spinTO = setTimeout(step, delay);
+    } else {
+      fgWinner(ids, green);
+    }
+  }
+  step();
+}
+
+function fgWinner(ids, winPos) {
+  const fg = window._fg;
+  if (!fg) return;
+  fg.phase = 'winner';
+
+  // Verwijder alle verliezers
+  ids.forEach((id, i) => {
+    if (i !== winPos) fg.touches[id].active = false;
+  });
+
+  const msg = document.getElementById('fg-msg');
+  const sub = document.getElementById('fg-sub');
+  if (msg) { msg.textContent='🎉'; msg.style.opacity='1'; msg.style.fontSize='7rem'; }
+  if (sub) { sub.textContent='JIJ BENT AAN DE BEURT!'; sub.style.color='#57c785'; sub.style.fontSize='1.6rem'; }
+
+  // Pulseer winnende bol
+  let pulse = 0;
+  fg.pulseInterval = setInterval(() => {
+    pulse++;
+    const w = fg.touches[ids[winPos]];
+    if (w) w.r = 55 + Math.sin(pulse * 0.25) * 15;
+    fgDrawFrame();
+  }, 30);
+
+  // Sluit-knop
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✓ Sluiten';
+  closeBtn.style.cssText = 'position:absolute;bottom:50px;left:50%;transform:translateX(-50%);' +
+    'background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;' +
+    'border-radius:20px;padding:16px 40px;font-family:"Fredoka One",cursive;' +
+    'font-size:1.2rem;cursor:pointer;z-index:20';
+  closeBtn.onclick = closeBtn.ontouchend = fgClose;
+  document.getElementById('finger-game')?.appendChild(closeBtn);
+
+  if (typeof sfxLevelUp === 'function') sfxLevelUp();
+}
+
+function fgDrawFrame() {
+  const fg = window._fg;
+  if (!fg) return;
+  const {ctx, canvas, touches} = fg;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  Object.values(touches).forEach(t => {
+    if (!t.active) return;
+    const r = t.r || 50;
+    // Gloed
+    const grd = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, r*2);
+    grd.addColorStop(0, t.color + '88');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(t.x, t.y, r*2, 0, Math.PI*2); ctx.fill();
+    // Cirkel
+    ctx.beginPath(); ctx.arc(t.x, t.y, r, 0, Math.PI*2);
+    ctx.fillStyle = t.color + 'cc'; ctx.fill();
+    ctx.strokeStyle = t.color; ctx.lineWidth = 4; ctx.stroke();
+    // Stip
+    ctx.beginPath(); ctx.arc(t.x, t.y, 10, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+  });
+}
+
+function fgDraw() {
+  const fg = window._fg;
+  if (!fg || fg.phase === 'winner') return;
+  fgDrawFrame();
+  fg.rafId = requestAnimationFrame(fgDraw);
+}
+
+function fgClose(e) {
+  if(e){e.preventDefault();e.stopPropagation();}
+  const fg = window._fg;
+  if (fg) {
+    clearInterval(fg.countTO); clearTimeout(fg.spinTO);
+    clearInterval(fg.pulseInterval);
+    if (fg.rafId) cancelAnimationFrame(fg.rafId);
+    window._fg = null;
+  }
+  document.getElementById('finger-game')?.remove();
 }
 
 // INIT =====
