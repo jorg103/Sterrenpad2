@@ -9044,29 +9044,78 @@ function showGezinsHulp() {
   overlay.id = 'gezinshulp-overlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;' +
     'background:#0d0d1a;display:flex;flex-direction:column;align-items:center;' +
-    'justify-content:center;text-align:center;padding:20px';
+    'overflow-y:auto;padding:20px 20px 40px';
+
+  // Check if health coins earned today
+  const hToday = localStorage.getItem('health_coins_' + new Date().toDateString());
+  const sunPct  = getSunProgress(); // 0-100 based on time of day
+
   overlay.innerHTML = `
-    <div style="max-width:360px;width:100%">
-      <div style="font-size:3rem;margin-bottom:12px">🏠</div>
-      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#ab47bc;margin-bottom:8px">Gezinshulp</div>
-      <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:24px;line-height:1.6">
-        Wie is er aan de beurt?<br><span style="color:#ab47bc">Eerlijk beslist door toeval!</span>
+    <div style="max-width:380px;width:100%;padding-top:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+        <div style="font-size:2.5rem">🌅</div>
+        <div>
+          <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#ab47bc">Gezinshulp</div>
+          <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Samen sterk · Elke dag</div>
+        </div>
+        <button onclick="document.getElementById('gezinshulp-overlay').remove()"
+          style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;border-radius:10px;
+          padding:8px 12px;color:white;cursor:pointer;font-size:1rem">✕</button>
       </div>
-      <button onclick="startFingerGame()"
-        style="width:100%;padding:18px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);
-        color:white;border:none;border-radius:20px;font-family:'Fredoka One',cursive;
-        font-size:1.3rem;cursor:pointer;box-shadow:0 6px 20px rgba(106,27,154,0.5);margin-bottom:12px">
-        👆 Wie is aan de beurt?
+
+      <!-- Dagelijkse zon progress -->
+      <div style="background:linear-gradient(135deg,#1a1a3e,#0f2040);border-radius:20px;padding:16px;margin-bottom:12px;border:1px solid rgba(245,166,35,0.3);overflow:hidden;position:relative">
+        <div style="position:absolute;top:0;left:0;right:0;bottom:0;opacity:0.15;background:radial-gradient(circle at ${sunPct}% 60%, #f5a623, transparent 60%)"></div>
+        <div style="display:flex;align-items:center;gap:12px;position:relative">
+          <div style="font-size:3rem" id="sun-emoji">☀️</div>
+          <div>
+            <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem">Dagelijks Gezondheidsplan</div>
+            <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);margin-top:2px">
+              ${hToday ? '✅ Vandaag al gedaan!' : '🌱 Klaar voor vandaag?'}
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:8px;height:6px;margin-top:10px;overflow:hidden">
+          <div style="width:${sunPct}%;height:100%;background:linear-gradient(90deg,#f5a623,#ff9800);border-radius:8px;transition:width 1s"></div>
+        </div>
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:4px;text-align:right">De zon staat op ${sunPct}% van de dag</div>
+      </div>
+
+      <!-- Gezondheidsplaneet knop -->
+      <button onclick="showGezondheidsPlaneet()"
+        style="width:100%;padding:18px;background:linear-gradient(135deg,#1565c0,#0d47a1);
+        border:2px solid #42a5f5;color:white;border-radius:20px;
+        font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;
+        box-shadow:0 6px 20px rgba(21,101,192,0.4);margin-bottom:10px;
+        display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:1.8rem">🌍</span>
+        <div style="text-align:left">
+          <div>Gezondheidsplaneet</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.6);font-family:'Nunito',sans-serif">Fysiek · Mentaal · Samen</div>
+        </div>
+        ${hToday ? '<span style="margin-left:auto;font-size:1.2rem">✅</span>' : '<span style="margin-left:auto;font-size:0.8rem;background:#f5a623;color:#000;border-radius:8px;padding:3px 8px;font-family:\'Fredoka One\',cursive">NIEUW</span>'}
       </button>
-      <button onclick="document.getElementById('gezinshulp-overlay').remove()"
-        style="background:rgba(255,255,255,0.08);border:none;border-radius:12px;
-        padding:10px 24px;color:rgba(255,255,255,0.5);font-family:'Fredoka One',cursive;
-        font-size:0.9rem;cursor:pointer">
-        ← Terug
+
+      <!-- Wie is aan de beurt -->
+      <button onclick="startFingerGame()"
+        style="width:100%;padding:16px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);
+        color:white;border:none;border-radius:16px;font-family:'Fredoka One',cursive;
+        font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(106,27,154,0.4);margin-bottom:10px;
+        display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:1.5rem">👆</span> Wie is aan de beurt?
       </button>
     </div>`;
   document.body.appendChild(overlay);
 }
+
+function getSunProgress() {
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes()/60;
+  // Zon komt op om 6:00, gaat onder om 22:00
+  const pct = Math.max(0, Math.min(100, Math.round((h - 6) / 16 * 100)));
+  return pct;
+}
+
 
 function startFingerGame() {
   document.getElementById('gezinshulp-overlay')?.remove();
@@ -9526,6 +9575,407 @@ state.players.forEach(p => {
 });
 
 // DOM-afhankelijke init — wacht tot DOM klaar is
+// ===== 🌍 GEZONDHEIDSPLANEET =====
+
+const HEALTH_KEY = 'tp_health_profile';
+function getHealthProfile() { try { return JSON.parse(localStorage.getItem(HEALTH_KEY)||'null'); } catch(e) { return null; } }
+function saveHealthProfile(p) { try { localStorage.setItem(HEALTH_KEY, JSON.stringify(p)); } catch(e) {} }
+
+const PHYSICAL_WORKOUTS = {
+  killer: [
+    { name:'Push-ups',   emoji:'💪', sets:3, reps:15, rest:45, desc:'Handen schouderbreedte, rug recht, borst naar de grond', muscles:'Borst · Schouders · Triceps' },
+    { name:'Squats',     emoji:'🦵', sets:3, reps:20, rest:45, desc:'Voeten schouderbreedte, knieën boven je tenen, rug recht', muscles:'Benen · Billen · Core' },
+    { name:'Plank',      emoji:'🧱', sets:3, reps:45, rest:60, desc:'45 seconden vasthouden, rug recht als een plank', muscles:'Core · Rug · Schouders', isTime:true },
+    { name:'Burpees',    emoji:'🔥', sets:3, reps:10, rest:60, desc:'Squat → plank → push-up → spring omhoog met armen', muscles:'Volledig lichaam' },
+    { name:'Lunges',     emoji:'⚡', sets:3, reps:12, rest:45, desc:'Stap vooruit, knie 90°, wissel been', muscles:'Benen · Billen · Balans' },
+    { name:'Mountain Climbers', emoji:'🏔️', sets:3, reps:30, rest:45, desc:'30 seconden snel knieën afwisselend naar borst', muscles:'Core · Cardio', isTime:true },
+  ],
+  gezond: [
+    { name:'Push-ups',   emoji:'💪', sets:2, reps:10, rest:60, desc:'Handen schouderbreedte, rustig omlaag en omhoog', muscles:'Borst · Armen' },
+    { name:'Squats',     emoji:'🦵', sets:2, reps:15, rest:60, desc:'Voeten schouderbreedte, rustig omlaag', muscles:'Benen · Billen' },
+    { name:'Plank',      emoji:'🧱', sets:2, reps:30, rest:60, desc:'30 seconden houden, blijf ademen', muscles:'Core · Rug', isTime:true },
+    { name:'Wandelen',   emoji:'🚶', sets:1, reps:20, rest:0,  desc:'20 minuten stevig doorwandelen', muscles:'Cardio · Benen', isTime:true, timeInMin:true },
+    { name:'Stretching', emoji:'🧘', sets:1, reps:60, rest:0,  desc:'Nek, schouders, rug en benen losmaken', muscles:'Flexibiliteit', isTime:true },
+  ],
+  beweging: [
+    { name:'Wandelen',       emoji:'🚶', sets:1, reps:15, rest:0, desc:'15 minuten rustig wandelen in de buitenlucht', muscles:'Cardio · Benen', isTime:true, timeInMin:true },
+    { name:'Stretching',     emoji:'🧘', sets:1, reps:120, rest:0, desc:'2 minuten nek en schouders rustig losmaken', muscles:'Flexibiliteit', isTime:true },
+    { name:'Diepe ademhaling',emoji:'🌬️', sets:1, reps:60, rest:0, desc:'Inademen 4 sec · uitademen 6 sec, herhalen', muscles:'Ontspanning', isTime:true },
+    { name:'Knie-optrek',    emoji:'🦵', sets:2, reps:10, rest:90, desc:'Staand, been optrekken tot 90°, 3 seconden vasthouden', muscles:'Balans · Benen' },
+  ],
+};
+
+const MENTAL_EXERCISES = {
+  einstein:    [ {type:'sudoku',name:'Sudoku',emoji:'🧩',desc:'Los het 9×9 puzzel op'},{type:'quiz',name:'Wetenschap Quiz',emoji:'🔬',desc:'8 wetenschapsvragen'},{type:'talen',name:'Spaans Gevorderd',emoji:'🇪🇸',desc:'8 woordparen koppelen'},{type:'geheugen',name:'Getal Geheugen',emoji:'🔢',desc:'Onthoud een rij getallen'},{type:'logica',name:'Logica Puzzel',emoji:'🧠',desc:'Wie woont waar?'} ],
+  kennis:      [ {type:'quiz',name:'Algemene Kennis',emoji:'🌍',desc:'8 quizvragen'},{type:'talen',name:'Spaans Basis',emoji:'🇪🇸',desc:'8 woordparen koppelen'},{type:'sudoku',name:'Sudoku 6x6',emoji:'🧩',desc:'Makkelijkere 6×6 variant'},{type:'woorden',name:'Woordenschat',emoji:'📚',desc:'Leer 5 nieuwe woorden'} ],
+  bijscholing: [ {type:'quiz',name:'Algemene Kennis',emoji:'💼',desc:'Praktische vragen'},{type:'talen',name:'Engelse Woorden',emoji:'🇬🇧',desc:'Engelse zakelijke termen'},{type:'geheugen',name:'Lijsten Onthouden',emoji:'📋',desc:'Onthoud een lijst'} ],
+};
+
+const QUIZ_VRAGEN_HEALTH = {
+  wetenschap: [
+    {v:'Hoeveel botten heeft een volwassen mens?',opts:['206','186','226','196'],a:0},
+    {v:'Wat is de snelheid van licht?',opts:['300.000 km/s','150.000 km/s','450.000 km/s','100.000 km/s'],a:0},
+    {v:'Welk element heeft symbool Au?',opts:['Goud','Zilver','Aluminium','IJzer'],a:0},
+    {v:'Hoe ver is de aarde van de zon?',opts:['150 miljoen km','50 miljoen km','250 miljoen km','300 miljoen km'],a:0},
+    {v:'Welk orgaan pompt bloed rond?',opts:['Hart','Long','Lever','Milt'],a:0},
+    {v:'Wat is DNA?',opts:['Erfelijk materiaal','Een eiwit','Een hormoon','Een vitamine'],a:0},
+    {v:'Hoe oud is het heelal?',opts:['13,8 miljard jaar','4,5 miljard jaar','100 miljard jaar','6000 jaar'],a:0},
+    {v:'Welke planeet is het grootst?',opts:['Jupiter','Saturnus','Neptunus','Uranus'],a:0},
+  ],
+  algemeen: [
+    {v:'Wat is de hoofdstad van Australië?',opts:['Canberra','Sydney','Melbourne','Brisbane'],a:0},
+    {v:'Wie schilderde de Mona Lisa?',opts:['Da Vinci','Michelangelo','Raphael','Botticelli'],a:0},
+    {v:'Hoeveel continenten zijn er?',opts:['7','6','8','5'],a:0},
+    {v:'In welk jaar viel de Berlijnse Muur?',opts:['1989','1991','1985','1993'],a:0},
+    {v:'Welke valuta gebruikt Japan?',opts:['Yen','Won','Ringgit','Baht'],a:0},
+    {v:'Hoeveel ogen heeft een spin?',opts:['8','6','4','2'],a:0},
+    {v:'Welke taal spreekt men in Brazilië?',opts:['Portugees','Spaans','Braziliaans','Engels'],a:0},
+    {v:'Wat is het langste rivier ter wereld?',opts:['Nijl','Amazone','Yangtze','Mississippi'],a:0},
+  ],
+};
+
+const SPAANS_ADULT = [
+  ['goed','bueno'],['slecht','malo'],['mooi','bonito'],['groot','grande'],['klein','pequeño'],
+  ['snel','rápido'],['langzaam','lento'],['warm','caliente'],['koud','frío'],['nieuw','nuevo'],
+  ['werk','trabajo'],['huis','casa'],['auto','coche'],['geld','dinero'],['tijd','tiempo'],
+  ['liefde','amor'],['gezondheid','salud'],['geluk','suerte'],['eten','comer'],['drinken','beber'],
+  ['sterk','fuerte'],['slim','inteligente'],['familie','familia'],['vriend','amigo'],['leren','aprender'],
+];
+
+const SAMEN_CHALLENGES = [
+  {name:'Frisbee Score Race',emoji:'🥏',type:'buiten',desc:'Wie kan het vaakst de frisbee gooien en vangen op een rij?',howto:'Ga 10m uit elkaar. Gooi en vang beurtelings. Tel de langste reeks zonder te laten vallen. Beste van 3.',winner:'Hoogste reeks wint!'},
+  {name:'Trampolinebal',emoji:'🎾',type:'buiten',desc:'Wie kan de bal het vaakst stuiteren op de trampoline?',howto:'Sta op de trampoline. Stuitjer de bal zo vaak mogelijk. Wissel om de beurt.',winner:'Meeste stuiters wint!'},
+  {name:'Pétanque Duel',emoji:'🎯',type:'buiten',desc:'Klassiek pétanque — ouder vs kind!',howto:'Gooi het kleine balletje. Wissel de zware ballen. 3 ronden, dichtstbij = punt.',winner:'Meeste punten in 3 ronden!'},
+  {name:'Plank Battle',emoji:'🏋️',type:'binnen',desc:'Wie houdt de plank het langst vol?',howto:'Ga tegelijk in plankpositie. Rug recht, armen gestrekt. Stop de timer.',winner:'Langst in plank wint!'},
+  {name:'Jumping Jack Sprint',emoji:'⚡',type:'binnen',desc:'Wie doet de meeste jumping jacks in 30 seconden?',howto:'Stel 30 seconden in. Tel je eigen jumping jacks. Eerlijk tellen!',winner:'Meeste jumping jacks wint!'},
+  {name:'Balans Battle',emoji:'🦩',type:'binnen',desc:'Wie balanceert het langst op één been?',howto:'Sta op één been, armen langs het lichaam. Wissel been. Combineer beste van beide.',winner:'Langste totaaltijd wint!'},
+  {name:'Tuin Estafette',emoji:'🏃',type:'buiten',desc:'Sprint 10 meter, raak een boom aan, spring 5x, sprint terug!',howto:'Maak een parcours. Wissel om de beurt. Stop de tijd. Beste van 3.',winner:'Snelste tijd wint!'},
+  {name:'Quiz Duel',emoji:'🧠',type:'binnen',desc:'Wie beantwoordt het snelst de meeste vragen correct?',howto:'Stel vragen om de beurt voor (of gebruik de quiz). Wie het eerst juist antwoordt krijgt het punt.',winner:'Meeste punten wint!'},
+];
+
+
+function showGezondheidsPlaneet() {
+  document.getElementById('gezinshulp-overlay')?.remove();
+  const profile = getHealthProfile();
+  const todayKey = 'health_coins_' + new Date().toDateString();
+  const coinsEarned = localStorage.getItem(todayKey);
+  const overlay = document.createElement('div');
+  overlay.id = 'health-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2500;background:#0a0a1a;overflow-y:auto';
+  overlay.innerHTML = !profile ? buildHealthOnboarding() : buildHealthDashboard(profile, coinsEarned);
+  document.body.appendChild(overlay);
+}
+
+function buildHealthOnboarding() {
+  return `<div style="max-width:400px;margin:0 auto;padding:20px 16px 60px">
+    <div style="text-align:center;margin-bottom:24px;padding-top:16px">
+      <div style="font-size:4rem;margin-bottom:8px">🌍</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#42a5f5">Gezondheidsplaneet</div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-top:4px">Stel één keer je doelen in</div>
+    </div>
+    <div style="background:#1a2744;border-radius:18px;padding:16px;margin-bottom:14px;border:2px solid rgba(87,199,133,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:12px">💪 Jouw Fysieke Doel</div>
+      ${[['killer','🔥 Killer Body','Intensief trainen, sterk en gespierd worden'],['gezond','💚 Gewoon Gezond','Gezond en fit blijven, gevarieerde beweging'],['beweging','🚶 In Beweging Blijven','Licht bewegen, soepel blijven, ontspannen']].map(([k,l,d]) =>
+        `<div onclick="selectHealthGoal('phys','${k}')" id="phys-${k}" style="padding:12px;background:#0f3060;border:2px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:8px;cursor:pointer">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem">${l}</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px">${d}</div>
+        </div>`).join('')}
+    </div>
+    <div style="background:#1a2744;border-radius:18px;padding:16px;margin-bottom:20px;border:2px solid rgba(206,147,216,0.3)">
+      <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem;margin-bottom:12px">🧠 Jouw Mentale Doel</div>
+      ${[['einstein','⚡ Slimmer dan Einstein','Uitdagende puzzels, logica en wetenschapsquiz'],['kennis','📚 Kennis Vergroten','Quizzen, Spaans leren, woordenschat uitbreiden'],['bijscholing','💼 Bijgeschoold Blijven','Praktische kennis en zakelijke vaardigheden']].map(([k,l,d]) =>
+        `<div onclick="selectHealthGoal('ment','${k}')" id="ment-${k}" style="padding:12px;background:#0f3060;border:2px solid rgba(255,255,255,0.1);border-radius:12px;margin-bottom:8px;cursor:pointer">
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem">${l}</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px">${d}</div>
+        </div>`).join('')}
+    </div>
+    <button onclick="saveHealthGoals()" style="width:100%;padding:16px;background:linear-gradient(135deg,#1565c0,#42a5f5);color:white;border:none;border-radius:16px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer">🚀 Start Gezondheidsreis!</button>
+    <button onclick="document.getElementById('health-overlay').remove();showGezinsHulp()" style="width:100%;padding:10px;background:none;border:none;color:rgba(255,255,255,0.4);font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;margin-top:8px">← Terug</button>
+  </div>`;
+}
+
+window._healthGoals = {phys:null,ment:null};
+function selectHealthGoal(type, key) {
+  window._healthGoals[type] = key;
+  const keys = type==='phys' ? ['killer','gezond','beweging'] : ['einstein','kennis','bijscholing'];
+  const col = type==='phys' ? '#57c785' : '#ce93d8';
+  keys.forEach(k => {
+    const el = document.getElementById(type+'-'+k);
+    if(el){ el.style.borderColor = k===key?col:'rgba(255,255,255,0.1)'; el.style.background = k===key?col+'22':'#0f3060'; }
+  });
+}
+function saveHealthGoals() {
+  const g = window._healthGoals;
+  if(!g.phys||!g.ment){ showToast('Kies eerst beide doelen!',true); return; }
+  saveHealthProfile({phys:g.phys,ment:g.ment,startDate:new Date().toISOString(),streakDays:0,lastVisit:null});
+  document.getElementById('health-overlay').remove();
+  showGezondheidsPlaneet();
+}
+
+function buildHealthDashboard(profile, coinsEarned) {
+  const pL={killer:'🔥 Killer Body',gezond:'💚 Gewoon Gezond',beweging:'🚶 In Beweging'};
+  const mL={einstein:'⚡ Einstein Mode',kennis:'📚 Kennis',bijscholing:'💼 Bijscholing'};
+  const sunPct=getSunProgress();
+  const streak=profile.streakDays||0;
+  return `<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px">
+      <button onclick="document.getElementById('health-overlay').remove();showGezinsHulp()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div><div style="font-family:'Fredoka One',cursive;color:#42a5f5;font-size:1.3rem">🌍 Gezondheidsplaneet</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.5)">${pL[profile.phys]} · ${mL[profile.ment]}</div></div>
+      <div style="margin-left:auto;text-align:center"><div style="font-size:1.5rem">🔥</div><div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.85rem">${streak} dagen</div></div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a3e,#0f2040);border-radius:16px;padding:14px;margin-bottom:12px;border:1px solid rgba(245,166,35,0.2)">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <div style="font-size:1.8rem">☀️</div>
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem">De zon staat op ${sunPct}%</div>
+        ${coinsEarned?'<div style="margin-left:auto;background:#57c785;color:#000;border-radius:8px;padding:3px 8px;font-family:\'Fredoka One\',cursive;font-size:0.78rem">✅ Gedaan!</div>':''}
+      </div>
+      <div style="background:rgba(255,255,255,0.1);border-radius:6px;height:8px;overflow:hidden">
+        <div style="width:${sunPct}%;height:100%;background:linear-gradient(90deg,#f5a623,#ff5722);border-radius:6px"></div>
+      </div>
+      <div style="font-size:0.75rem;color:${coinsEarned?'#57c785':'#f5a623'};margin-top:6px;text-align:center">
+        ${coinsEarned?'Super! Je kunt altijd nog een keer oefenen.':'💰 Verdien vandaag 20 coins door te trainen!'}
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+      <button onclick="showPhysical()" style="padding:16px 8px;background:linear-gradient(135deg,#2e7d32,#57c785);border:none;border-radius:14px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;text-align:center"><div style="font-size:1.8rem">💪</div>Fysiek</button>
+      <button onclick="showMental()" style="padding:16px 8px;background:linear-gradient(135deg,#4a148c,#ce93d8);border:none;border-radius:14px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;text-align:center"><div style="font-size:1.8rem">🧠</div>Mentaal</button>
+      <button onclick="showSamenChallenge()" style="padding:16px 8px;background:linear-gradient(135deg,#e65100,#ff9800);border:none;border-radius:14px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;text-align:center"><div style="font-size:1.8rem">🏆</div>Samen</button>
+    </div>
+    <button onclick="resetHealthProfile()" style="width:100%;padding:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,255,255,0.4);font-family:'Fredoka One',cursive;font-size:0.8rem;cursor:pointer">⚙️ Doelen aanpassen</button>
+  </div>`;
+}
+function resetHealthProfile(){ if(confirm('Doelen resetten?')){ localStorage.removeItem(HEALTH_KEY); document.getElementById('health-overlay').remove(); showGezondheidsPlaneet(); } }
+
+function showPhysical() {
+  const profile=getHealthProfile();
+  const workouts=PHYSICAL_WORKOUTS[profile?.phys||'gezond'];
+  const idx=Math.floor(Math.random()*workouts.length);
+  renderWorkout(workouts[idx],workouts,idx);
+}
+
+function renderWorkout(w,workouts,idx) {
+  const el=document.getElementById('health-overlay');
+  if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px">
+      <button onclick="showHealthDashboard()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1.2rem">💪 Fysieke Training</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a3a1a,#2e7d32);border-radius:20px;padding:20px;margin-bottom:14px;border:2px solid #57c785">
+      <div style="font-size:3rem;text-align:center;margin-bottom:8px">${w.emoji}</div>
+      <div style="font-family:'Fredoka One',cursive;color:white;font-size:1.3rem;text-align:center;margin-bottom:8px">${w.name}</div>
+      <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.6">${w.desc}</div>
+        <div style="font-size:0.75rem;color:#57c785;margin-top:6px">💪 ${w.muscles}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+        <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:10px 16px;text-align:center"><div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#f5a623">${w.sets}</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.6)">sets</div></div>
+        <div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:10px 16px;text-align:center"><div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#f5a623">${w.reps}</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.6)">${w.isTime?(w.timeInMin?'min':'sec'):'reps'}</div></div>
+        ${w.rest>0?`<div style="background:rgba(0,0,0,0.3);border-radius:12px;padding:10px 16px;text-align:center"><div style="font-family:'Fredoka One',cursive;font-size:1.5rem;color:#90caf9">${w.rest}</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.6)">sec rust</div></div>`:''}
+      </div>
+      <button onclick="startWorkoutTimer(${w.isTime?w.reps:w.rest},'${w.name}')" style="width:100%;padding:12px;background:linear-gradient(135deg,#f5a623,#e65100);color:white;border:none;border-radius:12px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer">⏱️ ${w.isTime?'Start Timer':'Start Rusttimer'}</button>
+    </div>
+    <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:8px">Andere oefeningen:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      ${workouts.map((wo,i)=>`<button onclick="renderWorkout(PHYSICAL_WORKOUTS[getHealthProfile()?.phys||'gezond'][${i}],PHYSICAL_WORKOUTS[getHealthProfile()?.phys||'gezond'],${i})" style="padding:8px 12px;background:${i===idx?'#57c785':'rgba(255,255,255,0.08)'};border:none;border-radius:10px;color:${i===idx?'#000':'white'};font-family:'Fredoka One',cursive;font-size:0.8rem;cursor:pointer">${wo.emoji} ${wo.name}</button>`).join('')}
+    </div>
+    <button onclick="completeHealthSession('phys')" style="width:100%;padding:14px;background:linear-gradient(135deg,#2e7d32,#57c785);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">✅ Training voltooid! +10 coins</button>
+  </div>`;
+}
+
+function startWorkoutTimer(seconds, name) {
+  if(window._wt){ clearInterval(window._wt); }
+  const id='workout-timer-overlay';
+  document.getElementById(id)?.remove();
+  let remaining=seconds;
+  const timerEl=document.createElement('div');
+  timerEl.id=id;
+  timerEl.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#0f3060;border:3px solid #f5a623;border-radius:24px;padding:30px 40px;text-align:center;min-width:220px;box-shadow:0 8px 40px rgba(0,0,0,0.8)';
+  timerEl.innerHTML=`<div style="font-size:1rem;color:rgba(255,255,255,0.6);margin-bottom:6px">${name}</div><div id="timer-val" style="font-family:'Fredoka One',cursive;font-size:4rem;color:#f5a623">${remaining}</div><div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:12px">seconden</div><button onclick="clearInterval(window._wt);document.getElementById('${id}').remove()" style="background:rgba(233,69,96,0.3);border:1px solid #e94560;border-radius:10px;padding:8px 20px;color:#e94560;font-family:'Fredoka One',cursive;cursor:pointer">Stop</button>`;
+  document.body.appendChild(timerEl);
+  window._wt=setInterval(()=>{ remaining--; const v=document.getElementById('timer-val'); if(v)v.textContent=remaining; if(remaining<=0){ clearInterval(window._wt); timerEl.innerHTML='<div style="font-size:3rem">✅</div><div style="font-family:\'Fredoka One\',cursive;color:#57c785;font-size:1.3rem">Klaar!</div>'; sfxLevelUp(); setTimeout(()=>timerEl.remove(),2000); } },1000);
+}
+
+function showMental() {
+  const profile=getHealthProfile();
+  const exercises=MENTAL_EXERCISES[profile?.ment||'kennis'];
+  const el=document.getElementById('health-overlay');
+  if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px">
+      <button onclick="showHealthDashboard()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1.2rem">🧠 Mentale Training</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${exercises.map(ex=>`<button onclick="startMentalExercise('${ex.type}')" style="padding:16px;background:#1a2744;border:2px solid rgba(206,147,216,0.3);border-radius:16px;color:white;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center"><div style="font-size:2.2rem">${ex.emoji}</div><div><div style="font-family:'Fredoka One',cursive;font-size:1rem">${ex.name}</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px">${ex.desc}</div></div><div style="margin-left:auto">→</div></button>`).join('')}
+    </div>
+  </div>`;
+}
+function startMentalExercise(type){ if(type==='quiz')showHealthQuiz(); else if(type==='sudoku')showHealthSudoku(); else if(type==='talen')showHealthTalen(); else if(type==='geheugen')showHealthGeheugen(); else if(type==='logica')showHealthLogica(); else if(type==='woorden')showHealthWoorden(); }
+
+function showHealthQuiz() {
+  const profile=getHealthProfile();
+  const set=profile?.ment==='einstein'?'wetenschap':'algemeen';
+  const vragen=shuffleArr([...QUIZ_VRAGEN_HEALTH[set]]).slice(0,8);
+  let qi=0,score=0;
+  window._hqNext=()=>{ qi++; if(qi>=vragen.length){ const rew=score*3; completeHealthSession('ment',rew); return; } renderHQ(); };
+  window._hqScore=()=>score++;
+  function renderHQ() {
+    const el=document.getElementById('health-overlay'); if(!el)return;
+    const q=vragen[qi];
+    const opts=shuffleArr(q.opts.map((o,i)=>({o,correct:i===q.a})));
+    el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">Quiz · Vraag ${qi+1}/8</div><div style="margin-left:auto;font-family:'Fredoka One',cursive;color:#f5a623">${score}✓</div></div><div style="background:#1a2744;border-radius:16px;padding:20px;margin-bottom:14px"><div style="font-family:'Fredoka One',cursive;color:white;font-size:1.05rem;line-height:1.5">${q.v}</div></div><div style="display:flex;flex-direction:column;gap:8px">${opts.map(({o,correct})=>`<button onclick="handleHealthQuizAnswer(this,${correct})" style="padding:14px;background:#1a2744;border:2px solid rgba(255,255,255,0.1);border-radius:14px;color:white;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;text-align:left">${o}</button>`).join('')}</div></div>`;
+  }
+  renderHQ();
+}
+function handleHealthQuizAnswer(btn,correct){ document.querySelectorAll('[onclick^="handleHealthQuizAnswer"]').forEach(b=>b.onclick=null); if(correct){ btn.style.background='#2e7d32'; btn.style.borderColor='#57c785'; if(window._hqScore)window._hqScore(); sfxCorrect(); } else { btn.style.background='#7f0000'; btn.style.borderColor='#e94560'; sfxWrong(); } setTimeout(()=>{ if(window._hqNext)window._hqNext(); },900); }
+
+function showHealthTalen() {
+  const pairs=shuffleArr([...SPAANS_ADULT]).slice(0,8);
+  const leftW=shuffleArr(pairs.map(p=>p[0]));
+  const rightW=shuffleArr(pairs.map(p=>p[1]));
+  window._tad={pairs,leftW,rightW,sel:null,matched:[],score:0};
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">🇪🇸 NL → Spaans</div></div><div style="font-size:0.82rem;color:rgba(255,255,255,0.5);margin-bottom:10px;text-align:center">Tik de juiste vertaling</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="taal-adult-grid">${leftW.map((w,i)=>`<button id="tad-L-${i}" onclick="tadTik('L',${i},'${w}')" style="padding:12px;background:#1a2744;border:2px solid rgba(245,166,35,0.3);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">${w}</button><button id="tad-R-${i}" onclick="tadTik('R',${i},'${rightW[i]}')" style="padding:12px;background:#1a2744;border:2px solid rgba(87,199,133,0.3);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">${rightW[i]}</button>`).join('')}</div><div id="tad-msg" style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-top:10px;text-align:center;min-height:1.4rem"></div></div>`;
+}
+function tadTik(side,idx,word) {
+  const t=window._tad; if(!t)return;
+  const btn=document.getElementById('tad-'+side+'-'+idx);
+  if(!btn||btn.disabled)return;
+  if(!t.sel){ t.sel={side,idx,word}; btn.style.background='#1565c0'; btn.style.borderColor='#42a5f5'; sfxClick(); return; }
+  const other=t.sel;
+  const otherBtn=document.getElementById('tad-'+other.side+'-'+other.idx);
+  if(other.side===side&&other.idx===idx){ btn.style.background='#1a2744'; btn.style.borderColor=side==='L'?'rgba(245,166,35,0.3)':'rgba(87,199,133,0.3)'; t.sel=null; return; }
+  const nlW=side==='L'?word:other.word;
+  const esW=side==='R'?word:other.word;
+  const isPair=t.pairs.some(p=>p[0]===nlW&&p[1]===esW);
+  if(isPair&&other.side!==side){ sfxCorrect(); [btn,otherBtn].forEach(b=>{if(b){b.style.background='#57c785';b.style.borderColor='#57c785';b.disabled=true;b.style.opacity='0.7';}}); t.matched.push(nlW); t.score++; const msg=document.getElementById('tad-msg'); if(msg)msg.textContent='✅ '+nlW+' = '+esW+'!'; if(t.matched.length===t.pairs.length){ sfxLevelUp(); setTimeout(()=>completeHealthSession('ment',14),800); } }
+  else{ sfxWrong(); [btn,otherBtn].forEach(b=>{if(b){b.style.background='rgba(233,69,96,0.2)';b.style.borderColor='#e94560';}}); setTimeout(()=>{ if(btn){btn.style.background='#1a2744';btn.style.borderColor=side==='L'?'rgba(245,166,35,0.3)':'rgba(87,199,133,0.3)';} if(otherBtn){otherBtn.style.background='#1a2744';otherBtn.style.borderColor=other.side==='L'?'rgba(245,166,35,0.3)':'rgba(87,199,133,0.3)';} },700); }
+  t.sel=null; if(otherBtn&&!otherBtn.disabled)otherBtn.style.background='#1a2744';
+}
+
+function showHealthSudoku() {
+  const profile=getHealthProfile();
+  const size=profile?.ment==='einstein'?9:6;
+  const puzzles6=[ [[6,1,0,4,0,2],[0,4,2,0,1,0],[1,0,4,2,0,6],[0,2,0,6,4,0],[4,0,1,0,2,3],[2,0,6,0,0,4]], [[0,5,0,1,0,4],[1,0,4,0,5,0],[5,4,0,0,1,0],[0,1,0,4,0,5],[4,0,5,0,0,1],[0,0,1,5,4,0]] ];
+  const puzzles9=[ [[5,3,0,0,7,0,0,0,0],[6,0,0,1,9,5,0,0,0],[0,9,8,0,0,0,0,6,0],[8,0,0,0,6,0,0,0,3],[4,0,0,8,0,3,0,0,1],[7,0,0,0,2,0,0,0,6],[0,6,0,0,0,0,2,8,0],[0,0,0,4,1,9,0,0,5],[0,0,0,0,8,0,0,7,9]] ];
+  const puzzle=(size===6?puzzles6[Math.floor(Math.random()*2)]:puzzles9[0]).map(r=>[...r]);
+  window._sudoku={puzzle,orig:puzzle.map(r=>[...r]),size};
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  const cs=size===6?48:34;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">🧩 Sudoku ${size}×${size}</div></div><div style="display:grid;grid-template-columns:repeat(${size},${cs}px);gap:2px;justify-content:center;margin-bottom:16px">${puzzle.map((row,r)=>row.map((val,c)=>`<input type="number" min="1" max="${size}" value="${val||''}" id="sc-${r}-${c}" ${val?'readonly':''} onchange="if(window._sudoku)window._sudoku.puzzle[${r}][${c}]=parseInt(this.value)||0" style="width:${cs}px;height:${cs}px;text-align:center;background:${val?'rgba(255,255,255,0.08)':'#1a2744'};border:1px solid rgba(255,255,255,0.15);color:${val?'rgba(255,255,255,0.5)':'#f5a623'};font-family:'Fredoka One',cursive;font-size:${size===6?'1.2':'0.9'}rem;border-radius:4px;-webkit-appearance:none;outline:none;">`).join('')).join('')}</div><button onclick="checkSudoku()" style="width:100%;padding:14px;background:linear-gradient(135deg,#4a148c,#ce93d8);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">✅ Controleer Sudoku</button></div>`;
+}
+function checkSudoku() {
+  const s=window._sudoku; if(!s)return; const n=s.size; let errs=0;
+  for(let i=0;i<n;i++){ const row=s.puzzle[i].filter(v=>v>0); const col=s.puzzle.map(r=>r[i]).filter(v=>v>0); if(new Set(row).size!==row.length||new Set(col).size!==col.length)errs++; }
+  if(errs===0&&s.puzzle.flat().every(v=>v>0)){ sfxLevelUp(); completeHealthSession('ment',15); }
+  else if(errs===0){ showToast('Goed bezig! Nog niet alles ingevuld.'); }
+  else{ sfxWrong(); showToast('Er zitten nog fouten in!',true); }
+}
+
+function showHealthGeheugen() {
+  const nums=Array.from({length:8},()=>Math.floor(Math.random()*9)+1).join(' ');
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">🔢 Getal Geheugen</div></div><div style="background:#1a2744;border-radius:20px;padding:30px;text-align:center;margin-bottom:16px"><div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:16px">Onthoud deze getallen!</div><div id="geheugen-nums" style="font-family:'Fredoka One',cursive;font-size:2.5rem;color:#f5a623;letter-spacing:8px">${nums}</div><div id="geheugen-timer" style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-top:12px">Nog 5 seconden...</div></div><div id="geheugen-input" style="display:none"><div style="font-size:0.85rem;color:rgba(255,255,255,0.6);margin-bottom:10px;text-align:center">Typ de getallen (met spaties):</div><input id="geheugen-answer" type="text" placeholder="bijv: 3 7 1 9 4 2 8 5" style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(245,166,35,0.4);background:#1a2744;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.2rem;text-align:center;box-sizing:border-box;margin-bottom:10px"><button onclick="checkGeheugen('${nums}')" style="width:100%;padding:14px;background:linear-gradient(135deg,#4a148c,#ce93d8);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">✅ Controleer</button></div></div>`;
+  let secs=5;
+  const t=setInterval(()=>{ secs--; const te=document.getElementById('geheugen-timer'); if(te)te.textContent=secs>0?'Nog '+secs+' sec...':'Nu!'; if(secs<=0){ clearInterval(t); const ne=document.getElementById('geheugen-nums'); if(ne)ne.textContent='? ? ? ? ? ? ? ?'; const ie=document.getElementById('geheugen-input'); if(ie)ie.style.display='block'; } },1000);
+}
+function checkGeheugen(original){ const ans=document.getElementById('geheugen-answer')?.value?.trim(); if(ans===original){ sfxLevelUp(); completeHealthSession('ment',12); } else{ sfxWrong(); showToast('Niet helemaal! Het waren: '+original,true); setTimeout(()=>completeHealthSession('ment',3),1500); } }
+
+function showHealthLogica() {
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">🧠 Logica Puzzel</div></div><div style="background:#1a2744;border-radius:20px;padding:20px;margin-bottom:16px"><div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:12px">Wie woont waar?</div><div style="font-size:0.85rem;color:rgba(255,255,255,0.85);line-height:1.8">• Er zijn 3 mensen: Anna, Boris en Clara.<br>• Ze wonen in Amsterdam, Rotterdam of Utrecht.<br>• Anna woont <em>niet</em> in Amsterdam.<br>• Boris woont in Rotterdam.<br>• Clara woont <em>niet</em> in Utrecht.<br><br><strong style="color:#ce93d8">Vraag: Waar woont Anna?</strong></div></div><div style="display:flex;flex-direction:column;gap:8px">${['Amsterdam','Rotterdam','Utrecht'].map(a=>`<button onclick="checkLogica(this,'${a}','Utrecht')" style="padding:14px;background:#1a2744;border:2px solid rgba(255,255,255,0.1);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">${a}</button>`).join('')}</div></div>`;
+}
+function checkLogica(btn,answer,correct){ document.querySelectorAll('[onclick^="checkLogica"]').forEach(b=>b.onclick=null); if(answer===correct){ btn.style.background='#2e7d32'; btn.style.borderColor='#57c785'; sfxLevelUp(); completeHealthSession('ment',10); } else{ btn.style.background='#7f0000'; btn.style.borderColor='#e94560'; sfxWrong(); showToast('Niet goed! Anna woont in Utrecht.',true); setTimeout(()=>completeHealthSession('ment',2),1500); } }
+
+function showHealthWoorden() {
+  const woorden=[{w:'Proliferatie',u:'Snelle vermenigvuldiging of verspreiding'},{w:'Empathie',u:'Je inleven in gevoelens van een ander'},{w:'Cognitief',u:'Betrekking op denken en kennisverwerking'},{w:'Resilientie',u:'Herstellen na tegenslag of moeilijkheden'},{w:'Serendipiteit',u:'Toevallig iets moois of waardevolls ontdekken'}];
+  let idx=0;
+  function showW() {
+    const el=document.getElementById('health-overlay'); if(!el)return;
+    if(idx>=woorden.length){ completeHealthSession('ment',8); return; }
+    const w=woorden[idx];
+    el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showMental()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem">📚 Woord ${idx+1}/5</div></div><div style="background:#1a2744;border-radius:20px;padding:30px;text-align:center;margin-bottom:20px"><div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#f5a623;margin-bottom:16px">${w.w}</div><div style="font-size:0.9rem;color:rgba(255,255,255,0.8);line-height:1.6">${w.u}</div></div><button onclick="_hwNext()" style="width:100%;padding:14px;background:linear-gradient(135deg,#4a148c,#ce93d8);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer">${idx<woorden.length-1?'Volgend woord →':'✅ Klaar!'}</button></div>`;
+    window._hwNext=()=>{ idx++; showW(); };
+  }
+  showW();
+}
+
+function showSamenChallenge() {
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  const tc=SAMEN_CHALLENGES[new Date().getDate()%SAMEN_CHALLENGES.length];
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px">
+      <button onclick="showHealthDashboard()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div style="font-family:'Fredoka One',cursive;color:#ff9800;font-size:1.2rem">🏆 Samen Challenge</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:20px;padding:20px;margin-bottom:14px;border:2px solid #ff9800">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><div style="font-size:2.5rem">${tc.emoji}</div><div><div style="font-family:'Fredoka One',cursive;color:white;font-size:1.1rem">${tc.name}</div><div style="font-size:0.72rem;color:rgba(255,255,255,0.7);text-transform:uppercase">${tc.type} · Dagelijkse Challenge</div></div></div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.9);line-height:1.5;margin:10px 0">${tc.desc}</div>
+      <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px;margin-bottom:10px"><div style="font-family:'Fredoka One',cursive;color:#ffd54f;font-size:0.85rem;margin-bottom:4px">📋 Hoe speel je het:</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.85);line-height:1.6">${tc.howto}</div></div>
+      <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 12px;font-family:'Fredoka One',cursive;font-size:0.85rem;color:white">🏅 ${tc.winner}</div>
+    </div>
+    <div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:12px">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem;margin-bottom:10px">📊 Wie won?</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${state.players.map((p,i)=>`<button onclick="recordSamenWin(${i})" style="flex:1;min-width:70px;padding:12px 6px;background:#0f3060;border:2px solid rgba(245,166,35,0.2);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;text-align:center">${p.avatar}<br>${p.name}</button>`).join('')}
+        <button onclick="recordSamenWin(-1)" style="flex:1;min-width:70px;padding:12px 6px;background:#0f3060;border:2px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.6);font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;text-align:center">🤝<br>Gelijk</button>
+      </div>
+    </div>
+    <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.5);font-size:0.82rem;margin-bottom:8px">Andere challenges vandaag:</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${SAMEN_CHALLENGES.filter(c=>c.name!==tc.name).slice(0,4).map(c=>`<button onclick="showSpecificSamenChallenge('${c.name.replace(/'/g,'')}')" style="padding:10px 14px;background:#1a2744;border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;text-align:left;display:flex;gap:8px;align-items:center"><span>${c.emoji}</span><span>${c.name}</span><span style="margin-left:auto;font-size:0.72rem;color:rgba(255,255,255,0.4)">${c.type}</span></button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function showSpecificSamenChallenge(name) {
+  const c=SAMEN_CHALLENGES.find(ch=>ch.name.replace(/'/g,'')===name); if(!c)return;
+  const el=document.getElementById('health-overlay'); if(!el)return;
+  el.innerHTML=`<div style="max-width:400px;margin:0 auto;padding:16px 16px 80px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px"><button onclick="showSamenChallenge()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button><div style="font-family:'Fredoka One',cursive;color:#ff9800;font-size:1rem">${c.emoji} ${c.name}</div></div><div style="background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:20px;padding:20px;margin-bottom:16px"><div style="font-size:0.9rem;color:rgba(255,255,255,0.9);line-height:1.6;margin-bottom:12px">${c.desc}</div><div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:12px;margin-bottom:10px"><div style="font-family:'Fredoka One',cursive;color:#ffd54f;font-size:0.85rem;margin-bottom:4px">📋 Hoe speel je het:</div><div style="font-size:0.82rem;color:rgba(255,255,255,0.85);line-height:1.6">${c.howto}</div></div><div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 12px;font-family:'Fredoka One',cursive;font-size:0.85rem;color:white">🏅 ${c.winner}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${state.players.map((p,i)=>`<button onclick="recordSamenWin(${i})" style="flex:1;min-width:70px;padding:12px 6px;background:#0f3060;border:2px solid rgba(245,166,35,0.2);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;text-align:center">${p.avatar}<br>${p.name}</button>`).join('')}<button onclick="recordSamenWin(-1)" style="flex:1;min-width:70px;padding:12px 6px;background:#0f3060;border:2px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.6);font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;text-align:center">🤝<br>Gelijk</button></div></div>`;
+}
+
+function recordSamenWin(playerIdx) {
+  if(playerIdx>=0){ const p=state.players[playerIdx]; if(p){ p.coins=(p.coins||0)+15; updateCoinDisplay(); saveState(); showToast('🏆 '+p.name+' wint! +15 coins'); sfxLevelUp(); } }
+  else{ state.players.forEach(p=>p.coins=(p.coins||0)+5); updateCoinDisplay(); saveState(); showToast('🤝 Gelijkspel! Iedereen +5 coins'); sfxCorrect(); }
+  completeHealthSession('samen');
+}
+
+function showHealthDashboard() {
+  const profile=getHealthProfile();
+  const todayKey='health_coins_'+new Date().toDateString();
+  const coinsEarned=localStorage.getItem(todayKey);
+  const el=document.getElementById('health-overlay');
+  if(!el)return;
+  el.innerHTML=buildHealthDashboard(profile||{phys:'gezond',ment:'kennis',streakDays:0},coinsEarned);
+}
+
+function completeHealthSession(type,extraCoins) {
+  const todayKey='health_coins_'+new Date().toDateString();
+  const alreadyEarned=localStorage.getItem(todayKey);
+  const coins=(extraCoins!=null?extraCoins:(type==='phys'?10:type==='ment'?8:5));
+  if(!alreadyEarned){
+    const bonus=5;
+    const p=getPlayer(); if(p){ p.coins=(p.coins||0)+coins+bonus; updateCoinDisplay(); saveState(); }
+    localStorage.setItem(todayKey,'1');
+    const prof=getHealthProfile();
+    if(prof){
+      const yesterday=new Date(Date.now()-86400000).toDateString();
+      prof.streakDays=(prof.lastVisit===yesterday||(prof.streakDays&&prof.lastVisit===new Date().toDateString()))?(prof.streakDays||0)+1:1;
+      prof.lastVisit=new Date().toDateString();
+      saveHealthProfile(prof);
+    }
+    showToast('🌍 +'+(coins+bonus)+' coins! Eerste keer vandaag! 🔥');
+    sfxLevelUp();
+  } else {
+    showToast('✅ Goed bezig! (Coins al verdiend vandaag)');
+    sfxCorrect();
+  }
+  setTimeout(()=>showHealthDashboard(),1200);
+}
+
+
 function initApp() {
   try {
     loadAudioPrefs();
