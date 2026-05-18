@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
 <title>⚡ TitansPad - Go Titans Go!</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f3460">
@@ -81,6 +81,9 @@
   }
   .screen.active { display: block; }
 
+  @keyframes twinkle { 0%{opacity:0.2} 100%{opacity:0.9} }
+  @keyframes rocket-fly { 0%{transform:translateY(0) rotate(-45deg)} 100%{transform:translateY(-150px) rotate(-45deg) scale(0)} }
+  #starfield { pointer-events:none; }
   @keyframes slide-in-3d {
     0%   { opacity:0; transform: perspective(800px) rotateY(-15deg) translateX(60px) scale(0.95); }
     100% { opacity:1; transform: perspective(800px) rotateY(0deg) translateX(0) scale(1); }
@@ -436,6 +439,9 @@
     background: #0f3460; box-shadow: 0 -2px 20px rgba(0,0,0,0.5);
     border-top: 2px solid #f5a623;
     display: flex; z-index: 50;
+    /* iOS keyboard fix: altijd onderaan, ook met keyboard open */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
   .nav-btn {
     flex: 1; padding: 12px 0; border: none; background: transparent;
@@ -621,6 +627,10 @@
   <button class="nav-btn" id="nav-parent" onclick="showParentLock()">
     <span class="nav-icon">🔒</span>Ouders
   </button>
+  <!-- Admin tab: alleen zichtbaar voor admin (TITANS2024) -->
+  <button class="nav-btn" id="nav-admin" onclick="navigate('admin')" style="display:none">
+    <span class="nav-icon">⚙️</span>Admin
+  </button>
 </nav>
 
 <!-- ========== OUDER VERGRENDELING ========== -->
@@ -637,6 +647,15 @@
     <div style="color:rgba(255,255,255,0.8);font-size:0.8rem;margin-top:4px">Voortgang per kind</div>
   </div>
   <div id="parent-content" style="padding:12px 12px 110px;max-width:480px;margin:0 auto"></div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div class="screen" id="admin-screen">
+  <div class="shop-header" style="background:linear-gradient(135deg,#1a1a2e,#f5a623)">
+    <h2>⚙️ Admin Dashboard</h2>
+    <div style="color:rgba(255,255,255,0.8);font-size:0.8rem;margin-top:4px">Alleen voor beheerder</div>
+  </div>
+  <div id="admin-content" style="padding:12px 12px 110px;max-width:480px;margin:0 auto"></div>
 </div>
 
 <script>
@@ -1432,6 +1451,7 @@ function navigate(screen) {
   if (screen === 'avatar') renderAvatarBuilder();
   if (screen === 'wallet') renderWallet();
   if (screen === 'parent') renderParentReport();
+  if (screen === 'admin')  renderAdminDashboard();
 
 }
 
@@ -1662,30 +1682,42 @@ function checkDewiTellen(btn, answer, correct, reward) {
 }
 
 
-function renderMap() {
+  function renderMap() {
   const track = document.getElementById('path-track');
   track.innerHTML = '';
   const p = getPlayer();
-  const newWorldIdx = Math.min(Math.floor((p.level||0)/5), 49);
-  currentWorldIdx = newWorldIdx; // ← update globale variabele!
+  const totalLevel = p.level||0;
+  const planetIdx = Math.min(Math.floor(totalLevel/50), PLANETS.length-1);
+  const planet = PLANETS[planetIdx];
+  const levelOnPlanet = totalLevel % 50;
+  const newWorldIdx = Math.min(Math.floor(levelOnPlanet/5), 9);
+  currentWorldIdx = newWorldIdx;
   LEVELS = getLevelsForWorld(currentWorldIdx);
   const world = WORLDS[currentWorldIdx];
 
-  // World dots - compact grid voor 50 werelden
+  // Planeet header + wereld dots
   let html = '<div style="margin:0 12px 10px">';
-  html += '<div style="font-family:\'Fredoka One\',cursive;font-size:0.8rem;color:#888;margin-bottom:6px;text-align:center">🗺️ Alle Werelden</div>';
+  html += `<div style="background:${planet.color}22;border:1px solid ${planet.color}55;border-radius:14px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+    <div style="font-size:1.8rem">${planet.emoji}</div>
+    <div>
+      <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem">${planet.name}</div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.5)">Planeet ${planetIdx+1}/${PLANETS.length} · ${Math.round(levelOnPlanet/50*100)}% klaar</div>
+    </div>
+  </div>`;
+  html += '<div style="font-family:\'Fredoka One\',cursive;font-size:0.8rem;color:#888;margin-bottom:6px;text-align:center">🗺️ Werelden op ' + planet.name + '</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">';
   WORLDS.forEach((w, i) => {
-    const unlocked = (p.level||0) >= w.unlockLevel;
+    const unlocked = levelOnPlanet >= w.unlockLevel;
     const active = i === currentWorldIdx;
-    html += '<button style="width:'+(active?'32px':'26px')+';height:'+(active?'32px':'26px')+';border-radius:50%;border:'+(active?'3px solid #333':'2px solid transparent')+';background:'+(unlocked?w.color:'#ccc')+';cursor:'+(unlocked?'pointer':'not-allowed')+';font-size:'+(active?'1rem':'0.75rem')+';opacity:'+(unlocked?1:0.4)+';'+(active?'transform:scale(1.1)':'')+'" onclick="'+(unlocked?'selectWorld('+i+')':'showToast(\'Nog niet vrij!\',true)')+'" title="'+w.name+'">'+w.icon+'</button>';
+    html += '<button style="width:'+(active?'32px':'26px')+';height:'+(active?'32px':'26px')+';border-radius:50%;border:'+(active?'3px solid #f5a623':'2px solid transparent')+';background:'+(unlocked?w.color:'#333')+';cursor:'+(unlocked?'pointer':'not-allowed')+';font-size:'+(active?'1rem':'0.75rem')+';opacity:'+(unlocked?1:0.4)+';'+(active?'transform:scale(1.1)':'')+'" onclick="'+(unlocked?'selectWorld('+i+')':'showToast(\'Nog niet vrij!\',true)')+'" title="'+w.name+'">'+w.icon+'</button>';
   });
   html += '</div></div>';
   html += `<div class="world-banner">
     <div class="world-banner-icon">${world.icon}</div>
     <div class="world-banner-text">
-      <div class="world-banner-title">${world.name}</div>
-      <div class="world-banner-sub">Wereld ${currentWorldIdx+1} van 50 · Stap ${((p.level||0)%5)+1}/5</div>
+      <div class="world-banner-title">${planet.emoji} ${world.name}</div>
+      <div class="world-banner-sub">Wereld ${currentWorldIdx+1}/10 op ${planet.name} · Stap ${(levelOnPlanet%5)+1}/5</div>
+      <div style="margin-top:3px;font-size:0.72rem;color:${getPlanetFocus(planetIdx).color}">${getPlanetFocus(planetIdx).icon} Focus: ${getPlanetFocus(planetIdx).label}</div>
     </div>
   </div>`;
   track.innerHTML = html;
@@ -2950,6 +2982,24 @@ function renderAvatarBuilder() {
           onclick="setWardrobeTab('${slot}')">${label}${equipped[slot]?'✅':''}</button>`
       ).join('')}
     </div>
+    <!-- THEMA & RAKET SECTIE -->
+    <div style="background:rgba(255,255,255,0.05);border-radius:16px;padding:14px;margin-bottom:12px">
+      <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.95rem;margin-bottom:8px">🎨 Missie Thema</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${Object.entries(THEMES).map(([key,th]) => { const isA=(getPlayer().theme||'ruimte')===key; return '<button onclick="setPlayerTheme(\'' + key + '\')" style="padding:8px 10px;background:'+(isA?th.accent+'33':'rgba(255,255,255,0.05)')+';border:2px solid '+(isA?th.accent:'rgba(255,255,255,0.1)')+';border-radius:10px;font-size:0.78rem;color:white;cursor:pointer;font-family:\'Fredoka One\',cursive">'+th.star+' '+th.name.split(' ').slice(1,2).join(' ')+(isA?' ✓':'')+'</button>'; }).join('')}
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.05);border-radius:16px;padding:14px;margin-bottom:12px">
+      <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem;margin-bottom:8px">🚀 Ruimteschip</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div style="font-size:2.5rem">${getCurrentRocket().emoji}</div>
+        <div>
+          <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">${getCurrentRocket().name}</div>
+          <div style="font-size:0.75rem;color:rgba(255,255,255,0.5)">${getCurrentRocket().desc}</div>
+          <div style="font-size:0.72rem;color:#f5a623;margin-top:2px">${PLANETS[getCurrentPlanet()].emoji} ${PLANETS[getCurrentPlanet()].name}</div>
+        </div>
+      </div>
+    </div>
     <div class="wardrobe-grid" id="wardrobe-grid">
       ${renderWardrobeItems(activeWardrobeTab, owned, equipped)}
     </div>
@@ -3111,9 +3161,22 @@ function setAvatarColor(color) {
 // ===== TOAST =====
 function showToast(msg, bad=false) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'feedback-toast' + (bad?' bad':'') + ' show';
-  setTimeout(() => t.classList.remove('show'), 2500);
+  if (!t) return;
+  // Reset eerst volledig
+  t.classList.remove('show', 'bad');
+  t.textContent = '';
+  // Clear vorige timer
+  if (window._toastTO) { clearTimeout(window._toastTO); window._toastTO = null; }
+  // Kleine vertraging zodat de reset zichtbaar is bij snelle opeenvolging
+  requestAnimationFrame(() => {
+    t.textContent = msg;
+    t.className = 'feedback-toast' + (bad ? ' bad' : '') + ' show';
+    window._toastTO = setTimeout(() => {
+      t.classList.remove('show');
+      // Na animatie ook tekst wissen
+      setTimeout(() => { if (!t.classList.contains('show')) t.textContent = ''; }, 400);
+    }, 2500);
+  });
   if (bad) sfxWrong();
 }
 
@@ -4193,9 +4256,10 @@ function showLevelUpgrade(type, tier) {
 
 // Kies vragen op basis van vaardigheid — inclusief Expert en Titan niveau
 function getAdaptiveWords(playerIdx, worldIdx) {
+  // worldIdx is already 0-9 (relative to planet)
   const p = state.players[playerIdx];
   const skill = (p.skills||{}).spell || 50;
-  const allWords = WORDS_BY_WORLD[playerIdx][worldIdx % 10];
+  const allWords = WORDS_BY_WORLD[playerIdx]?.[worldIdx % 10] || WORDS_BY_WORLD[playerIdx]?.[0] || [];
 
   if (skill < 35)  return allWords.slice(0, 3);   // Oefenen
   if (skill < 65)  return allWords;                // Standaard
@@ -4491,7 +4555,11 @@ function renderHome() {
   try {
     const p = getPlayer();
     if (!p) return;
-    const worldIdx = Math.min(Math.floor((p.level||0)/5),49);
+    const _totalLevel = p.level||0;
+    const _planetIdx = Math.min(Math.floor(_totalLevel/50), 7);
+    const _planet = PLANETS[_planetIdx];
+    const _levelOnPlanet = _totalLevel % 50;
+    const worldIdx = Math.min(Math.floor(_levelOnPlanet/5), 9);
     const world = WORLDS[worldIdx] || WORLDS[0];
     const sd = p.streakData || {};
     const fb = getSkillFeedback(state.currentPlayer);
@@ -6198,14 +6266,77 @@ const FINN_TIPS = [
   { type:'algemeen',msg:"Pauze nemen helpt je hersenen informatie op te slaan!", emoji:'☕' },
 ];
 
+// ===== 🪐 RUIMTE WEETJES PER PLANEET =====
+const SPACE_FACTS = {
+  algemeen: [
+    { emoji:'🌌', fact:"Het heelal is zo groot dat als je 1 km per seconde zou reizen, je er 93 miljard jaar over doet om het te doorkruisen!" },
+    { emoji:'⭐', fact:"Er zijn meer sterren in het heelal dan zandkorrels op alle stranden van de Aarde samen!" },
+    { emoji:'🔭', fact:"Licht van de zon doet er 8 minuten over om de aarde te bereiken. Van de dichtstbijzijnde ster duurt het 4 jaar!" },
+    { emoji:'🌠', fact:"Een vallende ster is geen ster — het is een steentje ter grootte van een erwt dat verbrandt in de lucht!" },
+    { emoji:'🕳️', fact:"Een zwart gat is zo zwaar dat zelfs licht er niet aan kan ontsnappen!" },
+    { emoji:'🚀', fact:"Om de aarde te verlaten moet je raket minstens 11 km per seconde gaan. Dat is 40.000 km/uur!" },
+    { emoji:'🌙', fact:"De maan beweegt elk jaar 3,8 cm verder van de aarde weg. Over een miljard jaar zullen er geen totale zonsverduisteringen meer zijn!" },
+    { emoji:'☀️', fact:"De kern van de zon is 15 miljoen graden Celsius. Het oppervlak is 'slechts' 5500 graden!" },
+    { emoji:'🌍', fact:"De aarde draait met 1.670 km/uur om zijn as en met 107.000 km/uur om de zon — je voelt het niet eens!" },
+    { emoji:'💫', fact:"De melkweg heeft 200-400 miljard sterren. Onze zon is er maar één van!" },
+  ],
+  aarde: [
+    { emoji:'🌍', fact:"De aarde is de enige planeet waarvan we weten dat er leven op bestaat — maar het heelal is zo groot dat er vast meer zijn!" },
+    { emoji:'💧', fact:"71% van de aarde is bedekt met water, maar slechts 3% is zoet water dat je kunt drinken!" },
+    { emoji:'🌋', fact:"Er zijn meer dan 1.500 actieve vulkanen op aarde. Elke dag barsten er gemiddeld 20!" },
+    { emoji:'🌊', fact:"De diepste plek op aarde is de Marianentrog: 11 km diep. De Mount Everest erin zou nóg onderlopen!" },
+  ],
+  mercurius: [
+    { emoji:'☿', fact:"Een dag op Mercurius duurt langer dan een jaar op Mercurius! De planeet draait zo langzaam dat de zon ervoor twee keer op- en ondergaat per jaar." },
+    { emoji:'🌡️', fact:"Overdag is het op Mercurius 430°C heet, 's nachts -180°C koud. Er is geen atmosfeer om warmte vast te houden!" },
+    { emoji:'➕', fact:"Mercurius is kleiner dan sommige manen in ons zonnestelsel, maar heeft een enorme ijzeren kern!" },
+    { emoji:'🌑', fact:"Mercurius heeft geen manen en ook geen ringen. Helemaal alleen om de zon!" },
+  ],
+  venus: [
+    { emoji:'🌟', fact:"Venus is de heetste planeet van ons zonnestelsel: 465°C, heter dan Mercurius dat dichter bij de zon staat!" },
+    { emoji:'🔄', fact:"Venus draait andersom dan de meeste planeten — als je er stond, zou de zon in het westen opkomen!" },
+    { emoji:'🌫️', fact:"De atmosfeer van Venus bestaat uit giftige zwavelzuurwolken. Het regent er zwavelzuur!" },
+    { emoji:'✨', fact:"Venus is na de maan het helderste object aan de nachtelijke hemel — vandaar de naam 'morgen- of avondster'!" },
+  ],
+  mars: [
+    { emoji:'🔴', fact:"Mars is rood door ijzeroxide — gewoon roest! De hele planeet is bedekt met roestend ijzer." },
+    { emoji:'🌋', fact:"De grootste vulkaan in het zonnestelsel staat op Mars: Olympus Mons. Hij is 3 keer zo hoog als de Mount Everest!" },
+    { emoji:'🌀', fact:"Op Mars zijn stofduivels die soms zo groot zijn als een heel land!" },
+    { emoji:'🚀', fact:"Een reis naar Mars duurt met een raket ongeveer 7 maanden. Astronauten oefenen dit nu al!" },
+  ],
+  jupiter: [
+    { emoji:'🟠', fact:"Jupiter is zo groot dat alle andere planeten van het zonnestelsel er samen twee keer in passen!" },
+    { emoji:'🌀', fact:"De Grote Rode Vlek op Jupiter is een storm die al meer dan 400 jaar woedt — en zo groot als 3 aardes!" },
+    { emoji:'🛡️', fact:"Jupiter beschermt de aarde! Zijn zwaartekracht vangt kometen en asteroïden op die anders de aarde zouden raken." },
+    { emoji:'🌙', fact:"Jupiter heeft 95 bekende manen. Vier daarvan zijn zo groot dat Galileo ze al in 1610 zag!" },
+  ],
+  saturnus: [
+    { emoji:'🪐', fact:"De ringen van Saturnus zijn enorm maar superdun: ze zijn duizenden kilometers breed maar maar 10-100 meter dik!" },
+    { emoji:'💨', fact:"Saturnus is zo licht dat het zou drijven op water — het is de minst dichte planeet in ons stelsel!" },
+    { emoji:'🌬️', fact:"De windsnelheid op Saturnus bereikt 1.800 km/uur. Een storkvliegtuig gaat maar 800 km/uur!" },
+    { emoji:'⏳', fact:"Over 100-300 miljoen jaar verdwijnen de ringen van Saturnus. Ze vallen langzaam op de planeet neer!" },
+  ],
+  uranus: [
+    { emoji:'🔵', fact:"Uranus draait op zijn zij — zijn rotatieas wijst bijna recht naar de zon. Niemand weet precies waarom!" },
+    { emoji:'❄️', fact:"Uranus is de koudste planeet: -224°C. Kouder dan Neptunus, dat verder van de zon staat!" },
+    { emoji:'💎', fact:"Op Uranus regent het mogelijk diamanten! De atmosfeer perst koolstof samen tot diamanten die naar beneden vallen." },
+    { emoji:'🌀', fact:"Een jaar op Uranus duurt 84 aardse jaren. Op één pool schijnt de zon dan 42 jaar lang zonder stoppen!" },
+  ],
+  neptunus: [
+    { emoji:'💙', fact:"Neptunus werd ontdekt via wiskunde — wetenschappers berekenden eerst waar hij moest zijn voordat ze hem zagen!" },
+    { emoji:'🌬️', fact:"De sterkste winden in het zonnestelsel waaien op Neptunus: 2.100 km/uur. Dat zijn supersone windstoten!" },
+    { emoji:'🌀', fact:"De Grote Donkere Vlek op Neptunus is een storm zo groot als de aarde — maar hij verdween opeens in 1994!" },
+    { emoji:'🔭', fact:"Neptunus is zo ver weg dat het Voyager 2 ruimteschip er 12 jaar over deed om er te komen!" },
+  ],
+};
+
+// Algemene natuur- en dierfeiten (altijd beschikbaar)
 const WIST_JE_DAT = [
   { emoji:'🦁', fact:"Leeuwen slapen wel 20 uur per dag! Dat is meer dan jij!" },
   { emoji:'🐙', fact:"Een octopus heeft 3 harten en blauw bloed!" },
   { emoji:'🦋', fact:"Vlinders proeven met hun poten — stel je voor!" },
-  { emoji:'🌍', fact:"De aarde is 4,5 miljard jaar oud. Als dat 1 jaar was, verschenen mensen pas op 31 december!" },
   { emoji:'🐘', fact:"Olifanten kunnen zichzelf herkennen in een spiegel — net zoals mensen!" },
   { emoji:'🍯', fact:"Honing bederft nooit. Er is honing gevonden van 3000 jaar oud!" },
-  { emoji:'⭐', fact:"De zon is zo groot dat er 1,3 miljoen aarden in passen!" },
   { emoji:'🐬', fact:"Dolfijnen hebben namen voor elkaar — ze roepen elkaar bij een fluitje!" },
   { emoji:'🦒', fact:"Een giraf heeft net zoveel nekwervels als jij: 7! Alleen veel groter." },
   { emoji:'❄️', fact:"Geen twee sneeuwvlokken zijn precies hetzelfde!" },
@@ -6214,9 +6345,10 @@ const WIST_JE_DAT = [
   { emoji:'🦈', fact:"Haaien zijn ouder dan dinosaurussen — ze bestaan al 450 miljoen jaar!" },
   { emoji:'🍌', fact:"Bananen zijn radioactief — maar maar heel een klein beetje!" },
   { emoji:'🐧', fact:"Pinguïns stellen voor door een steen te geven. Dat is hun trouwring!" },
+  { emoji:'🧠', fact:"Je hersenen zijn actiever als je slaapt dan als je tv kijkt. Dromen zijn hard werken!" },
+  { emoji:'👁️', fact:"Je ogen kunnen 10 miljoen kleuren onderscheiden!" },
 ];
 
-// Freek Vonk stijl weetjes
 const FREEK_FACTS = [
   { emoji:'🐍', fact:"Slangen hebben geen oren — ze voelen trillingen via hun kaak!" },
   { emoji:'🦎', fact:"Kameleons veranderen van kleur voor communicatie, niet voor camouflage!" },
@@ -6224,6 +6356,168 @@ const FREEK_FACTS = [
   { emoji:'🦅', fact:"Een adelaar kan een konijn zien van 3 kilometer afstand!" },
   { emoji:'🐸', fact:"Kikkers drinken niet — ze absorberen water via hun huid!" },
 ];
+
+// Geef ruimtefeiten die passen bij de huidige planeet
+function getSpaceFacts(playerIdx) {
+  const planetIdx = getCurrentPlanet(playerIdx !== undefined ? playerIdx : state.currentPlayer);
+  const planetNames = ['aarde','mercurius','venus','mars','jupiter','saturnus','uranus','neptunus'];
+  const planetKey = planetNames[planetIdx] || 'aarde';
+  return [
+    ...(SPACE_FACTS[planetKey] || []),
+    ...SPACE_FACTS.algemeen,
+  ];
+}
+
+// ===== 🎨 THEMA SYSTEEM =====
+const THEMES = {
+  ruimte:    { name:'🚀 Ruimte Explorer', bg:'#0d0d1a', accent:'#f5a623', star:'⭐', desc:'Verken het heelal!', mapBg:'radial-gradient(ellipse at center, #1a1a3e 0%, #0d0d1a 100%)' },
+  zee:       { name:'🌊 Zee Avonturier',  bg:'#001220', accent:'#00b4d8', star:'🐚', desc:'Duik in de oceaan!', mapBg:'radial-gradient(ellipse at center, #023e58 0%, #001220 100%)' },
+  magie:     { name:'🔮 Magie Meester',   bg:'#1a0a2e', accent:'#ce93d8', star:'✨', desc:'Betover de wereld!', mapBg:'radial-gradient(ellipse at center, #2d1458 0%, #1a0a2e 100%)' },
+  dino:      { name:'🦕 Dino Ontdekker',  bg:'#0a1a0a', accent:'#57c785', star:'🦴', desc:'Reis door de tijd!', mapBg:'radial-gradient(ellipse at center, #1a3a1a 0%, #0a1a0a 100%)' },
+  sprookje:  { name:'🧚 Sprookjesheld',   bg:'#1a0a1a', accent:'#f48fb1', star:'🌸', desc:'Leef het sprookje!', mapBg:'radial-gradient(ellipse at center, #3a1a3a 0%, #1a0a1a 100%)' },
+};
+
+function getPlayerTheme(playerIdx) {
+  const p = state.players[playerIdx !== undefined ? playerIdx : state.currentPlayer];
+  const themeKey = p?.theme || 'ruimte';
+  return THEMES[themeKey] || THEMES.ruimte;
+}
+
+function setPlayerTheme(themeKey) {
+  const p = getPlayer();
+  p.theme = themeKey;
+  saveState();
+  applyTheme();
+  showToast('🎨 Thema gewijzigd: ' + THEMES[themeKey].name);
+}
+
+function applyTheme() {
+  const theme = getPlayerTheme();
+  document.documentElement.style.setProperty('--accent', theme.accent);
+  document.documentElement.style.setProperty('--bg', theme.bg);
+  // Sterren achtergrond toevoegen
+  createStarField();
+}
+
+function createStarField() {
+  let starfield = document.getElementById('starfield');
+  if (!starfield) {
+    starfield = document.createElement('div');
+    starfield.id = 'starfield';
+    starfield.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden';
+    document.body.insertBefore(starfield, document.body.firstChild);
+  }
+  const theme = getPlayerTheme();
+  if (theme === THEMES.ruimte || getPlayerTheme().name.includes('Ruimte')) {
+    // Sterren animatie
+    let stars = '';
+    for (let i = 0; i < 80; i++) {
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      const size = Math.random() * 2 + 0.5;
+      const delay = Math.random() * 3;
+      stars += `<div style="position:absolute;left:${x}%;top:${y}%;width:${size}px;height:${size}px;background:white;border-radius:50%;opacity:${0.3+Math.random()*0.7};animation:twinkle ${1.5+Math.random()*2}s ${delay}s infinite alternate"></div>`;
+    }
+    starfield.innerHTML = stars;
+  } else {
+    starfield.innerHTML = '';
+  }
+}
+
+// ===== 🚀 RUIMTESCHIP SYSTEEM =====
+const ROCKETS = [
+  { id:'rocket_1', name:'Papieren Raket',  emoji:'🛸', desc:'Je eerste raket!',      planet:0 },
+  { id:'rocket_2', name:'Mini Raket',      emoji:'🚀', desc:'Sneller dan geluid!',    planet:1 },
+  { id:'rocket_3', name:'Turbo Raket',     emoji:'⚡🚀', desc:'Bijna lichtsnelheid!', planet:2 },
+  { id:'rocket_4', name:'Plasma Raket',    emoji:'🔥🚀', desc:'Plasma aandrijving!',  planet:3 },
+  { id:'rocket_5', name:'Ion Raket',       emoji:'💫🚀', desc:'Ion motoren!',         planet:4 },
+  { id:'rocket_6', name:'Warp Raket',      emoji:'🌀🚀', desc:'Warpdrive!',           planet:5 },
+  { id:'rocket_7', name:'Quantum Raket',   emoji:'⭐🚀', desc:'Kwantumsprong!',       planet:6 },
+  { id:'rocket_8', name:'Titans Raket',    emoji:'🏆🚀', desc:'De ultieme raket!',    planet:7 },
+];
+
+function getCurrentRocket(playerIdx) {
+  const planetIdx = getCurrentPlanet(playerIdx !== undefined ? playerIdx : state.currentPlayer);
+  return ROCKETS[Math.min(planetIdx, ROCKETS.length-1)];
+}
+
+// Ruimteschip launch animatie tussen planeten
+function showPlanetLaunchAnimation(fromPlanet, toPlanet, callback) {
+  const rocket = getCurrentRocket();
+  const overlay = document.createElement('div');
+  overlay.id = 'launch-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:900;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden';
+  overlay.innerHTML = `
+    <style>
+      @keyframes launch { 0%{transform:translateY(0) scale(1)} 100%{transform:translateY(-120vh) scale(0.3)} }
+      @keyframes arrive { 0%{transform:translateY(120vh) scale(0.3)} 100%{transform:translateY(0) scale(1)} }
+      @keyframes twinkle { 0%{opacity:0.3} 100%{opacity:1} }
+      @keyframes planet-glow { 0%{box-shadow:0 0 20px currentColor} 100%{box-shadow:0 0 60px currentColor} }
+    </style>
+    <!-- Sterren achtergrond -->
+    <div id="launch-stars" style="position:absolute;top:0;left:0;right:0;bottom:0"></div>
+    <!-- Van planeet -->
+    <div id="from-planet" style="position:absolute;bottom:20%;font-size:5rem;filter:blur(0);transition:all 2s">${fromPlanet.emoji}</div>
+    <!-- Raket -->
+    <div id="launch-rocket" style="position:absolute;font-size:4rem;animation:launch 2.5s cubic-bezier(0.25,0.46,0.45,0.94) 0.5s forwards">${rocket.emoji}</div>
+    <!-- Tekst -->
+    <div style="position:absolute;bottom:8%;text-align:center">
+      <div style="font-family:'Fredoka One',cursive;font-size:1.4rem;color:#f5a623;margin-bottom:6px">🚀 Koers naar ${toPlanet.name}!</div>
+      <div style="font-size:0.85rem;color:rgba(255,255,255,0.6)">${rocket.name} — ${rocket.desc}</div>
+    </div>`;
+
+  // Sterren
+  const starsEl = overlay.querySelector('#launch-stars');
+  for (let i = 0; i < 100; i++) {
+    const star = document.createElement('div');
+    star.style.cssText = `position:absolute;left:${Math.random()*100}%;top:${Math.random()*100}%;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;background:white;border-radius:50%;animation:twinkle ${1+Math.random()*2}s ${Math.random()*2}s infinite alternate`;
+    starsEl.appendChild(star);
+  }
+
+  document.body.appendChild(overlay);
+
+  // Na lancering: toon aankomst
+  setTimeout(() => {
+    overlay.innerHTML = `
+      <div id="launch-stars" style="position:absolute;top:0;left:0;right:0;bottom:0"></div>
+      <div style="position:absolute;font-size:5rem;animation:arrive 1.5s cubic-bezier(0.34,1.56,0.64,1) forwards">${toPlanet.emoji}</div>
+      <div id="arrive-rocket" style="position:absolute;font-size:3rem;animation:arrive 1.5s 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards">${rocket.emoji}</div>
+      <div style="position:absolute;bottom:8%;text-align:center">
+        <div style="font-family:'Fredoka One',cursive;font-size:1.6rem;color:#57c785;margin-bottom:6px">🎉 ${toPlanet.name} bereikt!</div>
+        <div style="font-size:0.9rem;color:${toPlanet.color}">${toPlanet.emoji} ${toPlanet.desc}</div>
+      </div>`;
+    const s2 = overlay.querySelector('#launch-stars');
+    for (let i = 0; i < 100; i++) {
+      const star = document.createElement('div');
+      star.style.cssText = `position:absolute;left:${Math.random()*100}%;top:${Math.random()*100}%;width:${1+Math.random()*2}px;height:${1+Math.random()*2}px;background:white;border-radius:50%;animation:twinkle ${1+Math.random()*2}s ${Math.random()*2}s infinite alternate`;
+      s2.appendChild(star);
+    }
+  }, 3000);
+
+  // Sluit na 5 seconden
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.8s';
+    setTimeout(() => { overlay.remove(); if(callback) callback(); }, 800);
+  }, 5000);
+}
+
+// Planeet focus label
+function getPlanetFocus(planetIdx) {
+  const focuses = [
+    { label:'Taal & Spelling',        icon:'📝', color:'#57c785' },
+    { label:'Rekenen & Wiskunde',      icon:'🧮', color:'#f5a623' },
+    { label:'Wetenschap & Natuur',     icon:'🔬', color:'#ce93d8' },
+    { label:'Taal & Lezen',            icon:'📚', color:'#42a5f5' },
+    { label:'Rekenen & Logica',        icon:'🧠', color:'#ff7043' },
+    { label:'Wereld & Aardrijkskunde', icon:'🌍', color:'#26c6da' },
+    { label:'Kunst & Creativiteit',    icon:'🎨', color:'#ec407a' },
+    { label:'Wetenschap & Filosofie',  icon:'💡', color:'#ffca28' },
+  ];
+  return focuses[Math.min(planetIdx, focuses.length-1)];
+}
+
+
 
 function showFinnTip(type) {
   if (document.getElementById('challenge-modal')?.classList.contains('open')) return;
@@ -6256,7 +6550,8 @@ function showWistJeDat() {
   if (document.getElementById('challenge-modal')?.classList.contains('open')) return;
   if (document.getElementById('reward-modal')?.classList.contains('open')) return;
 
-  const allFacts = [...WIST_JE_DAT, ...FREEK_FACTS];
+  const spaceFacts = getSpaceFacts();
+  const allFacts = [...spaceFacts, ...WIST_JE_DAT, ...FREEK_FACTS];
   const fact = allFacts[Math.floor(Math.random() * allFacts.length)];
 
   // Verwijder eventuele oude popup
@@ -7075,8 +7370,22 @@ function sluitMopje() {
 function advanceLevelSilently(coins) {
   const p = getPlayer();
   const absLevel = currentWorldIdx * 5 + currentLevelIdx;
+  const oldPlanetIdx = Math.floor((p.level||0)/50);
   if ((p.level||0) <= absLevel) {
     p.level = absLevel + 1;
+  }
+  const newPlanetIdx = Math.floor(p.level/50);
+  // Nieuwe planeet vrijgespeeld — raket animatie!
+  if (newPlanetIdx > oldPlanetIdx && newPlanetIdx < PLANETS.length) {
+    const fromPlanet = PLANETS[oldPlanetIdx];
+    const newPlanet  = PLANETS[newPlanetIdx];
+    setTimeout(() => {
+      sfxLevelUp();
+      showPlanetLaunchAnimation(fromPlanet, newPlanet, () => {
+        showToast('🪐 ' + newPlanet.name + ' vrijgespeeld! ' + newPlanet.emoji);
+        renderMap();
+      });
+    }, 1200);
   }
   if (coins > 0) addCoins(coins);
   const daily = updateDailyProgress();
@@ -7603,10 +7912,12 @@ function useAccessCode() {
   const code = (document.getElementById('access-code')?.value||'').trim().toUpperCase();
   const errEl = document.getElementById('access-error');
   if (code === ADMIN_APPROVE_CODE || code === FAMILY_APPROVE_CODE) {
-    saveRegistration({ approved:true, admin:(code===ADMIN_APPROVE_CODE), familyId:getFamilyId(), date:new Date().toLocaleDateString('nl-NL') });
+    const isAdmin = (code === ADMIN_APPROVE_CODE);
+    saveRegistration({ approved:true, admin:isAdmin, familyId:getFamilyId(), date:new Date().toLocaleDateString('nl-NL') });
     document.getElementById('reg-overlay')?.remove();
     showToast('✅ Welkom! Je bent ingelogd.');
     sfxLevelUp();
+    if (isAdmin) document.getElementById('nav-admin')?.style.setProperty('display','flex');
     updateCoinDisplay(); setWorldForPlayer(); renderHome();
   } else if (code.length > 0) {
     if (errEl) errEl.textContent = '❌ Onjuiste code.';
@@ -7679,7 +7990,7 @@ function showPendingScreen(reg) {
         Welkom Familie ${reg?.familyName||''}!<br>Je aanmelding is ontvangen. De beheerder keurt je account goed — je krijgt dan direct toegang.
       </div>
       <div style="font-size:0.78rem;color:rgba(255,255,255,0.4);margin-bottom:16px">
-        Sluit de app en open hem opnieuw na goedkeuring.
+        Zodra ik je goedkeur, tik je op de knop hieronder.
       </div>
       <button onclick="checkApprovalFromCloud()" style="width:100%;padding:12px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.95rem;cursor:pointer;margin-bottom:8px">
         🔄 Controleer goedkeuring
@@ -7698,9 +8009,8 @@ async function checkApprovalFromCloud() {
       reg.approved = true;
       saveRegistration(reg);
       document.getElementById('pending-overlay')?.remove();
-      showToast('✅ Goedgekeurd! Welkom bij SterrenPad!');
-      sfxLevelUp();
-      setTimeout(() => navigate('home'), 500);
+      // Toon "je bent goedgekeurd" scherm met toegangscode
+      showApprovedScreen();
       return;
     }
   } catch(e) {}
@@ -7720,8 +8030,35 @@ function copyShareLink() {
 }
 
 function shareViaWhatsApp() {
-  const msg = `Hé! 👋\n\nMijn kinderen gebruiken *SterrenPad* — een leer-app met Titan Coins, sommen en mini-spelletjes!\n\n📲 Registreer je hier:\n${INVITE_URL}\n\nVul je naam en kinderen in → ik keur je account goed → direct aan de slag! ⚡`;
-  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  const msg = [
+    'Hé! 👋',
+    '',
+    'Mijn kinderen gebruiken *SterrenPad* — een leer-app waarbij ze Titan Coins verdienen met sommen, spelling en mini-spelletjes. Ze kunnen sparen voor echte beloningen!',
+    '',
+    '📲 *Zo begin je:*',
+    '',
+    '*Stap 1* — Open deze registratielink:',
+    INVITE_URL,
+    '',
+    '*Stap 2* — Registreer je familie',
+    'Vul naam, familienaam en kinderen in → tik Aanmelden',
+    '',
+    '*Stap 3* — Wacht op goedkeuring',
+    'Ik keur je account goed (meestal snel). Daarna krijg je een melding.',
+    '',
+    '*Stap 4* — Na goedkeuring',
+    'Open de app → tik Controleer goedkeuring → voer toegangscode in: *TITANS2026*',
+    '',
+    '*Stap 5* — App-icoontje maken (aangeraden):',
+    '• iPhone/iPad: open link in Safari → tik 📤 Deel → Zet op beginscherm → Voeg toe',
+    '• Android: tik ⋮ rechtsboven → Toevoegen aan startscherm',
+    '',
+    'Na goedkeuring gebruik je altijd:',,
+    SHARE_URL,
+    '',
+    'Vragen? Stuur me een berichtje! 😊'
+  ].join('\n');
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function shareViaNative() {
@@ -8185,17 +8522,6 @@ function showBreakthroughCelebration(type, threshold) {
 // ===== 🔗 DEELLINK FIX =====
 // Genereer een invite link die NIET de eigen data laadt
 
-function copyShareLink() {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(INVITE_URL).t
-    const ta = document.createElement('textarea');
-    ta.value = INVITE_URL; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    ta.remove();
-    showToast('📋 Link gekopieerd!');
-  }
-}
 
 // ===== 🎮 EXTRA MINI-GAMES =====
 
@@ -8965,9 +9291,211 @@ function fgClose(e) {
   document.getElementById('finger-game')?.remove();
 }
 
-// INIT =====
+// ===== ✅ GOEDGEKEURD SCHERM =====
+function showApprovedScreen() {
+  const overlay = document.createElement('div');
+  overlay.id = 'approved-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;background:#0d0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center';
+  overlay.innerHTML = `
+    <div style="max-width:340px;width:100%">
+      <div style="font-size:4rem;margin-bottom:12px">🎉</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:1.8rem;color:#57c785;margin-bottom:8px">Je bent goedgekeurd!</div>
+      <div style="background:#1a2744;border-radius:16px;padding:16px;margin-bottom:16px;font-size:0.9rem;color:rgba(255,255,255,0.85);line-height:1.7">
+        Voer nu de toegangscode in om te starten:
+        <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin:10px 0;letter-spacing:6px">TITANS2026</div>
+      </div>
+      <input id="approved-code" type="text" placeholder="Voer code in..."
+        style="width:100%;padding:14px;border-radius:12px;border:2px solid rgba(245,166,35,0.5);
+        background:#0f3460;color:#f5a623;font-family:'Fredoka One',cursive;font-size:1.4rem;
+        text-align:center;letter-spacing:6px;box-sizing:border-box;margin-bottom:10px"
+        oninput="this.value=this.value.toUpperCase()"
+        onkeydown="if(event.key==='Enter')approvedLogin()">
+      <button onclick="approvedLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer">
+        ⚡ Start SterrenPad!
+      </button>
+      <div id="approved-error" style="color:#e94560;font-size:0.82rem;margin-top:8px;min-height:1rem"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('approved-code')?.focus(), 300);
+}
+
+function approvedLogin() {
+  const code = (document.getElementById('approved-code')?.value||'').trim().toUpperCase();
+  const errEl = document.getElementById('approved-error');
+  if (code === FAMILY_APPROVE_CODE || code === ADMIN_APPROVE_CODE) {
+    document.getElementById('approved-overlay')?.remove();
+    const reg = getRegistration()||{};
+    reg.approved = true;
+    reg.admin = (code === ADMIN_APPROVE_CODE);
+    saveRegistration(reg);
+    showToast('✅ Welkom bij SterrenPad! 🎉');
+    sfxLevelUp();
+    if (reg.admin) document.getElementById('nav-admin')?.style.setProperty('display','flex');
+    updateCoinDisplay(); setWorldForPlayer(); renderHome(); navigate('home');
+  } else {
+    if(errEl) errEl.textContent = '❌ Verkeerde code. Vraag de beheerder om de code.';
+    sfxWrong();
+    setTimeout(() => { if(errEl) errEl.textContent=''; }, 3000);
+  }
+}
+
+// ===== ⚙️ ADMIN TAB =====
+function renderAdminDashboard() {
+  const el = document.getElementById('admin-content');
+  if (!el) return;
+  const reg = getRegistration();
+  if (!reg?.admin) { el.innerHTML = '<div style="color:#e94560;padding:20px;text-align:center">Geen toegang</div>'; return; }
+  el.innerHTML = `
+    <div style="padding:12px">
+      <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);border-radius:16px;padding:14px;margin-bottom:12px;border:2px solid #f5a623">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:10px">⚙️ Admin Dashboard</div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:10px">Alleen zichtbaar voor jou (TITANS2024)</div>
+
+        <!-- Deel sectie -->
+        <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:10px">
+          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">🔗 Nieuwe familie uitnodigen</div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.6);margin-bottom:8px">Stuur de invite-link via WhatsApp. Na registratie keur jij goed in dit scherm.</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="shareViaWhatsApp()" style="flex:1;padding:10px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">💬 WhatsApp</button>
+            <button onclick="copyShareLink()" style="flex:1;padding:10px;background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">📋 Kopieer link</button>
+          </div>
+          <div style="margin-top:8px;font-size:0.72rem;color:rgba(255,255,255,0.35)">
+            Invite link: <span style="color:#f5a623">${INVITE_URL}</span>
+          </div>
+        </div>
+
+        <!-- Codes overzicht -->
+        <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:10px">
+          <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">🔑 Toegangscodes</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div style="background:#1a2744;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Jouw gezin (admin)</div>
+              <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;letter-spacing:2px">TITANS2024</div>
+            </div>
+            <div style="background:#1a2744;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Nieuwe families</div>
+              <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;letter-spacing:2px">TITANS2026</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sync & Force -->
+        <button onclick="forceSyncNow()" style="width:100%;padding:10px;background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;margin-bottom:8px">☁️ Nu synchroniseren</button>
+      </div>
+
+      <!-- Wachtende families -->
+      <div id="admin-pending" style="margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">⏳ Laden...</div>
+      </div>
+
+      <!-- Actieve families -->
+      <div id="admin-families" style="margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">📊 Families laden...</div>
+      </div>
+    </div>`;
+
+  // Laad data asynchroon
+  loadAdminData();
+}
+
+async function loadAdminData() {
+  try {
+    // Wachtende families
+    const pending = await sbFetch('families?approved=eq.false&order=created_at.desc&limit=20') || [];
+    const active  = await sbFetch('families?approved=eq.true&order=created_at.desc&limit=50') || [];
+
+    const pendingEl = document.getElementById('admin-pending');
+    const familiesEl = document.getElementById('admin-families');
+
+    if (pendingEl) {
+      pendingEl.innerHTML = pending.length === 0
+        ? `<div style="background:#1a2744;border-radius:12px;padding:10px;text-align:center;border:1px solid rgba(87,199,133,0.2)"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">✅ Geen wachtende aanmeldingen</div></div>`
+        : `<div style="background:#1a2744;border-radius:14px;padding:14px;border:2px solid #f5a623">
+            <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">✋ Wacht op Goedkeuring (${pending.length})</div>
+            ${pending.map(f => `
+              <div style="background:#0f3060;border-radius:12px;padding:10px;margin-bottom:8px">
+                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">👨‍👩‍👧 ${f.family_name||'?'}</div>
+                <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:3px 0">${f.parent_name||''} · ${f.created_at?new Date(f.created_at).toLocaleDateString('nl-NL'):''}</div>
+                ${(f.children||[]).map(ch=>`<div style="font-size:0.75rem;color:#57c785">👶 ${ch.name} · Groep ${ch.grade}</div>`).join('')}
+                <button onclick="approveFamily('${f.id}')" style="width:100%;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;margin-top:8px">✅ Goedkeuren</button>
+              </div>`).join('')}
+           </div>`;
+    }
+
+    if (familiesEl) {
+      familiesEl.innerHTML = `
+        <div style="background:#1a2744;border-radius:14px;padding:14px;border:1px solid rgba(87,199,133,0.3)">
+          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:10px">📊 Actieve Families (${active.length})</div>
+          ${active.length === 0 ? '<div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">Nog geen actieve families</div>'
+          : active.map(f => `
+            <div style="background:#0f3060;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.88rem">👨‍👩‍👧 ${f.family_name||'?'}</div>
+                <div style="font-size:0.72rem;color:rgba(255,255,255,0.4)">${f.parent_name||''} · ${(f.children||[]).length} kind(eren)</div>
+              </div>
+              <div style="font-size:0.72rem;color:#57c785">✅</div>
+            </div>`).join('')}
+        </div>`;
+    }
+  } catch(e) {
+    console.error('Admin data laden mislukt:', e);
+  }
+}
+
+// ===== 🪐 PLANETEN SYSTEEM =====
+const PLANETS = [
+  { id:0, name:'Aarde',    emoji:'🌍', color:'#1565c0', desc:'Jouw thuisplaneet — begin hier!', unlocked:true },
+  { id:1, name:'Mercurius',emoji:'☿', color:'#9e9e9e', desc:'De kleinste planeet dichtst bij de zon', unlocked:false },
+  { id:2, name:'Mars',     emoji:'🔴', color:'#c62828', desc:'De rode planeet vol avontuur', unlocked:false },
+  { id:3, name:'Venus',    emoji:'🌟', color:'#f9a825', desc:'De heetste planeet van het stelsel', unlocked:false },
+  { id:4, name:'Jupiter',  emoji:'🟠', color:'#e65100', desc:'De grootste planeet ooit!', unlocked:false },
+  { id:5, name:'Saturnus', emoji:'🪐', color:'#ffd54f', desc:'De planeet met de prachtige ringen', unlocked:false },
+  { id:6, name:'Uranus',   emoji:'🔵', color:'#00838f', desc:'De planeet die op zijn zij draait', unlocked:false },
+  { id:7, name:'Neptunus', emoji:'💙', color:'#1565c0', desc:'De verste en koudste planeet', unlocked:false },
+];
+
+// Bepaal huidige planeet op basis van totale levels
+function getCurrentPlanet(playerIdx) {
+  const p = state.players[playerIdx !== undefined ? playerIdx : state.currentPlayer];
+  const totalLevel = p?.level || 0;
+  const planetIdx = Math.floor(totalLevel / 50); // 50 levels per planeet
+  return Math.min(planetIdx, PLANETS.length - 1);
+}
+
+// Bepaal of een planeet voltooid is
+function isPlanetComplete(playerIdx, planetIdx) {
+  const p = state.players[playerIdx !== undefined ? playerIdx : state.currentPlayer];
+  return (p?.level || 0) >= (planetIdx + 1) * 50;
+}
+
+// Bepaal level binnen huidige planeet (0-49)
+function getLevelOnPlanet(playerIdx) {
+  const p = state.players[playerIdx !== undefined ? playerIdx : state.currentPlayer];
+  return (p?.level || 0) % 50;
+}
+
+
 // PWA: Service Worker registreren
 if ('serviceWorker' in navigator) {
+  
+  // iOS keyboard fix: zorg dat nav altijd onderaan blijft
+  function fixNavPosition() {
+    const nav = document.querySelector('.bottom-nav');
+    if (!nav) return;
+    // Reset naar fixed positie
+    nav.style.bottom = '0';
+    nav.style.position = 'fixed';
+  }
+
+  // Luister naar window resize (keyboard open/dicht)
+  window.addEventListener('resize', () => {
+    setTimeout(fixNavPosition, 100);
+  });
+  // Luister naar focus/blur van inputs
+  document.addEventListener('focusout', () => {
+    setTimeout(fixNavPosition, 200);
+  });
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/Sterrenpad2/sw.js', { scope: '/Sterrenpad2/' })
       .then(reg => { reg.update(); console.log('✅ SW actief'); })
@@ -9014,6 +9542,10 @@ function initApp() {
     }, 480000);
 
     checkFamilySetup();
+    applyTheme(); // Pas thema toe bij start
+    // Toon admin tab als admin
+    const _reg = getRegistration();
+    if (_reg?.admin) document.getElementById('nav-admin')?.style.setProperty('display','flex');
     // Direct sync bij opstarten
     setTimeout(() => syncToCloud(), 2000);
 
