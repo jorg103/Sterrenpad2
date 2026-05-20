@@ -82,6 +82,7 @@
   .screen.active { display: block; }
 
   @keyframes twinkle { 0%{opacity:0.2} 100%{opacity:0.9} }
+  @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
   @keyframes rocket-fly { 0%{transform:translateY(0) rotate(-45deg)} 100%{transform:translateY(-150px) rotate(-45deg) scale(0)} }
   #starfield { pointer-events:none; }
   @keyframes slide-in-3d {
@@ -1112,17 +1113,19 @@ function getLevelsForWorld(worldId) {
   const base = 5 + worldId * 2;
   const r = [base, base*2, base*2, base*3, base*2];
   const SURPRISES = [
-    {icon:'💥',label:'BOOYAH!',    type:'surprise', desc:'Titans bonus activeren!'},
+    {icon:'🎡',label:'WIEL!',      type:'wheel',    desc:'Draai aan het Titans wiel!'},
     {icon:'⚡',label:'SPEED!',     type:'speed',    desc:'Zo snel als Beast Boy!'},
     {icon:'🧠',label:'BRAIN!',     type:'memory',   desc:'Raven zou trots zijn!'},
-    {icon:'📚',label:'STAAL!',     type:'staal',    desc:'Taal Titan aan het werk!'},
-    {icon:'🎡',label:'WIEL!',      type:'wheel',    desc:'Draai aan het Titans wiel!'},
+    {icon:'🎡',label:'WIEL!',      type:'wheel',    desc:'Draai aan het Titans wiel!'},  // dubbel zodat rad vaker komt
     {icon:'🃏',label:'MEMORY!',    type:'cards',    desc:'2 of a kind — zoek de paren!'},
     {icon:'🎈',label:'BALLONNEN!', type:'balloons', desc:'Prik zoveel mogelijk ballonnen!'},
-    {icon:'🗺️',label:'TOPO!',     type:'topo',     desc:'Topografie uitdaging!'},
-    {icon:'🎬',label:'ONTDEKKING!',type:'ontdekking',desc:'Titans Unieke Ontdekking!'},
+    {icon:'🎡',label:'WIEL!',      type:'wheel',    desc:'Draai aan het Titans wiel!'},  // dubbel
+    {icon:'📚',label:'STAAL!',     type:'staal',    desc:'Taal Titan aan het werk!'},
+    {icon:'🔊',label:'DICTEE!',    type:'dictee',   desc:'Schrijf het woord dat je hoort!'},
+    {icon:'🕐',label:'KLOK!',      type:'clock',    desc:'Hoe laat is het? Professor Finn helpt!'},
     {icon:'😄',label:'MOPJE!',     type:'joke',     desc:'Een grappige tussenstop!'},
-    {icon:'🌀',label:'RAVEN!',     type:'staal',    desc:'Azarath taalchallenge!'},
+    {icon:'🌍',label:'TALEN!',     type:'talen',    desc:'Woorden koppelen in andere taal!'},
+    {icon:'🧩',label:'SIMON!',     type:'simon',    desc:'Simon Says — onthoud de volgorde!'},
   ];
   const surprise = SURPRISES[worldId % SURPRISES.length];
   return [
@@ -1806,38 +1809,17 @@ function buildMiniAvatarSVG(p) {
 
 function selectWorld(worldIdx) {
   const p = getPlayer();
-  if ((p.level||0) < WORLDS[worldIdx].unlockLevel) {
+  // Fix: gebruik planet-relatief level (niet absoluut) voor unlock check
+  const levelOnPlanet = (p.level||0) % 50;
+  if (levelOnPlanet < WORLDS[worldIdx].unlockLevel) {
     showToast('Missie vergrendeld, Titan!', true);
     return;
   }
   currentWorldIdx = worldIdx;
   LEVELS = getLevelsForWorld(worldIdx);
-
-  // 3D world entry flash effect
-  const mapScreen = document.getElementById('map-screen');
-  if (mapScreen) {
-    mapScreen.style.transition = 'background 0.3s';
-    const world = WORLDS[worldIdx];
-    mapScreen.style.background = world.color + '44';
-    setTimeout(() => { mapScreen.style.background = ''; }, 300);
-  }
-
   renderMap();
-
-  // Voeg world-entering animatie toe aan de level nodes
-  setTimeout(() => {
-    document.querySelectorAll('.node-btn').forEach((n, i) => {
-      n.style.animation = 'none';
-      n.style.opacity = '0';
-      setTimeout(() => {
-        n.style.animation = '';
-        n.style.opacity = '1';
-        n.classList.add('world-entering');
-        setTimeout(() => n.classList.remove('world-entering'), 500);
-      }, i * 80);
-    });
-  }, 50);
 }
+
 
 // ===== CHALLENGE SYSTEM =====
 let currentLevelIdx = 0;
@@ -1875,6 +1857,8 @@ function openChallenge(idx, worldIdx) {
   }
 
   else if (lvl.type === 'simon')      { showSimonSays(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'dictee')     { showDictee(); document.getElementById('challenge-modal').classList.add('open'); return; }
+  else if (lvl.type === 'clock')      { showClockChallenge(); document.getElementById('challenge-modal').classList.add('open'); return; }
   else if (lvl.type === 'snelrekenen'){ showSnelRekenen(); document.getElementById('challenge-modal').classList.add('open'); return; }
   else if (lvl.type === 'talen')      { showTalenKoppelen(); document.getElementById('challenge-modal').classList.add('open'); return; }
   else if (lvl.type === 'kleurMatch') { showKleurMatch(); document.getElementById('challenge-modal').classList.add('open'); return; }
@@ -2601,8 +2585,18 @@ function checkSpellTiles() {
     sfxWrong();
     spellAttempts++;
     recordAnswer('spell', false, ms);
-    // Reset na 800ms
-    setTimeout(() => spellClear(), 800);
+
+    if (spellAttempts >= 3) {
+      // Na 3 foute pogingen: toon het juiste woord
+      showToast(`Het woord was: ${word}`, true);
+      setTimeout(() => {
+        closeChallenge();
+        completeChallenge(Math.max(2, Math.floor((LEVELS[currentLevelIdx]?.reward||10) * 0.3)), false);
+      }, 1500);
+    } else {
+      showToast(`Nog ${3-spellAttempts} ${3-spellAttempts===1?'poging':'pogingen'}`, true);
+      setTimeout(() => spellClear(), 900);
+    }
   }
 }
 
@@ -2771,7 +2765,10 @@ function shuffleArr(arr) {
 // ===== COMPLETE CHALLENGE =====
 function completeChallenge(coins, perfect) {
   const p = getPlayer();
-  const absLevel = currentWorldIdx * 5 + currentLevelIdx;
+  // Fix: bereken absLevel planet-relatief zodat het correct werkt op alle planeten
+  const planetIdx = Math.min(Math.floor((p.level||0)/50), 7);
+  const planetBase = planetIdx * 50;
+  const absLevel = planetBase + (currentWorldIdx * 5 + currentLevelIdx);
   const wasCompleted = absLevel < (p.level||0);
 
   if (!wasCompleted) {
@@ -4932,17 +4929,24 @@ function renderParentReport() {
     🏠 Gezinshulp — Wie is aan de beurt?
   </button>`;
 
-  // ===== IDEEËNBUS & FAMILIE =====
-  html += `<div style="display:flex;gap:8px;margin-bottom:14px">
-    <button onclick="showIdeaBox()" style="flex:1;padding:12px;background:linear-gradient(135deg,#2e7d32,#57c785);
+  // ===== IDEEËNBUS, FAMILIE & ADMIN =====
+  const reg = getRegistration();
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <button onclick="showIdeaBox()" style="flex:1;min-width:80px;padding:12px;background:linear-gradient(135deg,#2e7d32,#57c785);
       color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
       💡 Ideeënbus
     </button>
     <button onclick="document.getElementById('family-settings-section').style.display=document.getElementById('family-settings-section').style.display==='none'?'block':'none'"
-      style="flex:1;padding:12px;background:linear-gradient(135deg,#1565c0,#42a5f5);
+      style="flex:1;min-width:80px;padding:12px;background:linear-gradient(135deg,#1565c0,#42a5f5);
       color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
       👨‍👩‍👧 Familie
     </button>
+    ${reg?.admin ? `<button onclick="navigate('admin')"
+      style="flex:1;min-width:80px;padding:12px;background:linear-gradient(135deg,#1a1a2e,#f5a623);
+      color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;
+      border:2px solid #f5a623">
+      ⚙️ Admin
+    </button>` : ''}
   </div>
   <div id="family-settings-section" style="display:none">
     ${renderFamilySettings()}
@@ -6655,31 +6659,68 @@ function saveUsedTime(minutes, playerIdx) {
 
 function showTimeLimitScreen(maxMin, naam) {
   naam = naam || state.players[state.currentPlayer]?.name || 'Kind';
+  const p = getPlayer();
+  const coins = p?.coins || 0;
+
+  // Sluit challenge/reward modals als die open zijn
+  document.getElementById('challenge-modal')?.classList.remove('open');
+  document.getElementById('reward-modal')?.classList.remove('open');
+
+  document.getElementById('time-limit-overlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'time-limit-overlay';
-  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;
-    background:#0d0d1a;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;text-align:center;padding:24px`;
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;' +
+    'background:#0d0d1a;overflow-y:auto;display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:center;text-align:center;padding:24px';
+
   overlay.innerHTML = `
-    <div style="font-size:5rem;margin-bottom:16px">⏰</div>
-    <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-bottom:8px">
-      Tijd is op!
-    </div>
-    <div style="font-size:1rem;color:rgba(255,255,255,0.7);margin-bottom:8px">
-      ${naam} heeft vandaag ${maxMin} minuten gespeeld.
-    </div>
-    <div style="font-size:0.9rem;color:#57c785;margin-bottom:24px">
-      Morgen kun je weer verder! 🌅
-    </div>
-    <div style="font-size:2rem">🧑‍🏫</div>
-    <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin:8px 0 20px">
-      Professor Finn zegt: "Rust is ook leren! Je hersenen verwerken alles nu."
-    </div>
-    <div style="font-size:0.78rem;color:rgba(255,255,255,0.3)">
-      Ouders kunnen de tijdslimiet aanpassen in het Ouders menu 🔒
+    <div style="max-width:340px;width:100%">
+      <div style="font-size:5rem;margin-bottom:12px">⏰</div>
+      <div style="font-family:'Fredoka One',cursive;font-size:2rem;color:#f5a623;margin-bottom:8px">
+        Tijd is op, ${naam}!
+      </div>
+      <div style="background:#1a2744;border-radius:16px;padding:16px;margin-bottom:16px">
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.8);line-height:1.6;margin-bottom:8px">
+          Je hebt vandaag <strong style="color:#f5a623">${maxMin} minuten</strong> gespeeld.<br>
+          Morgen kun je weer verder leren! 🌅
+        </div>
+        <div style="font-size:0.82rem;color:#57c785">
+          Je hebt nog <strong style="color:#f5a623">🪙 ${coins} coins</strong> in je spaarpot!
+        </div>
+      </div>
+
+      <!-- Professor Finn -->
+      <div style="background:linear-gradient(135deg,#1a1a3e,#0f3060);border-radius:16px;padding:14px;margin-bottom:16px;border:1px solid rgba(206,147,216,0.3)">
+        <div style="font-size:2rem;margin-bottom:6px">🧑‍🏫</div>
+        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:4px">Professor Finn zegt:</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.7);line-height:1.5;font-style:italic">
+          "Rust is ook leren! Je hersenen verwerken alles terwijl je rust. Morgen ben je nóg slimmer!"
+        </div>
+      </div>
+
+      <!-- Winkel optie -->
+      <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.6);font-size:0.85rem;margin-bottom:12px">
+        Wil je je verdiende coins nog uitgeven?
+      </div>
+      <button onclick="document.getElementById('time-limit-overlay').remove();navigate('shop')"
+        style="width:100%;padding:14px;background:linear-gradient(135deg,#6a1b9a,#ab47bc);
+        color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;
+        font-size:1rem;cursor:pointer;margin-bottom:8px;box-shadow:0 4px 16px rgba(106,27,154,0.4)">
+        🛒 Naar de Titan Store!
+      </button>
+      <button onclick="document.getElementById('time-limit-overlay').remove();navigate('home')"
+        style="width:100%;padding:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+        border-radius:14px;color:rgba(255,255,255,0.5);font-family:'Fredoka One',cursive;
+        font-size:0.9rem;cursor:pointer;margin-bottom:12px">
+        🏠 Terug naar Home
+      </button>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.25)">
+        Ouders kunnen de tijdslimiet aanpassen via het Ouders menu 🔒
+      </div>
     </div>`;
   document.body.appendChild(overlay);
 }
+
 
 // ===== 4. NIVEAU AANPASSING OUDERS =====
 function renderSkillSliders(p, idx) {
@@ -8053,7 +8094,7 @@ function shareViaWhatsApp() {
     '• iPhone/iPad: open link in Safari → tik 📤 Deel → Zet op beginscherm → Voeg toe',
     '• Android: tik ⋮ rechtsboven → Toevoegen aan startscherm',
     '',
-    'Na goedkeuring gebruik je altijd:',,
+    'Na goedkeuring gebruik je altijd:',
     SHARE_URL,
     '',
     'Vragen? Stuur me een berichtje! 😊'
@@ -9039,6 +9080,160 @@ function checkTimeLimit() {
 }
 
 // ===== 🏠 GEZINSHULP — VINGER RANDOMIZER =====
+// ===== 🎵 AUDIO BIBLIOTHEEK =====
+const AUDIO_KEY = 'tp_audio_library';
+function getAudioLibrary() { try { return JSON.parse(localStorage.getItem(AUDIO_KEY)||'[]'); } catch(e) { return []; } }
+function saveAudioLibrary(lib) { try { localStorage.setItem(AUDIO_KEY, JSON.stringify(lib)); } catch(e) {} }
+
+function detectAudioType(url, title) {
+  const u = url.toLowerCase(), t = (title||'').toLowerCase();
+  let platform = 'link';
+  if (u.includes('spotify.com')||u.includes('spotify:')) platform='spotify';
+  else if (u.includes('podcasts.apple.com')||u.includes('overcast')||u.includes('pocketcasts')) platform='podcast-app';
+  else if (u.includes('audible')||u.includes('storytel')||u.includes('bol.com')) platform='luisterboek-app';
+  else if (u.includes('youtube.com')||u.includes('youtu.be')) platform='youtube';
+  let cat = 'muziek';
+  const podcastWords=['podcast','aflevering','episode','nieuws','radio','npo','bnr','interview'];
+  const boekWords=['luisterboek','audiobook','verhaal','boek','sprookje','story','storytel','audible'];
+  if (podcastWords.some(w=>u.includes(w)||t.includes(w))) cat='podcast';
+  else if (boekWords.some(w=>u.includes(w)||t.includes(w))) cat='luisterboek';
+  else if (u.includes('spotify.com/episode')||u.includes('spotify.com/show')) cat='podcast';
+  else if (u.includes('spotify.com/audiobook')) cat='luisterboek';
+  return { platform, cat };
+}
+
+function getOpenUrl(item) {
+  if (item.platform==='spotify') {
+    const match = item.url.match(/open\.spotify\.com\/(playlist|album|track|episode|show|audiobook)\/([a-zA-Z0-9]+)/);
+    if (match) return `spotify://${match[1]}/${match[2]}`;
+  }
+  return item.url;
+}
+
+const CAT_CONFIG = {
+  muziek:      { icon:'🎵', label:'Muziek',        color:'#1db954', bg:'linear-gradient(135deg,#1db954,#158a3e)' },
+  podcast:     { icon:'🎙️', label:'Podcasts',      color:'#9c27b0', bg:'linear-gradient(135deg,#7b1fa2,#ce93d8)' },
+  luisterboek: { icon:'📖', label:'Luisterboeken',  color:'#f5a623', bg:'linear-gradient(135deg,#e65100,#f5a623)' },
+};
+
+function showAudioBibliotheek() {
+  document.getElementById('gezinshulp-overlay')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'audio-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2500;background:#0a0a1a;overflow-y:auto';
+  overlay.innerHTML = buildAudioScreen('muziek');
+  document.body.appendChild(overlay);
+}
+
+function buildAudioScreen(activeTab) {
+  activeTab = activeTab || 'muziek';
+  const lib = getAudioLibrary();
+  return `<div style="max-width:420px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-top:8px">
+      <button onclick="document.getElementById('audio-overlay').remove();showGezinsHulp()"
+        style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div><div style="font-family:'Fredoka One',cursive;color:#1db954;font-size:1.3rem">🎵 Audio Bibliotheek</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.4)">${lib.length} item${lib.length!==1?'s':''} opgeslagen</div></div>
+      <button onclick="showAddAudioForm()" style="margin-left:auto;padding:10px 14px;background:linear-gradient(135deg,#1db954,#158a3e);border:none;border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">+ Toevoegen</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      ${Object.entries(CAT_CONFIG).map(([cat,cfg])=>{
+        const count=lib.filter(i=>i.cat===cat).length;
+        const isA=cat===activeTab;
+        return `<button onclick="refreshAudioScreen('${cat}')" style="flex:1;padding:10px 6px;background:${isA?cfg.bg:'rgba(255,255,255,0.06)'};border:${isA?'none':'1px solid rgba(255,255,255,0.1)'};border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer;text-align:center"><div style="font-size:1.2rem">${cfg.icon}</div><div>${cfg.label}</div>${count>0?'<div style="font-size:0.65rem;opacity:0.8">'+count+'</div>':''}</button>`;
+      }).join('')}
+    </div>
+    <div id="audio-items">${buildAudioItems(lib,activeTab)}</div>
+    <div style="background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.2);border-radius:12px;padding:12px;margin-top:10px">
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);line-height:1.6">💡 <strong style="color:#1db954">Tip:</strong> Kopieer een link vanuit Spotify (Delen → Link kopiëren) en plak die hier. De app opent dan direct in Spotify.</div>
+    </div>
+  </div>`;
+}
+
+function buildAudioItems(lib, cat) {
+  const items=lib.filter(i=>i.cat===cat);
+  if(items.length===0){ const cfg=CAT_CONFIG[cat]; return `<div style="text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3)"><div style="font-size:3rem;margin-bottom:10px">${cfg.icon}</div><div style="font-family:'Fredoka One',cursive;font-size:1rem;margin-bottom:6px">Nog geen ${cfg.label}</div><div style="font-size:0.82rem">Tik <strong style="color:${cfg.color}">+ Toevoegen</strong> om te beginnen</div></div>`; }
+  return items.map(item=>{
+    const cfg=CAT_CONFIG[item.cat]||CAT_CONFIG.muziek;
+    const libIdx=lib.findIndex(i=>i.id===item.id);
+    const openUrl=getOpenUrl(item);
+    const pIcon=item.platform==='spotify'?'🟢':item.platform==='youtube'?'🔴':'🔗';
+    return `<div style="background:#1a2744;border-radius:16px;padding:14px;margin-bottom:10px;border-left:4px solid ${cfg.color};display:flex;gap:12px;align-items:center">
+      <div style="font-size:2rem;flex-shrink:0">${item.emoji||cfg.icon}</div>
+      <div style="flex:1;min-width:0"><div style="font-family:'Fredoka One',cursive;color:white;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.title}</div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.4);margin-top:2px">${pIcon} ${item.platform==='spotify'?'Spotify':item.platform==='youtube'?'YouTube':'Link'} · ${cfg.label}</div>
+      ${item.for?'<div style="font-size:0.7rem;color:'+cfg.color+';margin-top:2px">👤 '+item.for+'</div>':''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="openAudioItem('${openUrl.replace(/'/g,"\\'")}' )" style="padding:8px 12px;background:${cfg.bg};border:none;border-radius:10px;color:white;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">▶ Open</button>
+        <button onclick="deleteAudioItem(${libIdx})" style="padding:6px 12px;background:rgba(233,69,96,0.15);border:1px solid rgba(233,69,96,0.3);border-radius:10px;color:#e94560;font-family:'Fredoka One',cursive;font-size:0.78rem;cursor:pointer">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function refreshAudioScreen(tab) {
+  const el=document.getElementById('audio-overlay');
+  if(el) el.innerHTML=buildAudioScreen(tab||'muziek');
+}
+
+function openAudioItem(url) {
+  if(url.startsWith('spotify://')){ window.location.href=url; setTimeout(()=>window.open(url.replace('spotify://','https://open.spotify.com/').replace('//','/'),'_blank'),1500); }
+  else window.open(url,'_blank');
+}
+
+function deleteAudioItem(idx) {
+  const lib=getAudioLibrary(); lib.splice(idx,1); saveAudioLibrary(lib);
+  const el=document.getElementById('audio-overlay'); if(el) el.innerHTML=buildAudioScreen();
+}
+
+function showAddAudio() { showParentLock('audio'); }
+
+function showAddAudioForm() {
+  const el=document.getElementById('audio-overlay'); if(!el)return;
+  el.innerHTML=`<div style="max-width:420px;margin:0 auto;padding:16px 16px 80px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-top:8px">
+      <button onclick="refreshAudioScreen()" style="background:rgba(255,255,255,0.1);border:none;border-radius:10px;padding:8px 12px;color:white;cursor:pointer">←</button>
+      <div style="font-family:'Fredoka One',cursive;color:#1db954;font-size:1.2rem">🎵 Link Toevoegen</div>
+    </div>
+    <div style="background:#1a2744;border-radius:16px;padding:16px;margin-bottom:14px">
+      <div style="font-family:'Fredoka One',cursive;color:#1db954;font-size:0.9rem;margin-bottom:8px">🔗 Plak je Spotify / Podcast / Luisterboek link</div>
+      <input id="audio-url" type="url" placeholder="https://open.spotify.com/playlist/..."
+        style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(29,185,84,0.3);background:#0f3060;color:white;font-size:0.9rem;box-sizing:border-box;margin-bottom:10px"
+        oninput="autoDetectAudio(this.value)">
+      <div id="audio-detect-result" style="display:none;background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.3);border-radius:10px;padding:10px;margin-bottom:10px">
+        <div style="font-size:0.8rem;color:#1db954;font-family:'Fredoka One',cursive;margin-bottom:4px">✅ Herkend:</div>
+        <div id="audio-detect-text" style="font-size:0.82rem;color:rgba(255,255,255,0.8)"></div>
+      </div>
+    </div>
+    <div style="background:#1a2744;border-radius:16px;padding:16px;margin-bottom:14px">
+      <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:8px">✏️ Naam</div>
+      <input id="audio-title" type="text" placeholder="bijv. Mila's favoriete hits"
+        style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);background:#0f3060;color:white;font-family:'Fredoka One',cursive;font-size:0.95rem;box-sizing:border-box;margin-bottom:12px">
+      <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:8px">👤 Voor wie?</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="audio-for-btns">
+        <button onclick="selectAudioFor('Iedereen',this)" id="afor-all"
+          style="padding:8px 12px;background:#1565c0;border:2px solid #42a5f5;border-radius:10px;color:white;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">👨‍👩‍👧 Iedereen</button>
+        ${state.players.map(p=>`<button onclick="selectAudioFor('${p.name}',this)" style="padding:8px 12px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.15);border-radius:10px;color:white;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">${p.avatar} ${p.name}</button>`).join('')}
+      </div>
+    </div>
+    <div style="background:#1a2744;border-radius:16px;padding:16px;margin-bottom:20px">
+      <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:8px">🗂️ Categorie</div>
+      <div style="display:flex;gap:8px">
+        ${Object.entries(CAT_CONFIG).map(([key,cfg])=>`<button onclick="selectAudioCat('${key}',this)" id="catbtn-${key}" style="flex:1;padding:10px 6px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.1);border-radius:12px;color:white;font-family:'Fredoka One',cursive;font-size:0.8rem;cursor:pointer;text-align:center"><div>${cfg.icon}</div><div>${cfg.label}</div></button>`).join('')}
+      </div>
+    </div>
+    <button onclick="saveAudioItem()" style="width:100%;padding:16px;background:linear-gradient(135deg,#1db954,#158a3e);color:white;border:none;border-radius:16px;font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(29,185,84,0.4)">✅ Opslaan</button>
+  </div>`;
+  window._audioCat='muziek'; window._audioFor='Iedereen';
+  selectAudioCat('muziek',document.getElementById('catbtn-muziek'));
+}
+
+window._audioCat='muziek'; window._audioFor='Iedereen';
+function selectAudioFor(name,btn){ window._audioFor=name; document.querySelectorAll('#audio-for-btns button').forEach(b=>{b.style.background='rgba(255,255,255,0.06)';b.style.borderColor='rgba(255,255,255,0.15)';}); if(btn){btn.style.background='#1565c0';btn.style.borderColor='#42a5f5';} }
+function selectAudioCat(cat,btn){ window._audioCat=cat; const cfg=CAT_CONFIG[cat]; Object.keys(CAT_CONFIG).forEach(k=>{const b=document.getElementById('catbtn-'+k);if(b){b.style.background='rgba(255,255,255,0.06)';b.style.borderColor='rgba(255,255,255,0.1)';}}); if(btn){btn.style.background=cfg.color+'33';btn.style.borderColor=cfg.color;} }
+function autoDetectAudio(url){ if(!url||url.length<10){document.getElementById('audio-detect-result')?.style.setProperty('display','none');return;} const{platform,cat}=detectAudioType(url,''); const cfg=CAT_CONFIG[cat]; const el=document.getElementById('audio-detect-result'),txt=document.getElementById('audio-detect-text'); if(el&&txt){txt.textContent=(platform==='spotify'?'🟢 Spotify':platform==='youtube'?'🔴 YouTube':'🔗 Weblink')+' · '+cfg.icon+' '+cfg.label;el.style.display='block';} window._audioCat=cat; selectAudioCat(cat,document.getElementById('catbtn-'+cat)); }
+function saveAudioItem(){ const url=(document.getElementById('audio-url')?.value||'').trim(),title=(document.getElementById('audio-title')?.value||'').trim(); if(!url){showToast('Plak eerst een link!',true);return;} if(!title){showToast('Geef het een naam!',true);return;} const{platform}=detectAudioType(url,title); const finalCat=window._audioCat||'muziek'; const emojis={muziek:['🎵','🎶','🎸','🎹'],podcast:['🎙️','📻','🎧'],luisterboek:['📖','📚','🧙','🚀']}; const emojiList=emojis[finalCat]||emojis.muziek; const emoji=emojiList[Math.floor(Math.random()*emojiList.length)]; const lib=getAudioLibrary(); lib.push({id:'audio_'+Date.now(),title,url,platform,cat:finalCat,emoji,for:window._audioFor||'Iedereen',added:new Date().toLocaleDateString('nl-NL')}); saveAudioLibrary(lib); sfxLevelUp(); showToast('✅ "'+title+'" toegevoegd!'); refreshAudioScreen(finalCat); }
+
 function showGezinsHulp() {
   const overlay = document.createElement('div');
   overlay.id = 'gezinshulp-overlay';
@@ -9393,103 +9588,214 @@ function renderAdminDashboard() {
   const el = document.getElementById('admin-content');
   if (!el) return;
   const reg = getRegistration();
-  if (!reg?.admin) { el.innerHTML = '<div style="color:#e94560;padding:20px;text-align:center">Geen toegang</div>'; return; }
+  if (!reg?.admin) {
+    el.innerHTML = '<div style="color:#e94560;padding:20px;text-align:center;font-family:\'Fredoka One\',cursive">🔒 Geen toegang</div>';
+    return;
+  }
+
   el.innerHTML = `
-    <div style="padding:12px">
+    <div style="padding:12px 0">
+
+      <!-- Header -->
       <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);border-radius:16px;padding:14px;margin-bottom:12px;border:2px solid #f5a623">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem;margin-bottom:10px">⚙️ Admin Dashboard</div>
-        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:10px">Alleen zichtbaar voor jou (TITANS2024)</div>
-
-        <!-- Deel sectie -->
-        <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:10px">
-          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:6px">🔗 Nieuwe familie uitnodigen</div>
-          <div style="font-size:0.78rem;color:rgba(255,255,255,0.6);margin-bottom:8px">Stuur de invite-link via WhatsApp. Na registratie keur jij goed in dit scherm.</div>
-          <div style="display:flex;gap:8px">
-            <button onclick="shareViaWhatsApp()" style="flex:1;padding:10px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">💬 WhatsApp</button>
-            <button onclick="copyShareLink()" style="flex:1;padding:10px;background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">📋 Kopieer link</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="font-size:2rem">⚙️</div>
+          <div>
+            <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1.1rem">Admin Dashboard</div>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.4)">Alleen zichtbaar voor jou · TITANS2024</div>
           </div>
-          <div style="margin-top:8px;font-size:0.72rem;color:rgba(255,255,255,0.35)">
-            Invite link: <span style="color:#f5a623">${INVITE_URL}</span>
-          </div>
+          <button onclick="renderAdminDashboard()" style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:6px 10px;color:white;cursor:pointer;font-size:0.8rem">🔄</button>
         </div>
-
-        <!-- Codes overzicht -->
-        <div style="background:#0f3460;border-radius:12px;padding:12px;margin-bottom:10px">
-          <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.9rem;margin-bottom:8px">🔑 Toegangscodes</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div style="background:#1a2744;border-radius:10px;padding:10px;text-align:center">
-              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Jouw gezin (admin)</div>
-              <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;letter-spacing:2px">TITANS2024</div>
-            </div>
-            <div style="background:#1a2744;border-radius:10px;padding:10px;text-align:center">
-              <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Nieuwe families</div>
-              <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;letter-spacing:2px">TITANS2026</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sync & Force -->
-        <button onclick="forceSyncNow()" style="width:100%;padding:10px;background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;margin-bottom:8px">☁️ Nu synchroniseren</button>
       </div>
 
-      <!-- Wachtende families -->
+      <!-- Statistieken balk (snel overzicht) -->
+      <div id="admin-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:#1a2744;border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(87,199,133,0.3)">
+          <div style="font-size:1.6rem" id="stat-active">...</div>
+          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.72rem">Actieve families</div>
+        </div>
+        <div style="background:#1a2744;border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(245,166,35,0.3)">
+          <div style="font-size:1.6rem" id="stat-pending">...</div>
+          <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.72rem">Wachten op OK</div>
+        </div>
+        <div style="background:#1a2744;border-radius:12px;padding:12px;text-align:center;border:1px solid rgba(206,147,216,0.3)">
+          <div style="font-size:1.6rem" id="stat-ideas">...</div>
+          <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.72rem">Ideeën</div>
+        </div>
+      </div>
+
+      <!-- Uitnodigen -->
+      <div style="background:#1a2744;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(29,185,84,0.3)">
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.9rem;margin-bottom:8px">🔗 Nieuwe Familie Uitnodigen</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button onclick="shareViaWhatsApp()" style="flex:1;padding:10px;background:linear-gradient(135deg,#25D366,#128C7E);color:white;border:none;border-radius:10px;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">💬 WhatsApp</button>
+          <button onclick="copyShareLink()" style="flex:1;padding:10px;background:rgba(245,166,35,0.2);border:1px solid rgba(245,166,35,0.4);border-radius:10px;color:#f5a623;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">📋 Kopieer</button>
+          <button onclick="forceSyncNow()" style="flex:1;padding:10px;background:rgba(144,202,249,0.15);border:1px solid rgba(144,202,249,0.3);border-radius:10px;color:#90caf9;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">☁️ Sync</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="background:#0f3060;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">Jouw code (admin)</div>
+            <div style="font-family:'Fredoka One',cursive;color:#f5a623;letter-spacing:2px">TITANS2024</div>
+          </div>
+          <div style="background:#0f3060;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.4)">Nieuwe families</div>
+            <div style="font-family:'Fredoka One',cursive;color:#57c785;letter-spacing:2px">TITANS2026</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wachtende goedkeuringen -->
       <div id="admin-pending" style="margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">⏳ Laden...</div>
+        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.88rem;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          ✋ Wachten op goedkeuring
+          <div style="width:18px;height:18px;border:2px solid #f5a623;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite"></div>
+        </div>
       </div>
 
-      <!-- Actieve families -->
+      <!-- Actieve gebruikers -->
       <div id="admin-families" style="margin-bottom:12px">
-        <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">📊 Families laden...</div>
+        <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.88rem;margin-bottom:6px">📊 Actieve Families laden...</div>
       </div>
+
+      <!-- Ideeënbus -->
+      <div id="admin-ideas" style="margin-bottom:12px">
+        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.88rem;margin-bottom:6px">💡 Ingediende Ideeën laden...</div>
+      </div>
+
     </div>`;
 
-  // Laad data asynchroon
   loadAdminData();
 }
 
 async function loadAdminData() {
   try {
+    const [pending, active, ideas] = await Promise.all([
+      sbFetch('families?approved=eq.false&order=created_at.desc&limit=20').then(r=>r||[]).catch(()=>[]),
+      sbFetch('families?approved=eq.true&order=created_at.desc&limit=50').then(r=>r||[]).catch(()=>[]),
+      sbFetch('ideas?order=created_at.desc&limit=30').then(r=>r||[]).catch(()=>[]),
+    ]);
+
+    // Statistieken
+    const sa = document.getElementById('stat-active');
+    const sp = document.getElementById('stat-pending');
+    const si = document.getElementById('stat-ideas');
+    if(sa) sa.textContent = active.length;
+    if(sp) sp.textContent = pending.length;
+    if(si) si.textContent = ideas.length;
+
     // Wachtende families
-    const pending = await sbFetch('families?approved=eq.false&order=created_at.desc&limit=20') || [];
-    const active  = await sbFetch('families?approved=eq.true&order=created_at.desc&limit=50') || [];
-
     const pendingEl = document.getElementById('admin-pending');
-    const familiesEl = document.getElementById('admin-families');
-
     if (pendingEl) {
-      pendingEl.innerHTML = pending.length === 0
-        ? `<div style="background:#1a2744;border-radius:12px;padding:10px;text-align:center;border:1px solid rgba(87,199,133,0.2)"><div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">✅ Geen wachtende aanmeldingen</div></div>`
-        : `<div style="background:#1a2744;border-radius:14px;padding:14px;border:2px solid #f5a623">
-            <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:1rem;margin-bottom:10px">✋ Wacht op Goedkeuring (${pending.length})</div>
+      if (pending.length === 0) {
+        pendingEl.innerHTML = `<div style="background:#1a2744;border-radius:12px;padding:10px;text-align:center;border:1px solid rgba(87,199,133,0.15)">
+          <div style="font-size:0.82rem;color:rgba(255,255,255,0.35)">✅ Geen wachtende aanmeldingen</div>
+        </div>`;
+      } else {
+        pendingEl.innerHTML = `
+          <div style="background:#1a2744;border-radius:14px;padding:14px;border:2px solid #f5a623">
+            <div style="font-family:'Fredoka One',cursive;color:#f5a623;font-size:0.95rem;margin-bottom:10px">
+              ✋ Wacht op Goedkeuring (${pending.length})
+            </div>
             ${pending.map(f => `
-              <div style="background:#0f3060;border-radius:12px;padding:10px;margin-bottom:8px">
-                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem">👨‍👩‍👧 ${f.family_name||'?'}</div>
-                <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin:3px 0">${f.parent_name||''} · ${f.created_at?new Date(f.created_at).toLocaleDateString('nl-NL'):''}</div>
-                ${(f.children||[]).map(ch=>`<div style="font-size:0.75rem;color:#57c785">👶 ${ch.name} · Groep ${ch.grade}</div>`).join('')}
-                <button onclick="approveFamily('${f.id}')" style="width:100%;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer;margin-top:8px">✅ Goedkeuren</button>
+              <div style="background:#0f3060;border-radius:12px;padding:12px;margin-bottom:8px">
+                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.9rem;margin-bottom:3px">
+                  👨‍👩‍👧 ${f.family_name||'Onbekend'}
+                </div>
+                <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-bottom:4px">
+                  Ouder: ${f.parent_name||'?'} · ${f.created_at ? new Date(f.created_at).toLocaleDateString('nl-NL') : ''}
+                </div>
+                ${(f.children||[]).map(ch=>`
+                  <div style="font-size:0.75rem;color:#57c785">👶 ${ch.name} · Groep ${ch.grade}</div>
+                `).join('')}
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button onclick="approveFamily('${f.id}')"
+                    style="flex:1;padding:8px;background:linear-gradient(135deg,#57c785,#2e7d32);color:white;border:none;border-radius:8px;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
+                    ✅ Goedkeuren
+                  </button>
+                  <button onclick="rejectFamily('${f.id}')"
+                    style="padding:8px 12px;background:rgba(233,69,96,0.2);border:1px solid #e94560;border-radius:8px;color:#e94560;font-family:'Fredoka One',cursive;font-size:0.85rem;cursor:pointer">
+                    ✕
+                  </button>
+                </div>
               </div>`).join('')}
-           </div>`;
+          </div>`;
+      }
     }
 
+    // Actieve families — uitklapbaar met kinderen detail
+    const familiesEl = document.getElementById('admin-families');
     if (familiesEl) {
       familiesEl.innerHTML = `
-        <div style="background:#1a2744;border-radius:14px;padding:14px;border:1px solid rgba(87,199,133,0.3)">
-          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:1rem;margin-bottom:10px">📊 Actieve Families (${active.length})</div>
-          ${active.length === 0 ? '<div style="font-size:0.8rem;color:rgba(255,255,255,0.4)">Nog geen actieve families</div>'
-          : active.map(f => `
-            <div style="background:#0f3060;border-radius:10px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
-              <div>
-                <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.88rem">👨‍👩‍👧 ${f.family_name||'?'}</div>
-                <div style="font-size:0.72rem;color:rgba(255,255,255,0.4)">${f.parent_name||''} · ${(f.children||[]).length} kind(eren)</div>
-              </div>
-              <div style="font-size:0.72rem;color:#57c785">✅</div>
-            </div>`).join('')}
+        <div style="background:#1a2744;border-radius:14px;padding:14px;border:1px solid rgba(87,199,133,0.25)">
+          <div style="font-family:'Fredoka One',cursive;color:#57c785;font-size:0.95rem;margin-bottom:10px">
+            📊 Actieve Families (${active.length})
+          </div>
+          ${active.length === 0
+            ? '<div style="font-size:0.82rem;color:rgba(255,255,255,0.35)">Nog geen actieve families</div>'
+            : active.map((f,i) => `
+              <div style="background:#0f3060;border-radius:10px;padding:10px;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;align-items:center" onclick="toggleFamilyDetail('fam-${i}')">
+                  <div>
+                    <div style="font-family:'Fredoka One',cursive;color:white;font-size:0.88rem">👨‍👩‍👧 ${f.family_name||'?'}</div>
+                    <div style="font-size:0.72rem;color:rgba(255,255,255,0.45)">${f.parent_name||''} · ${(f.children||[]).length} kind(eren) · ✅ Actief</div>
+                  </div>
+                  <div style="font-size:0.8rem;color:rgba(255,255,255,0.4)" id="fam-arrow-${i}">▼</div>
+                </div>
+                <div id="fam-${i}" style="display:none;margin-top:8px;border-top:1px solid rgba(255,255,255,0.08);padding-top:8px">
+                  ${(f.children||[]).map(ch=>`<div style="font-size:0.78rem;color:#57c785;margin-bottom:3px">👶 ${ch.name} · Groep ${ch.grade}</div>`).join('')}
+                  <div style="font-size:0.7rem;color:rgba(255,255,255,0.3);margin-top:4px">Aangemeld: ${f.created_at?new Date(f.created_at).toLocaleDateString('nl-NL'):''}</div>
+                </div>
+              </div>`).join('')}
         </div>`;
     }
+
+    // Ideeënbus
+    const ideasEl = document.getElementById('admin-ideas');
+    if (ideasEl) {
+      ideasEl.innerHTML = `
+        <div style="background:#1a2744;border-radius:14px;padding:14px;border:1px solid rgba(206,147,216,0.25)">
+          <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.95rem;margin-bottom:10px">
+            💡 Ingediende Ideeën (${ideas.length})
+          </div>
+          ${ideas.length === 0
+            ? '<div style="font-size:0.82rem;color:rgba(255,255,255,0.35)">Nog geen ideeën ingediend</div>'
+            : ideas.map(idea => `
+              <div style="background:#0f3060;border-radius:10px;padding:10px;margin-bottom:8px;border-left:3px solid #ce93d8">
+                <div style="font-size:0.82rem;color:white;line-height:1.5;margin-bottom:4px">"${idea.idea||idea.text||idea.content||JSON.stringify(idea)}"</div>
+                <div style="font-size:0.7rem;color:rgba(255,255,255,0.35)">
+                  ${idea.family_name||''} ${idea.created_at?'· '+new Date(idea.created_at).toLocaleDateString('nl-NL'):''}
+                </div>
+              </div>`).join('')}
+        </div>`;
+    }
+
   } catch(e) {
     console.error('Admin data laden mislukt:', e);
+    const els = ['admin-pending','admin-families','admin-ideas'];
+    els.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.innerHTML = '<div style="font-size:0.8rem;color:rgba(255,255,255,0.3);padding:8px">Verbinding mislukt — probeer opnieuw</div>';
+    });
   }
 }
+
+function toggleFamilyDetail(id) {
+  const el = document.getElementById(id);
+  const idx = id.replace('fam-','');
+  const arrow = document.getElementById('fam-arrow-' + idx);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
+}
+
+async function rejectFamily(familyId) {
+  if (!confirm('Familie verwijderen?')) return;
+  const ok = await sbFetch('families?id=eq.' + familyId, 'DELETE');
+  showToast('🗑️ Familie verwijderd');
+  renderAdminDashboard();
+}
+
 
 // ===== 🪐 PLANETEN SYSTEEM =====
 const PLANETS = [
@@ -9973,6 +10279,345 @@ function completeHealthSession(type,extraCoins) {
     sfxCorrect();
   }
   setTimeout(()=>showHealthDashboard(),1200);
+}
+
+
+
+// ===== 🔊 DICTEE SPELLETJE =====
+// Professor Finn spreekt het woord uit — kind schrijft het
+function showDictee() {
+  const adaptiveWords = getAdaptiveWords(state.currentPlayer, currentWorldIdx);
+  const wordObj = adaptiveWords[Math.floor(Math.random() * adaptiveWords.length)];
+  const word = wordObj.word;
+  window._dicteeWord = word;
+  window._dicteeAttempts = 0;
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center;padding:4px">
+      <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:1rem;margin-bottom:6px">🔊 Dictee</div>
+
+      <!-- Professor Finn uitleg -->
+      <div style="background:linear-gradient(135deg,#1a1a3e,#0f3060);border-radius:14px;padding:12px;margin-bottom:12px;border:1px solid rgba(206,147,216,0.3)">
+        <div style="font-size:1.5rem;margin-bottom:4px">🧑‍🏫</div>
+        <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.85rem;margin-bottom:6px">Professor Finn zegt:</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.8);line-height:1.5">
+          Ik spreek een woord uit. Luister goed en schrijf het op! Gebruik de hint als je het moeilijk vindt.
+        </div>
+      </div>
+
+      <!-- Hint -->
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.7);margin-bottom:10px">${wordObj.hint}</div>
+
+      <!-- Spreek knop -->
+      <button onclick="speakDicteeWord()" id="speak-btn"
+        style="padding:14px 28px;background:linear-gradient(135deg,#6a1b9a,#ce93d8);
+        color:white;border:none;border-radius:16px;font-family:'Fredoka One',cursive;
+        font-size:1rem;cursor:pointer;margin-bottom:14px;width:100%">
+        🔊 Spreek het woord uit
+      </button>
+
+      <!-- Letterkaartjes aanmaken -->
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.5);margin-bottom:8px">Schrijf het woord na:</div>
+      <div id="dictee-answer" style="display:flex;justify-content:center;gap:6px;margin:10px 0;flex-wrap:wrap">
+        ${word.split('').map((_,i) => `
+          <div id="dans-${i}" onclick="dicteeRemoveLetter(${i})"
+            style="width:42px;height:48px;border-radius:10px;border:2px solid rgba(206,147,216,0.5);
+            background:#1a2744;display:flex;align-items:center;justify-content:center;
+            font-family:'Fredoka One',cursive;font-size:1.5rem;color:#ce93d8;cursor:pointer;
+            transition:all 0.15s" data-idx="">
+          </div>`).join('')}
+      </div>
+
+      <!-- Beschikbare letters (maar nu in willekeurige volgorde) -->
+      <div id="dictee-letters" style="display:flex;justify-content:center;gap:8px;margin:10px 0;flex-wrap:wrap">
+        ${shuffleLetters(word).map((l,i) => `
+          <button id="dletter-${i}" onclick="dicteePickLetter(${i},'${l}')"
+            ontouchend="dicteePickLetter(${i},'${l}')"
+            style="width:44px;height:48px;border-radius:10px;
+            background:linear-gradient(135deg,#4a148c,#6a1b9a);
+            border:2px solid #ce93d8;color:white;
+            font-family:'Fredoka One',cursive;font-size:1.5rem;cursor:pointer;
+            transition:all 0.15s">${l}</button>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:center">
+        <button onclick="dicteeClear()" style="background:rgba(233,69,96,0.2);border:1px solid #e94560;
+          border-radius:10px;padding:8px 14px;color:#e94560;font-family:'Fredoka One',cursive;
+          font-size:0.85rem;cursor:pointer">🗑️ Wis</button>
+        <button onclick="checkDictee()" class="btn-primary" style="padding:10px 20px">
+          ✅ CONTROLEER
+        </button>
+      </div>
+      <button class="btn-secondary" onclick="closeChallenge()" style="margin-top:8px">← Terug</button>
+    </div>`;
+
+  window._dicteeChosen = [];
+  window._dicteeLetters = shuffleLetters(word);
+  // Auto-speak na 500ms
+  setTimeout(() => speakDicteeWord(), 500);
+}
+
+function shuffleLetters(word) {
+  const arr = word.split('');
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function speakDicteeWord() {
+  const word = window._dicteeWord;
+  if (!word) return;
+  if ('speechSynthesis' in window) {
+    const utt = new SpeechSynthesisUtterance(word);
+    utt.lang = 'nl-NL';
+    utt.rate = 0.8;
+    utt.pitch = 1.0;
+    window.speechSynthesis.speak(utt);
+  } else {
+    showToast('🔊 ' + word, false);
+  }
+  const btn = document.getElementById('speak-btn');
+  if (btn) {
+    btn.textContent = '🔊 ' + word.split('').join(' - ');
+    setTimeout(() => { if(btn) btn.textContent = '🔊 Nog een keer'; }, 2000);
+  }
+}
+
+function dicteePickLetter(idx, letter) {
+  const word = window._dicteeWord;
+  const chosen = window._dicteeChosen;
+  if (chosen.includes(idx)) return;
+  const emptySlot = word.split('').findIndex((_,i) => {
+    const el = document.getElementById(`dans-${i}`);
+    return el && el.dataset.idx === '';
+  });
+  if (emptySlot === -1) return;
+  const slot = document.getElementById(`dans-${emptySlot}`);
+  if (slot) { slot.textContent = letter; slot.dataset.idx = idx; slot.style.background='#4a148c'; slot.style.borderColor='#ce93d8'; }
+  const btn = document.getElementById(`dletter-${idx}`);
+  if (btn) { btn.style.opacity='0.3'; btn.style.pointerEvents='none'; btn.disabled=true; }
+  chosen.push(idx);
+  if (chosen.length === word.length) setTimeout(() => checkDictee(), 300);
+}
+
+function dicteeRemoveLetter(slotIdx) {
+  const slot = document.getElementById(`dans-${slotIdx}`);
+  if (!slot || slot.dataset.idx === '') return;
+  const letterIdx = parseInt(slot.dataset.idx);
+  const btn = document.getElementById(`dletter-${letterIdx}`);
+  if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='auto'; btn.disabled=false; }
+  slot.textContent=''; slot.dataset.idx=''; slot.style.background='#1a2744'; slot.style.borderColor='rgba(206,147,216,0.5)';
+  window._dicteeChosen = (window._dicteeChosen||[]).filter(i=>i!==letterIdx);
+}
+
+function dicteeClear() {
+  const word = window._dicteeWord;
+  if (!word) return;
+  window._dicteeChosen = [];
+  word.split('').forEach((_,i) => {
+    const slot = document.getElementById(`dans-${i}`);
+    if (slot) { slot.textContent=''; slot.dataset.idx=''; slot.style.background='#1a2744'; slot.style.borderColor='rgba(206,147,216,0.5)'; }
+  });
+  (window._dicteeLetters||[]).forEach((_,i) => {
+    const btn = document.getElementById(`dletter-${i}`);
+    if (btn) { btn.style.opacity='1'; btn.style.pointerEvents='auto'; btn.disabled=false; }
+  });
+}
+
+function checkDictee() {
+  const word = window._dicteeWord;
+  if (!word) return;
+  const typed = word.split('').map((_,i) => {
+    const slot = document.getElementById(`dans-${i}`);
+    return slot ? slot.textContent : '';
+  }).join('');
+
+  if (typed === word) {
+    word.split('').forEach((_,i) => {
+      const slot = document.getElementById(`dans-${i}`);
+      if (slot) { slot.style.background='#57c785'; slot.style.borderColor='#57c785'; }
+    });
+    sfxPerfect();
+    const perfect = (window._dicteeAttempts||0) === 0;
+    setTimeout(() => { closeChallenge(); completeChallenge(LEVELS[currentLevelIdx]?.reward||12, perfect); }, 600);
+  } else if (typed.length === word.length) {
+    word.split('').forEach((_,i) => {
+      const slot = document.getElementById(`dans-${i}`);
+      if (slot) { slot.style.background='#e94560'; slot.style.borderColor='#e94560'; }
+    });
+    sfxWrong();
+    window._dicteeAttempts = (window._dicteeAttempts||0) + 1;
+    if ((window._dicteeAttempts||0) >= 3) {
+      // Toon het juiste woord
+      showToast(`Het woord was: ${word}`, true);
+      setTimeout(() => speakDicteeWord(), 800);
+      setTimeout(() => { closeChallenge(); completeChallenge(Math.max(2, Math.floor((LEVELS[currentLevelIdx]?.reward||12)*0.3)), false); }, 2500);
+    } else {
+      showToast(`Nog ${3-(window._dicteeAttempts||0)} pogingen — luister nog eens!`, true);
+      setTimeout(() => { speakDicteeWord(); dicteeClear(); }, 1000);
+    }
+  }
+}
+
+// ===== 🕐 KLOK KIJKEN — begeleid door Professor Finn =====
+const CLOCK_LEVELS = [
+  // Niveau 1: hele uren
+  { h:2,  m:0,  label:'2 uur',            desc:'De kleine wijzer wijst naar 2, de grote naar 12' },
+  { h:5,  m:0,  label:'5 uur',            desc:'De kleine wijzer wijst naar 5, de grote naar 12' },
+  { h:9,  m:0,  label:'9 uur',            desc:'De kleine wijzer wijst naar 9, de grote naar 12' },
+  { h:12, m:0,  label:'12 uur',           desc:'Beide wijzers wijzen naar boven — 12 uur!' },
+  // Niveau 2: halve uren
+  { h:2,  m:30, label:'half 3',           desc:'De kleine wijzer staat tussen 2 en 3, de grote naar beneden' },
+  { h:7,  m:30, label:'half 8',           desc:'De kleine wijzer staat tussen 7 en 8, de grote naar beneden' },
+  { h:10, m:30, label:'half 11',          desc:'De kleine wijzer staat tussen 10 en 11' },
+  // Niveau 3: kwartieren
+  { h:3,  m:15, label:'kwart over 3',     desc:'De kleine wijzer bij 3, de grote bij 3 (het kwart)' },
+  { h:6,  m:45, label:'kwart voor 7',     desc:'De kleine wijzer bijna bij 7, de grote bij 9' },
+  { h:8,  m:15, label:'kwart over 8',     desc:'De kleine wijzer bij 8, de grote bij het 3-tje' },
+  // Niveau 4: 5-minuten stappen
+  { h:4,  m:20, label:'20 over 4',        desc:'De kleine wijzer bij 4, de grote bij 4 (= 20 min)' },
+  { h:11, m:50, label:'10 voor 12',       desc:'Bijna 12 uur! De grote wijzer staat bij de 10' },
+];
+
+function showClockChallenge() {
+  const p = getPlayer();
+  const skillLevel = Math.min(Math.floor(((p.skills||{}).math||50) / 25), 3);
+  // Kies een klok op het juiste niveau
+  const available = CLOCK_LEVELS.slice(0, Math.max(4, (skillLevel+1)*3));
+  const clock = available[Math.floor(Math.random() * available.length)];
+  window._clockAnswer = clock;
+  window._clockShown = false;
+  window._clockAttempts = 0;
+
+  // Maak 3 verkeerde opties
+  const allLabels = CLOCK_LEVELS.map(c=>c.label).filter(l=>l!==clock.label);
+  const wrongOpts = shuffleArr(allLabels).slice(0,3);
+  const opts = shuffleArr([clock.label, ...wrongOpts]);
+
+  const box = document.getElementById('challenge-content');
+  box.innerHTML = `
+    <div style="text-align:center;padding:4px">
+      <!-- Professor Finn -->
+      <div style="background:linear-gradient(135deg,#1a1a3e,#0f3060);border-radius:14px;padding:10px;margin-bottom:12px;border:1px solid rgba(206,147,216,0.3)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:1.8rem">🧑‍🏫</div>
+          <div style="text-align:left">
+            <div style="font-family:'Fredoka One',cursive;color:#ce93d8;font-size:0.82rem">Professor Finn zegt:</div>
+            <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);line-height:1.4">
+              ${skillLevel === 0 ? 'De <strong style="color:#f5a623">kleine wijzer</strong> wijst het uur aan. De <strong style="color:#57c785">grote wijzer</strong> wijst de minuten aan. Als de grote wijzer naar 12 wijst, zijn het hele uren!' :
+                skillLevel === 1 ? 'Als de grote wijzer naar beneden (6) wijst, is het "half". Half 3 = 2:30!' :
+                skillLevel === 2 ? '"Kwart over" = grote wijzer bij 3. "Kwart voor" = grote wijzer bij 9.' :
+                'Tel de minuten: elke streep = 5 minuten. Groot bij 4 = 20 minuten over!'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analoge klok SVG -->
+      <div style="display:flex;justify-content:center;margin-bottom:14px">
+        ${drawAnalogClock(clock.h, clock.m)}
+      </div>
+
+      <div style="font-family:'Fredoka One',cursive;color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:12px">
+        Hoe laat is het?
+      </div>
+
+      <!-- Antwoord knoppen -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        ${opts.map(opt => `
+          <button onclick="checkClockAnswer('${opt}')"
+            style="padding:14px;background:#1a2744;border:2px solid rgba(255,255,255,0.15);
+            border-radius:14px;color:white;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer">
+            🕐 ${opt}
+          </button>`).join('')}
+      </div>
+
+      <!-- Hint knop -->
+      <button id="clock-hint-btn" onclick="showClockHint()"
+        style="width:100%;padding:9px;background:rgba(206,147,216,0.15);border:1px solid rgba(206,147,216,0.3);
+        border-radius:10px;color:#ce93d8;font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer;margin-bottom:8px">
+        🧑‍🏫 Hint van Professor Finn
+      </button>
+      <div id="clock-hint-text" style="display:none;background:rgba(206,147,216,0.1);border-radius:10px;
+        padding:10px;font-size:0.82rem;color:rgba(255,255,255,0.8);margin-bottom:8px;line-height:1.5">
+        ${clock.desc}
+      </div>
+
+      <button class="btn-secondary" onclick="closeChallenge()">← Terug</button>
+    </div>`;
+}
+
+function drawAnalogClock(hours, minutes) {
+  const size = 160;
+  const cx = size/2, cy = size/2, r = size/2 - 8;
+  const toRad = deg => (deg - 90) * Math.PI / 180;
+  const hourAngle = toRad((hours % 12) * 30 + minutes * 0.5);
+  const minAngle  = toRad(minutes * 6);
+  const hx = cx + Math.cos(hourAngle) * r * 0.55;
+  const hy = cy + Math.sin(hourAngle) * r * 0.55;
+  const mx = cx + Math.cos(minAngle) * r * 0.8;
+  const my = cy + Math.sin(minAngle) * r * 0.8;
+
+  let ticks = '';
+  for (let i = 0; i < 60; i++) {
+    const a = toRad(i * 6);
+    const isHour = i % 5 === 0;
+    const inner = r * (isHour ? 0.82 : 0.9);
+    const x1 = cx + Math.cos(a)*inner, y1 = cy + Math.sin(a)*inner;
+    const x2 = cx + Math.cos(a)*r,     y2 = cy + Math.sin(a)*r;
+    ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${isHour?'#f5a623':'rgba(255,255,255,0.3)'}" stroke-width="${isHour?2.5:1}"/>`;
+  }
+
+  let numbers = '';
+  [12,1,2,3,4,5,6,7,8,9,10,11].forEach((n,i) => {
+    const a = toRad(i*30);
+    const nr = r * 0.7;
+    numbers += `<text x="${(cx+Math.cos(a)*nr).toFixed(1)}" y="${(cy+Math.sin(a)*nr+5).toFixed(1)}" text-anchor="middle" fill="#f5a623" font-size="13" font-family="'Fredoka One',cursive">${n}</text>`;
+  });
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5))">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#1a2744" stroke="#f5a623" stroke-width="3"/>
+    ${ticks}
+    ${numbers}
+    <!-- Uurwijzer (oranje, dik, kort) -->
+    <line x1="${cx}" y1="${cy}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="#f5a623" stroke-width="5" stroke-linecap="round"/>
+    <!-- Minuutwijzer (groen, dun, lang) -->
+    <line x1="${cx}" y1="${cy}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#57c785" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="#f5a623"/>
+  </svg>`;
+}
+
+function showClockHint() {
+  const h = document.getElementById('clock-hint-text');
+  const btn = document.getElementById('clock-hint-btn');
+  if (h) { h.style.display = h.style.display==='none'?'block':'none'; }
+  if (btn) btn.textContent = '🧑‍🏫 Hint verbergen';
+}
+
+function checkClockAnswer(answer) {
+  const clock = window._clockAnswer;
+  if (!clock) return;
+  document.querySelectorAll('[onclick^="checkClockAnswer"]').forEach(b=>b.onclick=null);
+  window._clockAttempts = (window._clockAttempts||0) + 1;
+
+  if (answer === clock.label) {
+    sfxPerfect();
+    const perfect = window._clockAttempts <= 1;
+    setTimeout(() => { closeChallenge(); completeChallenge(LEVELS[currentLevelIdx]?.reward||12, perfect); }, 600);
+  } else {
+    sfxWrong();
+    showToast(`Niet goed! Het was: ${clock.label}`, true);
+    // Toon het juiste antwoord en laat Professor Finn uitleggen
+    setTimeout(() => {
+      const hint = document.getElementById('clock-hint-text');
+      if (hint) { hint.style.display='block'; }
+      closeChallenge();
+      completeChallenge(Math.max(2, Math.floor((LEVELS[currentLevelIdx]?.reward||12)*0.4)), false);
+    }, 1500);
+  }
 }
 
 
