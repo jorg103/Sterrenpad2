@@ -2852,10 +2852,13 @@ function closeReward() {
   document.getElementById('challenge-modal').classList.remove('open');
   bStopGame();
 
-  // Check of een nieuwe wereld vrijgespeeld is
+  // Check of een nieuwe wereld vrijgespeeld is — gebruik planet-relatief level
   const p = getPlayer();
-  const newWorldIdx = Math.min(Math.floor((p.level||0)/5), 49);
-  const prevWorldIdx = Math.min(Math.floor(((p.level||0)-1)/5), 49);
+  const levelOnPlanet = (p.level||0) % 50;
+  const prevLevelOnPlanet = Math.max(0, levelOnPlanet - 1);
+  const newWorldIdx  = Math.min(Math.floor(levelOnPlanet / 5), 9);
+  const prevWorldIdx = Math.min(Math.floor(prevLevelOnPlanet / 5), 9);
+
   if (newWorldIdx > prevWorldIdx && newWorldIdx > 0) {
     const newWorld = WORLDS[newWorldIdx];
     setTimeout(() => {
