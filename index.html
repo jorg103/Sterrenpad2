@@ -6131,6 +6131,11 @@ function handleCheckPin() {
   const err = document.getElementById('pin-error');
   if (window._enteredPin === getParentPin()) {
     closeParentLock();
+    // Toon admin tab als admin — altijd bij ontgrendelen
+    const reg = getRegistration();
+    if (reg?.admin) {
+      document.getElementById('nav-admin')?.style.setProperty('display','flex');
+    }
     navigate('parent');
   } else {
     sfxWrong();
@@ -6164,6 +6169,11 @@ async function triggerBiometric() {
     if (credential) {
       // Authenticatie geslaagd!
       closeParentLock();
+      // Toon admin tab als admin
+      const reg = getRegistration();
+      if (reg?.admin) {
+        document.getElementById('nav-admin')?.style.setProperty('display','flex');
+      }
       navigate('parent');
     }
   } catch(e) {
