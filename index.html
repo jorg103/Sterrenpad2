@@ -5009,7 +5009,12 @@ function renderParentReport() {
       color:white;border:none;border-radius:14px;font-family:'Fredoka One',cursive;font-size:0.9rem;cursor:pointer;
       border:2px solid #f5a623">
       ⚙️ Admin
-    </button>` : ''}
+    </button>` : `<button onclick="herstelAdminToegang()"
+      style="flex:1;min-width:80px;padding:12px;background:rgba(245,166,35,0.1);
+      border:1px solid rgba(245,166,35,0.3);border-radius:14px;color:#f5a623;
+      font-family:'Fredoka One',cursive;font-size:0.82rem;cursor:pointer">
+      🔑 Admin herstel
+    </button>`}
   </div>
   <div id="family-settings-section" style="display:none">
     ${renderFamilySettings()}
@@ -8034,9 +8039,11 @@ function useAccessCode() {
   const errEl = document.getElementById('access-error');
   if (code === ADMIN_APPROVE_CODE || code === FAMILY_APPROVE_CODE) {
     const isAdmin = (code === ADMIN_APPROVE_CODE);
-    saveRegistration({ approved:true, admin:isAdmin, familyId:getFamilyId(), date:new Date().toLocaleDateString('nl-NL') });
+    // Herstel admin flag — ook als backup was ingezet zonder admin:true
+    const existing = getRegistration() || {};
+    saveRegistration({ ...existing, approved:true, admin:isAdmin, familyId:getFamilyId()||existing.familyId, date:new Date().toLocaleDateString('nl-NL') });
     document.getElementById('reg-overlay')?.remove();
-    showToast('✅ Welkom! Je bent ingelogd.');
+    showToast(isAdmin ? '✅ Admin toegang hersteld!' : '✅ Welkom!');
     sfxLevelUp();
     if (isAdmin) document.getElementById('nav-admin')?.style.setProperty('display','flex');
     updateCoinDisplay(); setWorldForPlayer(); renderHome();
@@ -8046,6 +8053,22 @@ function useAccessCode() {
     setTimeout(() => { if(errEl) errEl.textContent=''; }, 2000);
   } else {
     if (errEl) errEl.textContent = 'Voer een code in.';
+  }
+}
+
+// Admin herstel functie — via Ouders tab PIN na backup herstel
+function herstelAdminToegang() {
+  const code = prompt('Voer admin code in:');
+  if (!code) return;
+  if (code.trim().toUpperCase() === ADMIN_APPROVE_CODE) {
+    const existing = getRegistration() || {};
+    saveRegistration({ ...existing, approved:true, admin:true });
+    document.getElementById('nav-admin')?.style.setProperty('display','flex');
+    showToast('✅ Admin toegang hersteld!');
+    sfxLevelUp();
+    navigate('admin');
+  } else {
+    showToast('❌ Onjuiste code', true);
   }
 }
 
