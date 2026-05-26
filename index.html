@@ -8368,7 +8368,15 @@ function importBackup(input) {
       const backup = JSON.parse(e.target.result);
       if (!backup.version?.includes('sterrenpad_backup')) { showToast('❌ Ongeldig backup bestand!',true); return; }
       if (backup.state) { state={...state,...backup.state}; try{localStorage.setItem('sterrenpad_v4',JSON.stringify(state));}catch(e){} }
-      if (backup.registration) saveRegistration(backup.registration);
+      if (backup.registration) {
+        // Bewaar huidige admin status — overschrijf deze NOOIT met backup
+        const currentReg = getRegistration() || {};
+        const isCurrentlyAdmin = currentReg.admin === true;
+        const newReg = { ...backup.registration };
+        if (isCurrentlyAdmin) newReg.admin = true; // Behoud admin flag
+        saveRegistration(newReg);
+        if (newReg.admin) document.getElementById('nav-admin')?.style.setProperty('display','flex');
+      }
       updateCoinDisplay(); setWorldForPlayer(); renderHome(); renderParentReport();
       showToast('✅ Backup hersteld!'); sfxLevelUp();
     } catch(e) { showToast('❌ Fout bij herstellen: '+e.message,true); }
