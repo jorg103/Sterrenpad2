@@ -1502,36 +1502,592 @@ const AVATAR_ITEMS = [
 
 // ═══ POKÉMON STICKER ALBUM ═══
 const POKEMON_CARDS = [
-  // Starter Pokémon (goedkoopst)
-  {id:'pk_001', name:'Bulbasaur',   emoji:'🌿', nr:'#001', type:'Gras',   rarity:'gewoon',  price:8,  color:'#4caf50'},
-  {id:'pk_002', name:'Ivysaur',     emoji:'🌿', nr:'#002', type:'Gras',   rarity:'gewoon',  price:10, color:'#388e3c'},
-  {id:'pk_003', name:'Venusaur',    emoji:'🌺', nr:'#003', type:'Gras',   rarity:'zeldzaam',price:20, color:'#2e7d32'},
-  {id:'pk_004', name:'Charmander',  emoji:'🔥', nr:'#004', type:'Vuur',   rarity:'gewoon',  price:8,  color:'#ff5722'},
-  {id:'pk_005', name:'Charmeleon',  emoji:'🔥', nr:'#005', type:'Vuur',   rarity:'gewoon',  price:12, color:'#f4511e'},
-  {id:'pk_006', name:'Charizard',   emoji:'🐉', nr:'#006', type:'Vuur',   rarity:'episch',  price:40, color:'#e64a19'},
-  {id:'pk_007', name:'Squirtle',    emoji:'💧', nr:'#007', type:'Water',  rarity:'gewoon',  price:8,  color:'#2196f3'},
-  {id:'pk_008', name:'Wartortle',   emoji:'💧', nr:'#008', type:'Water',  rarity:'gewoon',  price:12, color:'#1976d2'},
-  {id:'pk_009', name:'Blastoise',   emoji:'🌊', nr:'#009', type:'Water',  rarity:'zeldzaam',price:22, color:'#1565c0'},
-  // Klassiekers
-  {id:'pk_025', name:'Pikachu',     emoji:'⚡', nr:'#025', type:'Electro',rarity:'zeldzaam',price:25, color:'#ffc107'},
-  {id:'pk_026', name:'Raichu',      emoji:'⚡', nr:'#026', type:'Electro',rarity:'zeldzaam',price:20, color:'#ff9800'},
-  {id:'pk_039', name:'Jigglypuff',  emoji:'🎤', nr:'#039', type:'Normaal',rarity:'gewoon',  price:10, color:'#f48fb1'},
-  {id:'pk_051', name:'Meowth',      emoji:'🐱', nr:'#052', type:'Normaal',rarity:'gewoon',  price:10, color:'#ffd54f'},
-  {id:'pk_054', name:'Psyduck',     emoji:'🦆', nr:'#054', type:'Water',  rarity:'gewoon',  price:10, color:'#ffcc02'},
-  {id:'pk_063', name:'Abra',        emoji:'🥄', nr:'#063', type:'Psycho', rarity:'gewoon',  price:12, color:'#9c27b0'},
-  {id:'pk_074', name:'Geodude',     emoji:'🪨', nr:'#074', type:'Rots',   rarity:'gewoon',  price:8,  color:'#795548'},
-  {id:'pk_094', name:'Gengar',      emoji:'👻', nr:'#094', type:'Spook',  rarity:'zeldzaam',price:22, color:'#673ab7'},
-  {id:'pk_131', name:'Lapras',      emoji:'🌊', nr:'#131', type:'Water',  rarity:'zeldzaam',price:20, color:'#4dd0e1'},
-  {id:'pk_132', name:'Ditto',       emoji:'💜', nr:'#132', type:'Normaal',rarity:'zeldzaam',price:18, color:'#7b1fa2'},
-  {id:'pk_133', name:'Eevee',       emoji:'🦊', nr:'#133', type:'Normaal',rarity:'zeldzaam',price:20, color:'#a1887f'},
-  // Legendarisch
-  {id:'pk_143', name:'Snorlax',     emoji:'💤', nr:'#143', type:'Normaal',rarity:'zeldzaam',price:22, color:'#546e7a'},
-  {id:'pk_144', name:'Articuno',    emoji:'❄️', nr:'#144', type:'IJs',    rarity:'legendarisch',price:50,color:'#0288d1'},
-  {id:'pk_145', name:'Zapdos',      emoji:'⚡', nr:'#145', type:'Electro',rarity:'legendarisch',price:50,color:'#f9a825'},
-  {id:'pk_146', name:'Moltres',     emoji:'🔥', nr:'#146', type:'Vuur',   rarity:'legendarisch',price:50,color:'#ef6c00'},
-  {id:'pk_149', name:'Dragonite',   emoji:'🐲', nr:'#149', type:'Draak',  rarity:'episch',  price:38, color:'#ff8f00'},
-  {id:'pk_150', name:'Mewtwo',      emoji:'🔮', nr:'#150', type:'Psycho', rarity:'legendarisch',price:60,color:'#6a1b9a'},
-  {id:'pk_151', name:'Mew',         emoji:'✨', nr:'#151', type:'Psycho', rarity:'legendarisch',price:60,color:'#f48fb1'},
+  {id:"pk_001",nr:"001",name:"Bulbasaur",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_002",evo_level:16,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_002",nr:"002",name:"Ivysaur",emoji:"🌺",type:"Gras",color:"#4caf50",evo_to:"pk_003",evo_level:32,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_003",nr:"003",name:"Venusaur",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_004",nr:"004",name:"Charmander",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_005",evo_level:16,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_005",nr:"005",name:"Charmeleon",emoji:"🦎",type:"Vuur",color:"#ff5722",evo_to:"pk_006",evo_level:36,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_006",nr:"006",name:"Charizard",emoji:"🐉",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"episch",unlock:25,gen:1,price:35},
+  {id:"pk_007",nr:"007",name:"Squirtle",emoji:"💧",type:"Water",color:"#2196f3",evo_to:"pk_008",evo_level:16,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_008",nr:"008",name:"Wartortle",emoji:"🌊",type:"Water",color:"#2196f3",evo_to:"pk_009",evo_level:36,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_009",nr:"009",name:"Blastoise",emoji:"🛡️",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:1,price:20},
+  {id:"pk_010",nr:"010",name:"Caterpie",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:"pk_011",evo_level:7,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_011",nr:"011",name:"Metapod",emoji:"🫘",type:"Bug",color:"#8bc34a",evo_to:"pk_012",evo_level:10,rarity:"gewoon",unlock:2,gen:1,price:5},
+  {id:"pk_012",nr:"012",name:"Butterfree",emoji:"🦋",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:5,gen:1,price:10},
+  {id:"pk_013",nr:"013",name:"Weedle",emoji:"🪲",type:"Bug",color:"#8bc34a",evo_to:"pk_014",evo_level:7,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_014",nr:"014",name:"Kakuna",emoji:"🫙",type:"Bug",color:"#8bc34a",evo_to:"pk_015",evo_level:10,rarity:"gewoon",unlock:2,gen:1,price:5},
+  {id:"pk_015",nr:"015",name:"Beedrill",emoji:"🐝",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:5,gen:1,price:10},
+  {id:"pk_016",nr:"016",name:"Pidgey",emoji:"🐦",type:"Normaal",color:"#78909c",evo_to:"pk_017",evo_level:18,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_017",nr:"017",name:"Pidgeotto",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:"pk_018",evo_level:36,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_018",nr:"018",name:"Pidgeot",emoji:"🦁",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_019",nr:"019",name:"Rattata",emoji:"🐭",type:"Normaal",color:"#78909c",evo_to:"pk_020",evo_level:20,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_020",nr:"020",name:"Raticate",emoji:"🐀",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:5,gen:1,price:10},
+  {id:"pk_021",nr:"021",name:"Spearow",emoji:"🐧",type:"Normaal",color:"#78909c",evo_to:"pk_022",evo_level:20,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_022",nr:"022",name:"Fearow",emoji:"🦆",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_023",nr:"023",name:"Ekans",emoji:"🐍",type:"Gif",color:"#7b1fa2",evo_to:"pk_024",evo_level:22,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_024",nr:"024",name:"Arbok",emoji:"🐍",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_025",nr:"025",name:"Pikachu",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_026",evo_level:null,rarity:"zeldzaam",unlock:5,gen:1,price:20},
+  {id:"pk_026",nr:"026",name:"Raichu",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:1,price:20},
+  {id:"pk_027",nr:"027",name:"Sandshrew",emoji:"🏜️",type:"Grond",color:"#ff8f00",evo_to:"pk_028",evo_level:22,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_028",nr:"028",name:"Sandslash",emoji:"🦔",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_029",nr:"029",name:"Nidoran♀",emoji:"🐇",type:"Gif",color:"#7b1fa2",evo_to:"pk_030",evo_level:16,rarity:"gewoon",unlock:3,gen:1,price:5},
+  {id:"pk_030",nr:"030",name:"Nidorina",emoji:"🐇",type:"Gif",color:"#7b1fa2",evo_to:"pk_031",evo_level:null,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_031",nr:"031",name:"Nidoqueen",emoji:"👑",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_032",nr:"032",name:"Nidoran♂",emoji:"🐇",type:"Gif",color:"#7b1fa2",evo_to:"pk_033",evo_level:16,rarity:"gewoon",unlock:3,gen:1,price:5},
+  {id:"pk_033",nr:"033",name:"Nidorino",emoji:"🐗",type:"Gif",color:"#7b1fa2",evo_to:"pk_034",evo_level:null,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_034",nr:"034",name:"Nidoking",emoji:"👑",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_035",nr:"035",name:"Clefairy",emoji:"🌙",type:"Fee",color:"#e91e63",evo_to:"pk_036",evo_level:null,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_036",nr:"036",name:"Clefable",emoji:"🌟",type:"Fee",color:"#e91e63",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_037",nr:"037",name:"Vulpix",emoji:"🦊",type:"Vuur",color:"#ff5722",evo_to:"pk_038",evo_level:null,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_038",nr:"038",name:"Ninetales",emoji:"🦊",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_039",nr:"039",name:"Jigglypuff",emoji:"🎤",type:"Normaal",color:"#78909c",evo_to:"pk_040",evo_level:null,rarity:"ongewoon",unlock:5,gen:1,price:10},
+  {id:"pk_040",nr:"040",name:"Wigglytuff",emoji:"🎵",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:1,price:20},
+  {id:"pk_041",nr:"041",name:"Zubat",emoji:"🦇",type:"Gif",color:"#7b1fa2",evo_to:"pk_042",evo_level:22,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_042",nr:"042",name:"Golbat",emoji:"🦇",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_043",nr:"043",name:"Oddish",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_044",evo_level:21,rarity:"gewoon",unlock:3,gen:1,price:5},
+  {id:"pk_044",nr:"044",name:"Gloom",emoji:"🌺",type:"Gras",color:"#4caf50",evo_to:"pk_045",evo_level:null,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_045",nr:"045",name:"Vileplume",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_050",nr:"050",name:"Diglett",emoji:"🪨",type:"Grond",color:"#ff8f00",evo_to:"pk_051",evo_level:26,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_051",nr:"051",name:"Dugtrio",emoji:"🪨",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_052",nr:"052",name:"Meowth",emoji:"🐱",type:"Normaal",color:"#78909c",evo_to:"pk_053",evo_level:28,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_053",nr:"053",name:"Persian",emoji:"🐈",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_054",nr:"054",name:"Psyduck",emoji:"🦆",type:"Water",color:"#2196f3",evo_to:"pk_055",evo_level:33,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_055",nr:"055",name:"Golduck",emoji:"🦆",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_058",nr:"058",name:"Growlithe",emoji:"🐕",type:"Vuur",color:"#ff5722",evo_to:"pk_059",evo_level:null,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_059",nr:"059",name:"Arcanine",emoji:"🐕",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_060",nr:"060",name:"Poliwag",emoji:"🌀",type:"Water",color:"#2196f3",evo_to:"pk_061",evo_level:25,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_061",nr:"061",name:"Poliwhirl",emoji:"🌀",type:"Water",color:"#2196f3",evo_to:"pk_062",evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_062",nr:"062",name:"Poliwrath",emoji:"💪",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:1,price:20},
+  {id:"pk_063",nr:"063",name:"Abra",emoji:"🥄",type:"Psycho",color:"#9c27b0",evo_to:"pk_064",evo_level:16,rarity:"ongewoon",unlock:8,gen:1,price:10},
+  {id:"pk_064",nr:"064",name:"Kadabra",emoji:"🥄",type:"Psycho",color:"#9c27b0",evo_to:"pk_065",evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_065",nr:"065",name:"Alakazam",emoji:"✨",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:1,price:35},
+  {id:"pk_066",nr:"066",name:"Machop",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:"pk_067",evo_level:28,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_067",nr:"067",name:"Machoke",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:"pk_068",evo_level:null,rarity:"ongewoon",unlock:15,gen:1,price:10},
+  {id:"pk_068",nr:"068",name:"Machamp",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:1,price:20},
+  {id:"pk_074",nr:"074",name:"Geodude",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_075",evo_level:25,rarity:"gewoon",unlock:3,gen:1,price:5},
+  {id:"pk_075",nr:"075",name:"Graveler",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_076",evo_level:null,rarity:"ongewoon",unlock:12,gen:1,price:10},
+  {id:"pk_076",nr:"076",name:"Golem",emoji:"🗿",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:1,price:20},
+  {id:"pk_079",nr:"079",name:"Slowpoke",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:"pk_080",evo_level:37,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_080",nr:"080",name:"Slowbro",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_081",nr:"081",name:"Magnemite",emoji:"🧲",type:"Electro",color:"#ffc107",evo_to:"pk_082",evo_level:30,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_082",nr:"082",name:"Magneton",emoji:"🧲",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_083",nr:"083",name:"Farfetch'd",emoji:"🦢",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:1,price:20},
+  {id:"pk_084",nr:"084",name:"Doduo",emoji:"🐦",type:"Normaal",color:"#78909c",evo_to:"pk_085",evo_level:31,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_085",nr:"085",name:"Dodrio",emoji:"🦤",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:1,price:10},
+  {id:"pk_086",nr:"086",name:"Seel",emoji:"🦭",type:"Water",color:"#2196f3",evo_to:"pk_087",evo_level:34,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_087",nr:"087",name:"Dewgong",emoji:"🦭",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_088",nr:"088",name:"Grimer",emoji:"🫧",type:"Gif",color:"#7b1fa2",evo_to:"pk_089",evo_level:38,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_089",nr:"089",name:"Muk",emoji:"💀",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_090",nr:"090",name:"Shellder",emoji:"🐚",type:"Water",color:"#2196f3",evo_to:"pk_091",evo_level:null,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_091",nr:"091",name:"Cloyster",emoji:"🐚",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:1,price:20},
+  {id:"pk_092",nr:"092",name:"Gastly",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:"pk_093",evo_level:25,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_093",nr:"093",name:"Haunter",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:"pk_094",evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_094",nr:"094",name:"Gengar",emoji:"😈",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"episch",unlock:30,gen:1,price:35},
+  {id:"pk_095",nr:"095",name:"Onix",emoji:"🪨",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:1,price:20},
+  {id:"pk_096",nr:"096",name:"Drowzee",emoji:"💤",type:"Psycho",color:"#9c27b0",evo_to:"pk_097",evo_level:26,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_097",nr:"097",name:"Hypno",emoji:"💤",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_098",nr:"098",name:"Krabby",emoji:"🦀",type:"Water",color:"#2196f3",evo_to:"pk_099",evo_level:28,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_099",nr:"099",name:"Kingler",emoji:"🦀",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:1,price:10},
+  {id:"pk_100",nr:"100",name:"Voltorb",emoji:"💣",type:"Electro",color:"#ffc107",evo_to:"pk_101",evo_level:30,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_101",nr:"101",name:"Electrode",emoji:"💥",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_102",nr:"102",name:"Exeggcute",emoji:"🥚",type:"Gras",color:"#4caf50",evo_to:"pk_103",evo_level:null,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_103",nr:"103",name:"Exeggutor",emoji:"🌴",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_104",nr:"104",name:"Cubone",emoji:"💀",type:"Grond",color:"#ff8f00",evo_to:"pk_105",evo_level:28,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_105",nr:"105",name:"Marowak",emoji:"💀",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:1,price:10},
+  {id:"pk_106",nr:"106",name:"Hitmonlee",emoji:"🥊",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_107",nr:"107",name:"Hitmonchan",emoji:"🥊",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_108",nr:"108",name:"Lickitung",emoji:"👅",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_113",nr:"113",name:"Chansey",emoji:"🥚",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_114",nr:"114",name:"Tangela",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:1,price:10},
+  {id:"pk_115",nr:"115",name:"Kangaskhan",emoji:"🦘",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_116",nr:"116",name:"Horsea",emoji:"🐴",type:"Water",color:"#2196f3",evo_to:"pk_117",evo_level:32,rarity:"gewoon",unlock:8,gen:1,price:5},
+  {id:"pk_117",nr:"117",name:"Seadra",emoji:"🐉",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_118",nr:"118",name:"Goldeen",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:"pk_119",evo_level:33,rarity:"gewoon",unlock:5,gen:1,price:5},
+  {id:"pk_119",nr:"119",name:"Seaking",emoji:"🐡",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:1,price:10},
+  {id:"pk_120",nr:"120",name:"Staryu",emoji:"⭐",type:"Water",color:"#2196f3",evo_to:"pk_121",evo_level:null,rarity:"ongewoon",unlock:10,gen:1,price:10},
+  {id:"pk_121",nr:"121",name:"Starmie",emoji:"🌟",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_122",nr:"122",name:"Mr. Mime",emoji:"🤡",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_123",nr:"123",name:"Scyther",emoji:"⚔️",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_124",nr:"124",name:"Jynx",emoji:"💋",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_125",nr:"125",name:"Electabuzz",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_126",nr:"126",name:"Magmar",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_127",nr:"127",name:"Pinsir",emoji:"🦂",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_128",nr:"128",name:"Tauros",emoji:"🐂",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_129",nr:"129",name:"Magikarp",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:"pk_130",evo_level:20,rarity:"gewoon",unlock:0,gen:1,price:5},
+  {id:"pk_130",nr:"130",name:"Gyarados",emoji:"🐲",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"episch",unlock:20,gen:1,price:35},
+  {id:"pk_131",nr:"131",name:"Lapras",emoji:"🧊",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:1,price:20},
+  {id:"pk_132",nr:"132",name:"Ditto",emoji:"💜",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_133",nr:"133",name:"Eevee",emoji:"🦊",type:"Normaal",color:"#78909c",evo_to:"pk_134",evo_level:null,rarity:"zeldzaam",unlock:10,gen:1,price:20},
+  {id:"pk_134",nr:"134",name:"Vaporeon",emoji:"💧",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_135",nr:"135",name:"Jolteon",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_136",nr:"136",name:"Flareon",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_137",nr:"137",name:"Porygon",emoji:"🔷",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:1,price:20},
+  {id:"pk_138",nr:"138",name:"Omanyte",emoji:"🌀",type:"Rots",color:"#795548",evo_to:"pk_139",evo_level:40,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_139",nr:"139",name:"Omastar",emoji:"🌀",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:30,gen:1,price:20},
+  {id:"pk_140",nr:"140",name:"Kabuto",emoji:"🦀",type:"Rots",color:"#795548",evo_to:"pk_141",evo_level:40,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_141",nr:"141",name:"Kabutops",emoji:"⚔️",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:30,gen:1,price:20},
+  {id:"pk_142",nr:"142",name:"Aerodactyl",emoji:"🦕",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"episch",unlock:30,gen:1,price:35},
+  {id:"pk_143",nr:"143",name:"Snorlax",emoji:"💤",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:1,price:20},
+  {id:"pk_144",nr:"144",name:"Articuno",emoji:"❄️",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:40,gen:1,price:60},
+  {id:"pk_145",nr:"145",name:"Zapdos",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:40,gen:1,price:60},
+  {id:"pk_146",nr:"146",name:"Moltres",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:40,gen:1,price:60},
+  {id:"pk_147",nr:"147",name:"Dratini",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_148",evo_level:30,rarity:"zeldzaam",unlock:20,gen:1,price:20},
+  {id:"pk_148",nr:"148",name:"Dragonair",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_149",evo_level:55,rarity:"episch",unlock:30,gen:1,price:35},
+  {id:"pk_149",nr:"149",name:"Dragonite",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:1,price:35},
+  {id:"pk_150",nr:"150",name:"Mewtwo",emoji:"🔮",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:1,price:60},
+  {id:"pk_151",nr:"151",name:"Mew",emoji:"✨",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:1,price:60},
+  {id:"pk_152",nr:"152",name:"Chikorita",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_153",evo_level:16,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_153",nr:"153",name:"Bayleef",emoji:"🌱",type:"Gras",color:"#4caf50",evo_to:"pk_154",evo_level:32,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_154",nr:"154",name:"Meganium",emoji:"🌺",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:2,price:20},
+  {id:"pk_155",nr:"155",name:"Cyndaquil",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_156",evo_level:14,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_156",nr:"156",name:"Quilava",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_157",evo_level:36,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_157",nr:"157",name:"Typhlosion",emoji:"🌋",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:2,price:20},
+  {id:"pk_158",nr:"158",name:"Totodile",emoji:"🐊",type:"Water",color:"#2196f3",evo_to:"pk_159",evo_level:18,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_159",nr:"159",name:"Croconaw",emoji:"🐊",type:"Water",color:"#2196f3",evo_to:"pk_160",evo_level:30,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_160",nr:"160",name:"Feraligatr",emoji:"🐊",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_161",nr:"161",name:"Sentret",emoji:"🦝",type:"Normaal",color:"#78909c",evo_to:"pk_162",evo_level:15,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_162",nr:"162",name:"Furret",emoji:"🦝",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_163",nr:"163",name:"Hoothoot",emoji:"🦉",type:"Normaal",color:"#78909c",evo_to:"pk_164",evo_level:20,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_164",nr:"164",name:"Noctowl",emoji:"🦉",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_165",nr:"165",name:"Ledyba",emoji:"🐞",type:"Bug",color:"#8bc34a",evo_to:"pk_166",evo_level:18,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_166",nr:"166",name:"Ledian",emoji:"🐞",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_167",nr:"167",name:"Spinarak",emoji:"🕷️",type:"Bug",color:"#8bc34a",evo_to:"pk_168",evo_level:22,rarity:"gewoon",unlock:0,gen:2,price:5},
+  {id:"pk_168",nr:"168",name:"Ariados",emoji:"🕸️",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_170",nr:"170",name:"Chinchou",emoji:"💡",type:"Water",color:"#2196f3",evo_to:"pk_171",evo_level:27,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_171",nr:"171",name:"Lanturn",emoji:"🔦",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_172",nr:"172",name:"Pichu",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_025",evo_level:null,rarity:"ongewoon",unlock:5,gen:2,price:10},
+  {id:"pk_173",nr:"173",name:"Cleffa",emoji:"⭐",type:"Fee",color:"#e91e63",evo_to:"pk_035",evo_level:null,rarity:"ongewoon",unlock:5,gen:2,price:10},
+  {id:"pk_174",nr:"174",name:"Igglybuff",emoji:"💗",type:"Normaal",color:"#78909c",evo_to:"pk_039",evo_level:null,rarity:"ongewoon",unlock:5,gen:2,price:10},
+  {id:"pk_175",nr:"175",name:"Togepi",emoji:"🥚",type:"Fee",color:"#e91e63",evo_to:"pk_176",evo_level:null,rarity:"zeldzaam",unlock:10,gen:2,price:20},
+  {id:"pk_176",nr:"176",name:"Togetic",emoji:"🕊️",type:"Fee",color:"#e91e63",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_177",nr:"177",name:"Natu",emoji:"🐦",type:"Psycho",color:"#9c27b0",evo_to:"pk_178",evo_level:25,rarity:"gewoon",unlock:8,gen:2,price:5},
+  {id:"pk_178",nr:"178",name:"Xatu",emoji:"🦅",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_179",nr:"179",name:"Mareep",emoji:"🐑",type:"Electro",color:"#ffc107",evo_to:"pk_180",evo_level:15,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_180",nr:"180",name:"Flaaffy",emoji:"🐑",type:"Electro",color:"#ffc107",evo_to:"pk_181",evo_level:30,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_181",nr:"181",name:"Ampharos",emoji:"💡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:2,price:20},
+  {id:"pk_182",nr:"182",name:"Bellossom",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_183",nr:"183",name:"Marill",emoji:"💧",type:"Water",color:"#2196f3",evo_to:"pk_184",evo_level:18,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_184",nr:"184",name:"Azumarill",emoji:"🐰",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_185",nr:"185",name:"Sudowoodo",emoji:"🌳",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:2,price:20},
+  {id:"pk_186",nr:"186",name:"Politoed",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_187",nr:"187",name:"Hoppip",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:"pk_188",evo_level:18,rarity:"gewoon",unlock:3,gen:2,price:5},
+  {id:"pk_188",nr:"188",name:"Skiploom",emoji:"🌼",type:"Gras",color:"#4caf50",evo_to:"pk_189",evo_level:27,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_189",nr:"189",name:"Jumpluff",emoji:"🌻",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_190",nr:"190",name:"Aipom",emoji:"🐒",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_191",nr:"191",name:"Sunkern",emoji:"🌻",type:"Gras",color:"#4caf50",evo_to:"pk_192",evo_level:null,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_192",nr:"192",name:"Sunflora",emoji:"🌻",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_193",nr:"193",name:"Yanma",emoji:"🪲",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_194",nr:"194",name:"Wooper",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:"pk_195",evo_level:20,rarity:"gewoon",unlock:3,gen:2,price:5},
+  {id:"pk_195",nr:"195",name:"Quagsire",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_196",nr:"196",name:"Espeon",emoji:"☀️",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_197",nr:"197",name:"Umbreon",emoji:"🌙",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_198",nr:"198",name:"Murkrow",emoji:"🐦",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_200",nr:"200",name:"Misdreavus",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_202",nr:"202",name:"Wobbuffet",emoji:"🫧",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:2,price:20},
+  {id:"pk_203",nr:"203",name:"Girafarig",emoji:"🦒",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_206",nr:"206",name:"Dunsparce",emoji:"🐍",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_207",nr:"207",name:"Gligar",emoji:"🦂",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_208",nr:"208",name:"Steelix",emoji:"🐍",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_209",nr:"209",name:"Snubbull",emoji:"🐕",type:"Fee",color:"#e91e63",evo_to:"pk_210",evo_level:23,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_210",nr:"210",name:"Granbull",emoji:"🐕",type:"Fee",color:"#e91e63",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_211",nr:"211",name:"Qwilfish",emoji:"🐡",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_212",nr:"212",name:"Scizor",emoji:"✂️",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:2,price:20},
+  {id:"pk_213",nr:"213",name:"Shuckle",emoji:"🐌",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_214",nr:"214",name:"Heracross",emoji:"🦏",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_215",nr:"215",name:"Sneasel",emoji:"❄️",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_216",nr:"216",name:"Teddiursa",emoji:"🐻",type:"Normaal",color:"#78909c",evo_to:"pk_217",evo_level:30,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_217",nr:"217",name:"Ursaring",emoji:"🐻",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_218",nr:"218",name:"Slugma",emoji:"🌋",type:"Vuur",color:"#ff5722",evo_to:"pk_219",evo_level:38,rarity:"gewoon",unlock:8,gen:2,price:5},
+  {id:"pk_219",nr:"219",name:"Magcargo",emoji:"🐌",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:18,gen:2,price:10},
+  {id:"pk_220",nr:"220",name:"Swinub",emoji:"🐷",type:"IJs",color:"#0288d1",evo_to:"pk_221",evo_level:33,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_221",nr:"221",name:"Piloswine",emoji:"🦣",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_222",nr:"222",name:"Corsola",emoji:"🪸",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_223",nr:"223",name:"Remoraid",emoji:"🐠",type:"Water",color:"#2196f3",evo_to:"pk_224",evo_level:25,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_224",nr:"224",name:"Octillery",emoji:"🐙",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_225",nr:"225",name:"Delibird",emoji:"🎁",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:2,price:20},
+  {id:"pk_226",nr:"226",name:"Mantine",emoji:"🦈",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_227",nr:"227",name:"Skarmory",emoji:"🦅",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_228",nr:"228",name:"Houndour",emoji:"🐕",type:"Donker",color:"#37474f",evo_to:"pk_229",evo_level:24,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_229",nr:"229",name:"Houndoom",emoji:"🐕",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_230",nr:"230",name:"Kingdra",emoji:"🐉",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:2,price:20},
+  {id:"pk_231",nr:"231",name:"Phanpy",emoji:"🐘",type:"Grond",color:"#ff8f00",evo_to:"pk_232",evo_level:25,rarity:"gewoon",unlock:5,gen:2,price:5},
+  {id:"pk_232",nr:"232",name:"Donphan",emoji:"🐘",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:2,price:10},
+  {id:"pk_233",nr:"233",name:"Porygon2",emoji:"🔷",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_234",nr:"234",name:"Stantler",emoji:"🦌",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:2,price:10},
+  {id:"pk_235",nr:"235",name:"Smeargle",emoji:"🎨",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_236",nr:"236",name:"Tyrogue",emoji:"🥊",type:"Vechten",color:"#d32f2f",evo_to:"pk_106",evo_level:20,rarity:"ongewoon",unlock:10,gen:2,price:10},
+  {id:"pk_238",nr:"238",name:"Smoochum",emoji:"💋",type:"IJs",color:"#0288d1",evo_to:"pk_124",evo_level:30,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_239",nr:"239",name:"Elekid",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_125",evo_level:30,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_240",nr:"240",name:"Magby",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_126",evo_level:30,rarity:"ongewoon",unlock:8,gen:2,price:10},
+  {id:"pk_241",nr:"241",name:"Miltank",emoji:"🐄",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:2,price:20},
+  {id:"pk_242",nr:"242",name:"Blissey",emoji:"🩹",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_243",nr:"243",name:"Raikou",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:2,price:60},
+  {id:"pk_244",nr:"244",name:"Entei",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:2,price:60},
+  {id:"pk_245",nr:"245",name:"Suicune",emoji:"💧",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:2,price:60},
+  {id:"pk_246",nr:"246",name:"Larvitar",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_247",evo_level:30,rarity:"zeldzaam",unlock:20,gen:2,price:20},
+  {id:"pk_247",nr:"247",name:"Pupitar",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_248",evo_level:55,rarity:"episch",unlock:30,gen:2,price:35},
+  {id:"pk_248",nr:"248",name:"Tyranitar",emoji:"🦖",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:2,price:35},
+  {id:"pk_249",nr:"249",name:"Lugia",emoji:"🕊️",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:2,price:60},
+  {id:"pk_250",nr:"250",name:"Ho-Oh",emoji:"🦅",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:2,price:60},
+  {id:"pk_251",nr:"251",name:"Celebi",emoji:"🌿",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:2,price:60},
+  {id:"pk_252",nr:"252",name:"Treecko",emoji:"🦎",type:"Gras",color:"#4caf50",evo_to:"pk_253",evo_level:16,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_253",nr:"253",name:"Grovyle",emoji:"🦎",type:"Gras",color:"#4caf50",evo_to:"pk_254",evo_level:36,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_254",nr:"254",name:"Sceptile",emoji:"🦎",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_255",nr:"255",name:"Torchic",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_256",evo_level:16,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_256",nr:"256",name:"Combusken",emoji:"🐔",type:"Vuur",color:"#ff5722",evo_to:"pk_257",evo_level:36,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_257",nr:"257",name:"Blaziken",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_258",nr:"258",name:"Mudkip",emoji:"💧",type:"Water",color:"#2196f3",evo_to:"pk_259",evo_level:16,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_259",nr:"259",name:"Marshtomp",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:"pk_260",evo_level:36,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_260",nr:"260",name:"Swampert",emoji:"💪",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_261",nr:"261",name:"Poochyena",emoji:"🐺",type:"Donker",color:"#37474f",evo_to:"pk_262",evo_level:18,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_262",nr:"262",name:"Mightyena",emoji:"🐺",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_263",nr:"263",name:"Zigzagoon",emoji:"🦝",type:"Normaal",color:"#78909c",evo_to:"pk_264",evo_level:20,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_264",nr:"264",name:"Linoone",emoji:"🦝",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_265",nr:"265",name:"Wurmple",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:"pk_266",evo_level:7,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_266",nr:"266",name:"Silcoon",emoji:"🫘",type:"Bug",color:"#8bc34a",evo_to:"pk_267",evo_level:10,rarity:"gewoon",unlock:2,gen:3,price:5},
+  {id:"pk_267",nr:"267",name:"Beautifly",emoji:"🦋",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:5,gen:3,price:10},
+  {id:"pk_270",nr:"270",name:"Lotad",emoji:"🍀",type:"Water",color:"#2196f3",evo_to:"pk_271",evo_level:14,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_271",nr:"271",name:"Lombre",emoji:"🌿",type:"Water",color:"#2196f3",evo_to:"pk_272",evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_272",nr:"272",name:"Ludicolo",emoji:"🌺",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_273",nr:"273",name:"Seedot",emoji:"🌰",type:"Gras",color:"#4caf50",evo_to:"pk_274",evo_level:14,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_274",nr:"274",name:"Nuzleaf",emoji:"🍂",type:"Gras",color:"#4caf50",evo_to:"pk_275",evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_275",nr:"275",name:"Shiftry",emoji:"🍃",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_276",nr:"276",name:"Taillow",emoji:"🐦",type:"Normaal",color:"#78909c",evo_to:"pk_277",evo_level:22,rarity:"gewoon",unlock:0,gen:3,price:5},
+  {id:"pk_277",nr:"277",name:"Swellow",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_278",nr:"278",name:"Wingull",emoji:"🦤",type:"Water",color:"#2196f3",evo_to:"pk_279",evo_level:25,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_279",nr:"279",name:"Pelipper",emoji:"🦤",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_280",nr:"280",name:"Ralts",emoji:"🎀",type:"Psycho",color:"#9c27b0",evo_to:"pk_281",evo_level:20,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_281",nr:"281",name:"Kirlia",emoji:"💃",type:"Psycho",color:"#9c27b0",evo_to:"pk_282",evo_level:30,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_282",nr:"282",name:"Gardevoir",emoji:"🤍",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:3,price:35},
+  {id:"pk_283",nr:"283",name:"Surskit",emoji:"🕷️",type:"Bug",color:"#8bc34a",evo_to:"pk_284",evo_level:22,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_284",nr:"284",name:"Masquerain",emoji:"🦋",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_285",nr:"285",name:"Shroomish",emoji:"🍄",type:"Gras",color:"#4caf50",evo_to:"pk_286",evo_level:23,rarity:"gewoon",unlock:3,gen:3,price:5},
+  {id:"pk_286",nr:"286",name:"Breloom",emoji:"🥊",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:3,price:20},
+  {id:"pk_287",nr:"287",name:"Slakoth",emoji:"🦥",type:"Normaal",color:"#78909c",evo_to:"pk_288",evo_level:18,rarity:"gewoon",unlock:3,gen:3,price:5},
+  {id:"pk_288",nr:"288",name:"Vigoroth",emoji:"🦧",type:"Normaal",color:"#78909c",evo_to:"pk_289",evo_level:36,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_289",nr:"289",name:"Slaking",emoji:"🦧",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_293",nr:"293",name:"Whismur",emoji:"🐰",type:"Normaal",color:"#78909c",evo_to:"pk_294",evo_level:20,rarity:"gewoon",unlock:3,gen:3,price:5},
+  {id:"pk_294",nr:"294",name:"Loudred",emoji:"📢",type:"Normaal",color:"#78909c",evo_to:"pk_295",evo_level:40,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_295",nr:"295",name:"Exploud",emoji:"📣",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_296",nr:"296",name:"Makuhita",emoji:"🥊",type:"Vechten",color:"#d32f2f",evo_to:"pk_297",evo_level:24,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_297",nr:"297",name:"Hariyama",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_298",nr:"298",name:"Azurill",emoji:"🔵",type:"Normaal",color:"#78909c",evo_to:"pk_183",evo_level:null,rarity:"gewoon",unlock:3,gen:3,price:5},
+  {id:"pk_300",nr:"300",name:"Skitty",emoji:"🐱",type:"Normaal",color:"#78909c",evo_to:"pk_301",evo_level:null,rarity:"gewoon",unlock:3,gen:3,price:5},
+  {id:"pk_301",nr:"301",name:"Delcatty",emoji:"🐈",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_302",nr:"302",name:"Sableye",emoji:"💎",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_303",nr:"303",name:"Mawile",emoji:"🦷",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_304",nr:"304",name:"Aron",emoji:"🦏",type:"Staal",color:"#607d8b",evo_to:"pk_305",evo_level:32,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_305",nr:"305",name:"Lairon",emoji:"🦏",type:"Staal",color:"#607d8b",evo_to:"pk_306",evo_level:42,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_306",nr:"306",name:"Aggron",emoji:"🤖",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:3,price:20},
+  {id:"pk_309",nr:"309",name:"Electrike",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_310",evo_level:26,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_310",nr:"310",name:"Manectric",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_311",nr:"311",name:"Plusle",emoji:"➕",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_312",nr:"312",name:"Minun",emoji:"➖",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_316",nr:"316",name:"Gulpin",emoji:"🫧",type:"Gif",color:"#7b1fa2",evo_to:"pk_317",evo_level:26,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_317",nr:"317",name:"Swalot",emoji:"💀",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_318",nr:"318",name:"Carvanha",emoji:"🦈",type:"Water",color:"#2196f3",evo_to:"pk_319",evo_level:30,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_319",nr:"319",name:"Sharpedo",emoji:"🦈",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_320",nr:"320",name:"Wailmer",emoji:"🐳",type:"Water",color:"#2196f3",evo_to:"pk_321",evo_level:40,rarity:"gewoon",unlock:8,gen:3,price:5},
+  {id:"pk_321",nr:"321",name:"Wailord",emoji:"🐋",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_325",nr:"325",name:"Spoink",emoji:"🐗",type:"Psycho",color:"#9c27b0",evo_to:"pk_326",evo_level:32,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_326",nr:"326",name:"Grumpig",emoji:"🐷",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_327",nr:"327",name:"Spinda",emoji:"🐼",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_328",nr:"328",name:"Trapinch",emoji:"🏜️",type:"Grond",color:"#ff8f00",evo_to:"pk_329",evo_level:35,rarity:"gewoon",unlock:8,gen:3,price:5},
+  {id:"pk_329",nr:"329",name:"Vibrava",emoji:"🦟",type:"Grond",color:"#ff8f00",evo_to:"pk_330",evo_level:45,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_330",nr:"330",name:"Flygon",emoji:"🐉",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:3,price:35},
+  {id:"pk_331",nr:"331",name:"Cacnea",emoji:"🌵",type:"Gras",color:"#4caf50",evo_to:"pk_332",evo_level:32,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_332",nr:"332",name:"Cacturne",emoji:"🌵",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_333",nr:"333",name:"Swablu",emoji:"☁️",type:"Normaal",color:"#78909c",evo_to:"pk_334",evo_level:35,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_334",nr:"334",name:"Altaria",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:3,price:20},
+  {id:"pk_335",nr:"335",name:"Zangoose",emoji:"🦦",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_336",nr:"336",name:"Seviper",emoji:"🐍",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_339",nr:"339",name:"Barboach",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:"pk_340",evo_level:30,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_340",nr:"340",name:"Whiscash",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_341",nr:"341",name:"Corphish",emoji:"🦀",type:"Water",color:"#2196f3",evo_to:"pk_342",evo_level:30,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_342",nr:"342",name:"Crawdaunt",emoji:"🦀",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_349",nr:"349",name:"Feebas",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:"pk_350",evo_level:null,rarity:"zeldzaam",unlock:15,gen:3,price:20},
+  {id:"pk_350",nr:"350",name:"Milotic",emoji:"🐲",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:3,price:35},
+  {id:"pk_351",nr:"351",name:"Castform",emoji:"🌤️",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_352",nr:"352",name:"Kecleon",emoji:"🦎",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_353",nr:"353",name:"Shuppet",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:"pk_354",evo_level:37,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_354",nr:"354",name:"Banette",emoji:"🎭",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:3,price:20},
+  {id:"pk_355",nr:"355",name:"Duskull",emoji:"💀",type:"Spook",color:"#673ab7",evo_to:"pk_356",evo_level:37,rarity:"ongewoon",unlock:12,gen:3,price:10},
+  {id:"pk_356",nr:"356",name:"Dusclops",emoji:"👁️",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:3,price:20},
+  {id:"pk_357",nr:"357",name:"Tropius",emoji:"🦕",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:3,price:20},
+  {id:"pk_359",nr:"359",name:"Absol",emoji:"🌙",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"episch",unlock:25,gen:3,price:35},
+  {id:"pk_360",nr:"360",name:"Wynaut",emoji:"💙",type:"Psycho",color:"#9c27b0",evo_to:"pk_202",evo_level:15,rarity:"ongewoon",unlock:5,gen:3,price:10},
+  {id:"pk_361",nr:"361",name:"Snorunt",emoji:"❄️",type:"IJs",color:"#0288d1",evo_to:"pk_362",evo_level:42,rarity:"ongewoon",unlock:10,gen:3,price:10},
+  {id:"pk_362",nr:"362",name:"Glalie",emoji:"🧊",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:3,price:20},
+  {id:"pk_363",nr:"363",name:"Spheal",emoji:"🦭",type:"IJs",color:"#0288d1",evo_to:"pk_364",evo_level:32,rarity:"gewoon",unlock:5,gen:3,price:5},
+  {id:"pk_364",nr:"364",name:"Sealeo",emoji:"🦭",type:"IJs",color:"#0288d1",evo_to:"pk_365",evo_level:44,rarity:"ongewoon",unlock:15,gen:3,price:10},
+  {id:"pk_365",nr:"365",name:"Walrein",emoji:"🦭",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:3,price:20},
+  {id:"pk_370",nr:"370",name:"Luvdisc",emoji:"💗",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:3,price:10},
+  {id:"pk_371",nr:"371",name:"Bagon",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_372",evo_level:30,rarity:"zeldzaam",unlock:20,gen:3,price:20},
+  {id:"pk_372",nr:"372",name:"Shelgon",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_373",evo_level:50,rarity:"episch",unlock:30,gen:3,price:35},
+  {id:"pk_373",nr:"373",name:"Salamence",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:3,price:35},
+  {id:"pk_374",nr:"374",name:"Beldum",emoji:"🔩",type:"Staal",color:"#607d8b",evo_to:"pk_375",evo_level:20,rarity:"zeldzaam",unlock:20,gen:3,price:20},
+  {id:"pk_375",nr:"375",name:"Metang",emoji:"🔩",type:"Staal",color:"#607d8b",evo_to:"pk_376",evo_level:45,rarity:"episch",unlock:30,gen:3,price:35},
+  {id:"pk_376",nr:"376",name:"Metagross",emoji:"🤖",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:3,price:35},
+  {id:"pk_377",nr:"377",name:"Regirock",emoji:"🪨",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:3,price:60},
+  {id:"pk_378",nr:"378",name:"Regice",emoji:"🧊",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:3,price:60},
+  {id:"pk_379",nr:"379",name:"Registeel",emoji:"🤖",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:3,price:60},
+  {id:"pk_380",nr:"380",name:"Latias",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:3,price:60},
+  {id:"pk_381",nr:"381",name:"Latios",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:3,price:60},
+  {id:"pk_382",nr:"382",name:"Kyogre",emoji:"🌊",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:3,price:60},
+  {id:"pk_383",nr:"383",name:"Groudon",emoji:"🌋",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:3,price:60},
+  {id:"pk_384",nr:"384",name:"Rayquaza",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:3,price:60},
+  {id:"pk_385",nr:"385",name:"Jirachi",emoji:"⭐",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:3,price:60},
+  {id:"pk_386",nr:"386",name:"Deoxys",emoji:"👽",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:3,price:60},
+  {id:"pk_387",nr:"387",name:"Turtwig",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_388",evo_level:18,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_388",nr:"388",name:"Grotle",emoji:"🌲",type:"Gras",color:"#4caf50",evo_to:"pk_389",evo_level:32,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_389",nr:"389",name:"Torterra",emoji:"🌍",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_390",nr:"390",name:"Chimchar",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_391",evo_level:14,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_391",nr:"391",name:"Monferno",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_392",evo_level:36,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_392",nr:"392",name:"Infernape",emoji:"🐒",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_393",nr:"393",name:"Piplup",emoji:"🐧",type:"Water",color:"#2196f3",evo_to:"pk_394",evo_level:16,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_394",nr:"394",name:"Prinplup",emoji:"🐧",type:"Water",color:"#2196f3",evo_to:"pk_395",evo_level:36,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_395",nr:"395",name:"Empoleon",emoji:"🐧",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_396",nr:"396",name:"Starly",emoji:"🐦",type:"Normaal",color:"#78909c",evo_to:"pk_397",evo_level:14,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_397",nr:"397",name:"Staravia",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:"pk_398",evo_level:34,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_398",nr:"398",name:"Staraptor",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_399",nr:"399",name:"Bidoof",emoji:"🦫",type:"Normaal",color:"#78909c",evo_to:"pk_400",evo_level:15,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_400",nr:"400",name:"Bibarel",emoji:"🦫",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_401",nr:"401",name:"Kricketot",emoji:"🦗",type:"Bug",color:"#8bc34a",evo_to:"pk_402",evo_level:10,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_402",nr:"402",name:"Kricketune",emoji:"🎵",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:5,gen:4,price:10},
+  {id:"pk_403",nr:"403",name:"Shinx",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_404",evo_level:15,rarity:"gewoon",unlock:0,gen:4,price:5},
+  {id:"pk_404",nr:"404",name:"Luxio",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_405",evo_level:30,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_405",nr:"405",name:"Luxray",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_406",nr:"406",name:"Budew",emoji:"🌹",type:"Gras",color:"#4caf50",evo_to:"pk_407",evo_level:null,rarity:"gewoon",unlock:3,gen:4,price:5},
+  {id:"pk_407",nr:"407",name:"Roserade",emoji:"🌹",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_408",nr:"408",name:"Cranidos",emoji:"🦕",type:"Rots",color:"#795548",evo_to:"pk_409",evo_level:30,rarity:"zeldzaam",unlock:15,gen:4,price:20},
+  {id:"pk_409",nr:"409",name:"Rampardos",emoji:"🦕",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"episch",unlock:25,gen:4,price:35},
+  {id:"pk_410",nr:"410",name:"Shieldon",emoji:"🛡️",type:"Rots",color:"#795548",evo_to:"pk_411",evo_level:30,rarity:"zeldzaam",unlock:15,gen:4,price:20},
+  {id:"pk_411",nr:"411",name:"Bastiodon",emoji:"🛡️",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"episch",unlock:25,gen:4,price:35},
+  {id:"pk_415",nr:"415",name:"Combee",emoji:"🐝",type:"Bug",color:"#8bc34a",evo_to:"pk_416",evo_level:21,rarity:"gewoon",unlock:3,gen:4,price:5},
+  {id:"pk_416",nr:"416",name:"Vespiquen",emoji:"👑",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:4,price:20},
+  {id:"pk_417",nr:"417",name:"Pachirisu",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_418",nr:"418",name:"Buizel",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:"pk_419",evo_level:26,rarity:"gewoon",unlock:5,gen:4,price:5},
+  {id:"pk_419",nr:"419",name:"Floatzel",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:4,price:10},
+  {id:"pk_420",nr:"420",name:"Cherubi",emoji:"🍒",type:"Gras",color:"#4caf50",evo_to:"pk_421",evo_level:25,rarity:"gewoon",unlock:3,gen:4,price:5},
+  {id:"pk_421",nr:"421",name:"Cherrim",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:4,price:10},
+  {id:"pk_422",nr:"422",name:"Shellos",emoji:"🐌",type:"Water",color:"#2196f3",evo_to:"pk_423",evo_level:30,rarity:"gewoon",unlock:5,gen:4,price:5},
+  {id:"pk_423",nr:"423",name:"Gastrodon",emoji:"🐌",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:4,price:10},
+  {id:"pk_425",nr:"425",name:"Drifloon",emoji:"🎈",type:"Spook",color:"#673ab7",evo_to:"pk_426",evo_level:28,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_426",nr:"426",name:"Drifblim",emoji:"🎈",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_427",nr:"427",name:"Buneary",emoji:"🐰",type:"Normaal",color:"#78909c",evo_to:"pk_428",evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_428",nr:"428",name:"Lopunny",emoji:"🐰",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_429",nr:"429",name:"Mismagius",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_430",nr:"430",name:"Honchkrow",emoji:"🎩",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_431",nr:"431",name:"Glameow",emoji:"🐱",type:"Normaal",color:"#78909c",evo_to:"pk_432",evo_level:38,rarity:"gewoon",unlock:5,gen:4,price:5},
+  {id:"pk_432",nr:"432",name:"Purugly",emoji:"🐈",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:4,price:10},
+  {id:"pk_433",nr:"433",name:"Chingling",emoji:"🔔",type:"Psycho",color:"#9c27b0",evo_to:"pk_358",evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_434",nr:"434",name:"Stunky",emoji:"🦨",type:"Gif",color:"#7b1fa2",evo_to:"pk_435",evo_level:34,rarity:"gewoon",unlock:5,gen:4,price:5},
+  {id:"pk_435",nr:"435",name:"Skuntank",emoji:"🦨",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:4,price:10},
+  {id:"pk_436",nr:"436",name:"Bronzor",emoji:"🔮",type:"Staal",color:"#607d8b",evo_to:"pk_437",evo_level:33,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_437",nr:"437",name:"Bronzong",emoji:"🔮",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_438",nr:"438",name:"Bonsly",emoji:"🌳",type:"Rots",color:"#795548",evo_to:"pk_185",evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_439",nr:"439",name:"Mime Jr.",emoji:"🤡",type:"Psycho",color:"#9c27b0",evo_to:"pk_122",evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_440",nr:"440",name:"Happiny",emoji:"🩹",type:"Normaal",color:"#78909c",evo_to:"pk_113",evo_level:null,rarity:"ongewoon",unlock:8,gen:4,price:10},
+  {id:"pk_441",nr:"441",name:"Chatot",emoji:"🦜",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_442",nr:"442",name:"Spiritomb",emoji:"💜",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:4,price:35},
+  {id:"pk_443",nr:"443",name:"Gible",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_444",evo_level:24,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_444",nr:"444",name:"Gabite",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:"pk_445",evo_level:48,rarity:"episch",unlock:30,gen:4,price:35},
+  {id:"pk_445",nr:"445",name:"Garchomp",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:4,price:35},
+  {id:"pk_446",nr:"446",name:"Munchlax",emoji:"💤",type:"Normaal",color:"#78909c",evo_to:"pk_143",evo_level:null,rarity:"zeldzaam",unlock:15,gen:4,price:20},
+  {id:"pk_447",nr:"447",name:"Riolu",emoji:"🐾",type:"Vechten",color:"#d32f2f",evo_to:"pk_448",evo_level:null,rarity:"zeldzaam",unlock:15,gen:4,price:20},
+  {id:"pk_448",nr:"448",name:"Lucario",emoji:"🐾",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:4,price:35},
+  {id:"pk_449",nr:"449",name:"Hippopotas",emoji:"🦛",type:"Grond",color:"#ff8f00",evo_to:"pk_450",evo_level:34,rarity:"gewoon",unlock:8,gen:4,price:5},
+  {id:"pk_450",nr:"450",name:"Hippowdon",emoji:"🦛",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_451",nr:"451",name:"Skorupi",emoji:"🦂",type:"Gif",color:"#7b1fa2",evo_to:"pk_452",evo_level:40,rarity:"ongewoon",unlock:12,gen:4,price:10},
+  {id:"pk_452",nr:"452",name:"Drapion",emoji:"🦂",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_453",nr:"453",name:"Croagunk",emoji:"🐸",type:"Gif",color:"#7b1fa2",evo_to:"pk_454",evo_level:37,rarity:"gewoon",unlock:8,gen:4,price:5},
+  {id:"pk_454",nr:"454",name:"Toxicroak",emoji:"🐸",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_455",nr:"455",name:"Carnivine",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:4,price:20},
+  {id:"pk_456",nr:"456",name:"Finneon",emoji:"🐠",type:"Water",color:"#2196f3",evo_to:"pk_457",evo_level:31,rarity:"gewoon",unlock:5,gen:4,price:5},
+  {id:"pk_457",nr:"457",name:"Lumineon",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:4,price:10},
+  {id:"pk_458",nr:"458",name:"Mantyke",emoji:"🦈",type:"Water",color:"#2196f3",evo_to:"pk_226",evo_level:null,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_459",nr:"459",name:"Snover",emoji:"🌲",type:"Gras",color:"#4caf50",evo_to:"pk_460",evo_level:40,rarity:"ongewoon",unlock:10,gen:4,price:10},
+  {id:"pk_460",nr:"460",name:"Abomasnow",emoji:"❄️",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_461",nr:"461",name:"Weavile",emoji:"❄️",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_462",nr:"462",name:"Magnezone",emoji:"🧲",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_464",nr:"464",name:"Rhyperior",emoji:"🦏",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_466",nr:"466",name:"Electivire",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_467",nr:"467",name:"Magmortar",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_468",nr:"468",name:"Togekiss",emoji:"🕊️",type:"Fee",color:"#e91e63",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:4,price:20},
+  {id:"pk_470",nr:"470",name:"Leafeon",emoji:"🍃",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_471",nr:"471",name:"Glaceon",emoji:"❄️",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:4,price:20},
+  {id:"pk_472",nr:"472",name:"Gliscor",emoji:"🦂",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_474",nr:"474",name:"Porygon-Z",emoji:"🔷",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:4,price:35},
+  {id:"pk_475",nr:"475",name:"Gallade",emoji:"⚔️",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:4,price:35},
+  {id:"pk_477",nr:"477",name:"Dusknoir",emoji:"👁️",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:4,price:20},
+  {id:"pk_478",nr:"478",name:"Froslass",emoji:"❄️",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:4,price:20},
+  {id:"pk_480",nr:"480",name:"Uxie",emoji:"💛",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:4,price:60},
+  {id:"pk_481",nr:"481",name:"Mesprit",emoji:"❤️",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:4,price:60},
+  {id:"pk_482",nr:"482",name:"Azelf",emoji:"💙",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:4,price:60},
+  {id:"pk_483",nr:"483",name:"Dialga",emoji:"⏳",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_484",nr:"484",name:"Palkia",emoji:"💎",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_485",nr:"485",name:"Heatran",emoji:"🌋",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:4,price:60},
+  {id:"pk_487",nr:"487",name:"Giratina",emoji:"👁️",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_488",nr:"488",name:"Cresselia",emoji:"🌙",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:4,price:60},
+  {id:"pk_490",nr:"490",name:"Manaphy",emoji:"💧",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_491",nr:"491",name:"Darkrai",emoji:"🌑",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_492",nr:"492",name:"Shaymin",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_493",nr:"493",name:"Arceus",emoji:"✨",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:4,price:60},
+  {id:"pk_495",nr:"495",name:"Snivy",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_496",evo_level:17,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_496",nr:"496",name:"Servine",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:"pk_497",evo_level:36,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_497",nr:"497",name:"Serperior",emoji:"🐍",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_498",nr:"498",name:"Tepig",emoji:"🐷",type:"Vuur",color:"#ff5722",evo_to:"pk_499",evo_level:17,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_499",nr:"499",name:"Pignite",emoji:"🐗",type:"Vuur",color:"#ff5722",evo_to:"pk_500",evo_level:36,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_500",nr:"500",name:"Emboar",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_501",nr:"501",name:"Oshawott",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:"pk_502",evo_level:17,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_502",nr:"502",name:"Dewott",emoji:"🦦",type:"Water",color:"#2196f3",evo_to:"pk_503",evo_level:36,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_503",nr:"503",name:"Samurott",emoji:"⚔️",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_504",nr:"504",name:"Patrat",emoji:"🐿️",type:"Normaal",color:"#78909c",evo_to:"pk_505",evo_level:20,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_505",nr:"505",name:"Watchog",emoji:"👁️",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_506",nr:"506",name:"Lillipup",emoji:"🐕",type:"Normaal",color:"#78909c",evo_to:"pk_507",evo_level:16,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_507",nr:"507",name:"Herdier",emoji:"🐕",type:"Normaal",color:"#78909c",evo_to:"pk_508",evo_level:32,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_508",nr:"508",name:"Stoutland",emoji:"🐕",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_509",nr:"509",name:"Purrloin",emoji:"🐱",type:"Donker",color:"#37474f",evo_to:"pk_510",evo_level:20,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_510",nr:"510",name:"Liepard",emoji:"🐆",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_511",nr:"511",name:"Pansage",emoji:"🐒",type:"Gras",color:"#4caf50",evo_to:"pk_512",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_512",nr:"512",name:"Simisage",emoji:"🐵",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_513",nr:"513",name:"Pansear",emoji:"🐒",type:"Vuur",color:"#ff5722",evo_to:"pk_514",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_514",nr:"514",name:"Simisear",emoji:"🐵",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_515",nr:"515",name:"Panpour",emoji:"🐒",type:"Water",color:"#2196f3",evo_to:"pk_516",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_516",nr:"516",name:"Simipour",emoji:"🐵",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_517",nr:"517",name:"Munna",emoji:"🌙",type:"Psycho",color:"#9c27b0",evo_to:"pk_518",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_518",nr:"518",name:"Musharna",emoji:"💜",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_519",nr:"519",name:"Pidove",emoji:"🐦",type:"Normaal",color:"#78909c",evo_to:"pk_520",evo_level:21,rarity:"gewoon",unlock:0,gen:5,price:5},
+  {id:"pk_520",nr:"520",name:"Tranquill",emoji:"🕊️",type:"Normaal",color:"#78909c",evo_to:"pk_521",evo_level:32,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_521",nr:"521",name:"Unfezant",emoji:"🦚",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_522",nr:"522",name:"Blitzle",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_523",evo_level:27,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_523",nr:"523",name:"Zebstrika",emoji:"🦓",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_524",nr:"524",name:"Roggenrola",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_525",evo_level:25,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_525",nr:"525",name:"Boldore",emoji:"🪨",type:"Rots",color:"#795548",evo_to:"pk_526",evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_526",nr:"526",name:"Gigalith",emoji:"🗿",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_527",nr:"527",name:"Woobat",emoji:"🦇",type:"Psycho",color:"#9c27b0",evo_to:"pk_528",evo_level:null,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_528",nr:"528",name:"Swoobat",emoji:"🦇",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_529",nr:"529",name:"Drilbur",emoji:"⛏️",type:"Grond",color:"#ff8f00",evo_to:"pk_530",evo_level:31,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_530",nr:"530",name:"Excadrill",emoji:"⛏️",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_531",nr:"531",name:"Audino",emoji:"🩺",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:5,price:20},
+  {id:"pk_532",nr:"532",name:"Timburr",emoji:"🪵",type:"Vechten",color:"#d32f2f",evo_to:"pk_533",evo_level:25,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_533",nr:"533",name:"Gurdurr",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:"pk_534",evo_level:null,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_534",nr:"534",name:"Conkeldurr",emoji:"💪",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_535",nr:"535",name:"Tympole",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:"pk_536",evo_level:25,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_536",nr:"536",name:"Palpitoad",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:"pk_537",evo_level:36,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_537",nr:"537",name:"Seismitoad",emoji:"🐸",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_538",nr:"538",name:"Throh",emoji:"🥋",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_539",nr:"539",name:"Sawk",emoji:"🥋",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_540",nr:"540",name:"Sewaddle",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:"pk_541",evo_level:20,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_541",nr:"541",name:"Swadloon",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:"pk_542",evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_542",nr:"542",name:"Leavanny",emoji:"🍃",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_543",nr:"543",name:"Venipede",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:"pk_544",evo_level:22,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_544",nr:"544",name:"Whirlipede",emoji:"🪲",type:"Bug",color:"#8bc34a",evo_to:"pk_545",evo_level:30,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_545",nr:"545",name:"Scolipede",emoji:"🐛",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_546",nr:"546",name:"Cottonee",emoji:"🌱",type:"Gras",color:"#4caf50",evo_to:"pk_547",evo_level:null,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_547",nr:"547",name:"Whimsicott",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_548",nr:"548",name:"Petilil",emoji:"🌸",type:"Gras",color:"#4caf50",evo_to:"pk_549",evo_level:null,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_549",nr:"549",name:"Lilligant",emoji:"🌺",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_550",nr:"550",name:"Basculin",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_551",nr:"551",name:"Sandile",emoji:"🐊",type:"Grond",color:"#ff8f00",evo_to:"pk_552",evo_level:29,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_552",nr:"552",name:"Krokorok",emoji:"🐊",type:"Grond",color:"#ff8f00",evo_to:"pk_553",evo_level:40,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_553",nr:"553",name:"Krookodile",emoji:"🐊",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_554",nr:"554",name:"Darumaka",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:"pk_555",evo_level:35,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_555",nr:"555",name:"Darmanitan",emoji:"🦧",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_556",nr:"556",name:"Maractus",emoji:"🌵",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:5,price:10},
+  {id:"pk_557",nr:"557",name:"Dwebble",emoji:"🦀",type:"Bug",color:"#8bc34a",evo_to:"pk_558",evo_level:34,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_558",nr:"558",name:"Crustle",emoji:"🦀",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_559",nr:"559",name:"Scraggy",emoji:"🦎",type:"Donker",color:"#37474f",evo_to:"pk_560",evo_level:39,rarity:"gewoon",unlock:8,gen:5,price:5},
+  {id:"pk_560",nr:"560",name:"Scrafty",emoji:"🦎",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_561",nr:"561",name:"Sigilyph",emoji:"👁️",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_562",nr:"562",name:"Yamask",emoji:"👻",type:"Spook",color:"#673ab7",evo_to:"pk_563",evo_level:34,rarity:"ongewoon",unlock:10,gen:5,price:10},
+  {id:"pk_563",nr:"563",name:"Cofagrigus",emoji:"⚰️",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_564",nr:"564",name:"Tirtouga",emoji:"🐢",type:"Water",color:"#2196f3",evo_to:"pk_565",evo_level:37,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_565",nr:"565",name:"Carracosta",emoji:"🐢",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:30,gen:5,price:20},
+  {id:"pk_566",nr:"566",name:"Archen",emoji:"🦕",type:"Rots",color:"#795548",evo_to:"pk_567",evo_level:37,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_567",nr:"567",name:"Archeops",emoji:"🦕",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:30,gen:5,price:20},
+  {id:"pk_568",nr:"568",name:"Trubbish",emoji:"🗑️",type:"Gif",color:"#7b1fa2",evo_to:"pk_569",evo_level:36,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_569",nr:"569",name:"Garbodor",emoji:"💀",type:"Gif",color:"#7b1fa2",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_570",nr:"570",name:"Zorua",emoji:"🦊",type:"Donker",color:"#37474f",evo_to:"pk_571",evo_level:30,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_571",nr:"571",name:"Zoroark",emoji:"🦊",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"episch",unlock:28,gen:5,price:35},
+  {id:"pk_572",nr:"572",name:"Minccino",emoji:"🐭",type:"Normaal",color:"#78909c",evo_to:"pk_573",evo_level:null,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_573",nr:"573",name:"Cinccino",emoji:"🐭",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:5,price:20},
+  {id:"pk_574",nr:"574",name:"Gothita",emoji:"🎀",type:"Psycho",color:"#9c27b0",evo_to:"pk_575",evo_level:32,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_575",nr:"575",name:"Gothorita",emoji:"🎀",type:"Psycho",color:"#9c27b0",evo_to:"pk_576",evo_level:41,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_576",nr:"576",name:"Gothitelle",emoji:"🎀",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_577",nr:"577",name:"Solosis",emoji:"🫧",type:"Psycho",color:"#9c27b0",evo_to:"pk_578",evo_level:32,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_578",nr:"578",name:"Duosion",emoji:"🫧",type:"Psycho",color:"#9c27b0",evo_to:"pk_579",evo_level:41,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_579",nr:"579",name:"Reuniclus",emoji:"🫧",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_580",nr:"580",name:"Ducklett",emoji:"🦆",type:"Water",color:"#2196f3",evo_to:"pk_581",evo_level:35,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_581",nr:"581",name:"Swanna",emoji:"🦢",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_582",nr:"582",name:"Vanillite",emoji:"🍦",type:"IJs",color:"#0288d1",evo_to:"pk_583",evo_level:35,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_583",nr:"583",name:"Vanillish",emoji:"🍧",type:"IJs",color:"#0288d1",evo_to:"pk_584",evo_level:47,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_584",nr:"584",name:"Vanilluxe",emoji:"🍨",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_585",nr:"585",name:"Deerling",emoji:"🦌",type:"Normaal",color:"#78909c",evo_to:"pk_586",evo_level:34,rarity:"gewoon",unlock:3,gen:5,price:5},
+  {id:"pk_586",nr:"586",name:"Sawsbuck",emoji:"🦌",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_587",nr:"587",name:"Emolga",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:5,price:20},
+  {id:"pk_588",nr:"588",name:"Karrablast",emoji:"🪲",type:"Bug",color:"#8bc34a",evo_to:"pk_589",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_589",nr:"589",name:"Escavalier",emoji:"🪲",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_590",nr:"590",name:"Foongus",emoji:"🍄",type:"Gras",color:"#4caf50",evo_to:"pk_591",evo_level:39,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_591",nr:"591",name:"Amoonguss",emoji:"🍄",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_592",nr:"592",name:"Frillish",emoji:"👻",type:"Water",color:"#2196f3",evo_to:"pk_593",evo_level:40,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_593",nr:"593",name:"Jellicent",emoji:"👻",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_594",nr:"594",name:"Alomomola",emoji:"🐟",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:15,gen:5,price:20},
+  {id:"pk_595",nr:"595",name:"Joltik",emoji:"🕷️",type:"Bug",color:"#8bc34a",evo_to:"pk_596",evo_level:36,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_596",nr:"596",name:"Galvantula",emoji:"🕸️",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_597",nr:"597",name:"Ferroseed",emoji:"🌰",type:"Gras",color:"#4caf50",evo_to:"pk_598",evo_level:40,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_598",nr:"598",name:"Ferrothorn",emoji:"🌵",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_599",nr:"599",name:"Klink",emoji:"⚙️",type:"Staal",color:"#607d8b",evo_to:"pk_600",evo_level:38,rarity:"gewoon",unlock:8,gen:5,price:5},
+  {id:"pk_600",nr:"600",name:"Klang",emoji:"⚙️",type:"Staal",color:"#607d8b",evo_to:"pk_601",evo_level:49,rarity:"ongewoon",unlock:18,gen:5,price:10},
+  {id:"pk_601",nr:"601",name:"Klinklang",emoji:"⚙️",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:28,gen:5,price:20},
+  {id:"pk_602",nr:"602",name:"Tynamo",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_603",evo_level:39,rarity:"gewoon",unlock:8,gen:5,price:5},
+  {id:"pk_603",nr:"603",name:"Eelektrik",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:"pk_604",evo_level:null,rarity:"zeldzaam",unlock:20,gen:5,price:20},
+  {id:"pk_604",nr:"604",name:"Eelektross",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"episch",unlock:30,gen:5,price:35},
+  {id:"pk_605",nr:"605",name:"Elgyem",emoji:"👽",type:"Psycho",color:"#9c27b0",evo_to:"pk_606",evo_level:42,rarity:"ongewoon",unlock:10,gen:5,price:10},
+  {id:"pk_606",nr:"606",name:"Beheeyem",emoji:"👽",type:"Psycho",color:"#9c27b0",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_607",nr:"607",name:"Litwick",emoji:"🕯️",type:"Spook",color:"#673ab7",evo_to:"pk_608",evo_level:41,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_608",nr:"608",name:"Lampent",emoji:"🪔",type:"Spook",color:"#673ab7",evo_to:"pk_609",evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_609",nr:"609",name:"Chandelure",emoji:"🔮",type:"Spook",color:"#673ab7",evo_to:null,evo_level:null,rarity:"episch",unlock:30,gen:5,price:35},
+  {id:"pk_610",nr:"610",name:"Axew",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_611",evo_level:38,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_611",nr:"611",name:"Fraxure",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_612",evo_level:48,rarity:"episch",unlock:32,gen:5,price:35},
+  {id:"pk_612",nr:"612",name:"Haxorus",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"episch",unlock:42,gen:5,price:35},
+  {id:"pk_613",nr:"613",name:"Cubchoo",emoji:"🐻",type:"IJs",color:"#0288d1",evo_to:"pk_614",evo_level:37,rarity:"gewoon",unlock:5,gen:5,price:5},
+  {id:"pk_614",nr:"614",name:"Beartic",emoji:"🐻‍❄️",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_615",nr:"615",name:"Cryogonal",emoji:"❄️",type:"IJs",color:"#0288d1",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_616",nr:"616",name:"Shelmet",emoji:"🐌",type:"Bug",color:"#8bc34a",evo_to:"pk_617",evo_level:null,rarity:"ongewoon",unlock:8,gen:5,price:10},
+  {id:"pk_617",nr:"617",name:"Accelgor",emoji:"🐌",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_618",nr:"618",name:"Stunfisk",emoji:"🐟",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"ongewoon",unlock:10,gen:5,price:10},
+  {id:"pk_619",nr:"619",name:"Mienfoo",emoji:"🥋",type:"Vechten",color:"#d32f2f",evo_to:"pk_620",evo_level:50,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_620",nr:"620",name:"Mienshao",emoji:"🥋",type:"Vechten",color:"#d32f2f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_621",nr:"621",name:"Druddigon",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_622",nr:"622",name:"Golett",emoji:"🤖",type:"Grond",color:"#ff8f00",evo_to:"pk_623",evo_level:43,rarity:"ongewoon",unlock:12,gen:5,price:10},
+  {id:"pk_623",nr:"623",name:"Golurk",emoji:"🤖",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:22,gen:5,price:20},
+  {id:"pk_624",nr:"624",name:"Pawniard",emoji:"⚔️",type:"Donker",color:"#37474f",evo_to:"pk_625",evo_level:52,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_625",nr:"625",name:"Bisharp",emoji:"♟️",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_626",nr:"626",name:"Bouffalant",emoji:"🐃",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_627",nr:"627",name:"Rufflet",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:"pk_628",evo_level:54,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_628",nr:"628",name:"Braviary",emoji:"🦅",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_629",nr:"629",name:"Vullaby",emoji:"🦃",type:"Donker",color:"#37474f",evo_to:"pk_630",evo_level:54,rarity:"ongewoon",unlock:15,gen:5,price:10},
+  {id:"pk_630",nr:"630",name:"Mandibuzz",emoji:"🦃",type:"Donker",color:"#37474f",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_631",nr:"631",name:"Heatmor",emoji:"🔥",type:"Vuur",color:"#ff5722",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_632",nr:"632",name:"Durant",emoji:"🐜",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"zeldzaam",unlock:18,gen:5,price:20},
+  {id:"pk_633",nr:"633",name:"Deino",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_634",evo_level:50,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_634",nr:"634",name:"Zweilous",emoji:"🐲",type:"Draak",color:"#e65100",evo_to:"pk_635",evo_level:64,rarity:"episch",unlock:35,gen:5,price:35},
+  {id:"pk_635",nr:"635",name:"Hydreigon",emoji:"🐉",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"episch",unlock:45,gen:5,price:35},
+  {id:"pk_636",nr:"636",name:"Larvesta",emoji:"🔥",type:"Bug",color:"#8bc34a",evo_to:"pk_637",evo_level:59,rarity:"zeldzaam",unlock:25,gen:5,price:20},
+  {id:"pk_637",nr:"637",name:"Volcarona",emoji:"🦋",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"episch",unlock:40,gen:5,price:35},
+  {id:"pk_638",nr:"638",name:"Cobalion",emoji:"⚔️",type:"Staal",color:"#607d8b",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:5,price:60},
+  {id:"pk_639",nr:"639",name:"Terrakion",emoji:"🪨",type:"Rots",color:"#795548",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:5,price:60},
+  {id:"pk_640",nr:"640",name:"Virizion",emoji:"🌿",type:"Gras",color:"#4caf50",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:45,gen:5,price:60},
+  {id:"pk_641",nr:"641",name:"Tornadus",emoji:"🌪️",type:"Vliegend",color:"#64b5f6",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:5,price:60},
+  {id:"pk_642",nr:"642",name:"Thundurus",emoji:"⚡",type:"Electro",color:"#ffc107",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:5,price:60},
+  {id:"pk_643",nr:"643",name:"Reshiram",emoji:"🔥",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
+  {id:"pk_644",nr:"644",name:"Zekrom",emoji:"⚡",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
+  {id:"pk_645",nr:"645",name:"Landorus",emoji:"🌪️",type:"Grond",color:"#ff8f00",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:48,gen:5,price:60},
+  {id:"pk_646",nr:"646",name:"Kyurem",emoji:"❄️",type:"Draak",color:"#e65100",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
+  {id:"pk_647",nr:"647",name:"Keldeo",emoji:"🦄",type:"Water",color:"#2196f3",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
+  {id:"pk_648",nr:"648",name:"Meloetta",emoji:"🎵",type:"Normaal",color:"#78909c",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
+  {id:"pk_649",nr:"649",name:"Genesect",emoji:"🤖",type:"Bug",color:"#8bc34a",evo_to:null,evo_level:null,rarity:"legendarisch",unlock:50,gen:5,price:60},
 ];
 
 const POKEMON_RARITY = {
@@ -2999,6 +3555,8 @@ function closeReward() {
     }, 400);
   }
 
+  // Check pokemon evolutie na level up
+  checkEvoAfterLevelUp(state.currentPlayer);
   navigate('map');
 }
 
@@ -3140,6 +3698,7 @@ function renderAvatarBuilder() {
     ${activeWardrobeTab==='pokemon' ? (() => {
       const owned = state.ownedAvatarItems[state.currentPlayer]||[];
       const ownedPk = POKEMON_CARDS.filter(c=>owned.includes(c.id)).length;
+      const availablePk = POKEMON_CARDS.filter(c=>c.unlock<=(state.players[state.currentPlayer]?.level||0)).length;
       const pct = Math.round(ownedPk/POKEMON_CARDS.length*100);
       return '<div style="background:#1a2744;border-radius:12px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center">' +
         '<div style="font-size:1.5rem">🎴</div>' +
@@ -3330,7 +3889,7 @@ function renderWardrobeItems(slot, owned, equipped) {
           <div style="font-family:Fredoka One,cursive;font-size:0.78rem;color:${r.color}">${'⭐'.repeat(r.stars)} ${r.label}</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-          ${rarItems.map(item => renderPokemonCard(item, owned)).join('')}
+          ${rarItems.map(item => renderPokemonCard(item, owned, state.currentPlayer)).join('')}
         </div>
       </div>`;
     }).join('');
@@ -3360,23 +3919,35 @@ function renderWardrobeCard(item, owned, equipped, slot) {
   </div>`;
 }
 
-function renderPokemonCard(item, owned) {
+function renderPokemonCard(item, owned, playerIdx) {
   const isOwned = owned.includes(item.id);
   const r = POKEMON_RARITY[item.rarity];
-  return `<div onclick="buyPokemon('${item.id}')"
+  const p = state.players[playerIdx !== undefined ? playerIdx : state.currentPlayer];
+  const playerLevel = (p?.level || 0);
+  const isLocked = item.unlock > playerLevel;
+  const canEvolve = isOwned && item.evo_to && !owned.includes(item.evo_to);
+  const levelOnPlanet = playerLevel % 50;
+  const evoProgress = canEvolve && item.evo_level ?
+    Math.min(100, Math.round(levelOnPlanet / item.evo_level * 100)) : 0;
+
+  return `<div onclick="${isLocked ? '' : "buyPokemon('"+item.id+"')"}"
     style="background:${isOwned?item.color+'22':'rgba(255,255,255,0.04)'};
-    border:2px solid ${isOwned?item.color:'rgba(255,255,255,0.1)'};
-    border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;position:relative;
-    opacity:${isOwned?1:0.65}">
+    border:2px solid ${isOwned?item.color:isLocked?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.1)'};
+    border-radius:14px;padding:10px 6px;text-align:center;cursor:${isLocked?'default':'pointer'};
+    position:relative;opacity:${isLocked?0.35:isOwned?1:0.75}">
     ${isOwned?'<div style="position:absolute;top:3px;right:3px;font-size:0.55rem;background:'+item.color+';color:#fff;border-radius:5px;padding:1px 5px;font-family:Fredoka One,cursive">✓</div>':''}
+    ${isLocked?'<div style="position:absolute;top:3px;left:3px;font-size:0.8rem">🔒</div>':''}
+    ${canEvolve?'<div style="position:absolute;top:3px;left:3px;font-size:0.75rem">✨</div>':''}
     <div style="font-size:2.2rem;margin-bottom:2px">${item.emoji}</div>
     <div style="font-family:Fredoka One,cursive;font-size:0.68rem;color:white;margin-bottom:2px">${item.name}</div>
-    <div style="font-size:0.6rem;color:${r.color};font-family:Fredoka One,cursive">${item.nr}</div>
-    <div style="font-size:0.62rem;color:${isOwned?'#57c785':'#f5a623'};font-family:Fredoka One,cursive;margin-top:2px">
-      ${isOwned?'🎴 Verzameld':'🪙 '+item.price}
+    <div style="font-size:0.6rem;color:${r.color};font-family:Fredoka One,cursive">#${item.nr} · Gen ${item.gen}</div>
+    ${canEvolve && evoProgress > 0 ? '<div style="background:rgba(255,255,255,0.1);border-radius:3px;height:3px;margin:3px 0;overflow:hidden"><div style="width:'+evoProgress+'%;height:100%;background:#f5a623"></div></div>' : ''}
+    <div style="font-size:0.62rem;color:${isOwned?'#57c785':isLocked?'rgba(255,255,255,0.3)':'#f5a623'};font-family:Fredoka One,cursive;margin-top:2px">
+      ${isOwned?(canEvolve?'✨ Kan evolueren!':'🎴 Verzameld'):(isLocked?'🔒 Level '+item.unlock:'🪙 '+item.price)}
     </div>
   </div>`;
 }
+
 
 // PASKAMER: try-on preview before buying
 window._tryOnItem = null;
@@ -11356,6 +11927,159 @@ function pushToProduction() {
 function isTestMode() {
   return localStorage.getItem('sp_testmode') === '1';
 }
+
+
+// ===== 🎮 POKÉMON EVOLUTIE SYSTEEM =====
+
+function checkPokemonEvolution(playerIdx) {
+  const p = state.players[playerIdx];
+  if (!p) return;
+  const owned = state.ownedAvatarItems[playerIdx] || [];
+  const levelOnPlanet = (p.level || 0) % 50;
+  const evolutions = [];
+
+  owned.forEach(id => {
+    const pk = POKEMON_CARDS.find(c => c.id === id);
+    if (!pk || !pk.evo_to) return;
+    const alreadyEvolved = owned.includes(pk.evo_to);
+    if (alreadyEvolved) return;
+
+    let shouldEvolve = false;
+    if (pk.evo_level && levelOnPlanet >= pk.evo_level) shouldEvolve = true;
+    // Steen-evoluties (evo_level = null maar owned long enough)
+    if (!pk.evo_level && (p.level || 0) >= (pk.unlock + 15)) shouldEvolve = true;
+
+    if (shouldEvolve) {
+      const nextPk = POKEMON_CARDS.find(c => c.id === pk.evo_to);
+      if (nextPk) evolutions.push({ from: pk, to: nextPk });
+    }
+  });
+
+  if (evolutions.length > 0) {
+    // Voer evoluties uit
+    evolutions.forEach(({ from, to }) => {
+      if (!state.ownedAvatarItems[playerIdx]) state.ownedAvatarItems[playerIdx] = [];
+      state.ownedAvatarItems[playerIdx].push(to.id);
+    });
+    saveState();
+    // Toon animatie voor eerste evolutie
+    showEvolutionAnimation(evolutions[0].from, evolutions[0].to, playerIdx);
+    if (evolutions.length > 1) {
+      setTimeout(() => {
+        evolutions.slice(1).forEach(({ from, to }) => {
+          showToast(from.emoji + ' ' + from.name + ' → ' + to.emoji + ' ' + to.name + '!');
+        });
+      }, 4000);
+    }
+  }
+}
+
+function showEvolutionAnimation(fromPk, toPk, playerIdx) {
+  const overlay = document.createElement('div');
+  overlay.id = 'evolution-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;' +
+    'background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+    'text-align:center;padding:20px';
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes evo-flash { 0%,100%{opacity:1} 50%{opacity:0.1} }
+      @keyframes evo-grow  { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+      @keyframes evo-spin  { 0%{transform:rotate(0deg) scale(1)} 50%{transform:rotate(180deg) scale(0.3)} 100%{transform:rotate(360deg) scale(1)} }
+    </style>
+    <div style="font-family:Fredoka One,cursive;color:#f5a623;font-size:1.1rem;margin-bottom:20px">
+      ✨ ${state.players[playerIdx]?.name || 'Jij'} heeft een evolutie!
+    </div>
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px">
+      <div style="text-align:center">
+        <div id="evo-from" style="font-size:5rem;animation:evo-flash 0.5s 3">${fromPk.emoji}</div>
+        <div style="font-family:Fredoka One,cursive;color:rgba(255,255,255,0.6);font-size:0.85rem">${fromPk.name}</div>
+      </div>
+      <div style="font-size:2rem">→</div>
+      <div style="text-align:center">
+        <div id="evo-to" style="font-size:5rem;animation:evo-grow 0.8s 1s both">${toPk.emoji}</div>
+        <div style="font-family:Fredoka One,cursive;color:#f5a623;font-size:0.85rem">${toPk.name}</div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a3e,#0f3060);border-radius:16px;padding:16px;max-width:300px;margin-bottom:20px;border:2px solid #f5a623">
+      <div style="font-family:Fredoka One,cursive;color:white;font-size:1rem;margin-bottom:6px">
+        🎉 ${fromPk.name} evolueerde naar ${toPk.name}!
+      </div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.6)">
+        Type: ${toPk.type} · ${POKEMON_RARITY[toPk.rarity]?.label || toPk.rarity}
+        ${'⭐'.repeat(POKEMON_RARITY[toPk.rarity]?.stars || 1)}
+      </div>
+    </div>
+    <button onclick="document.getElementById('evolution-overlay').remove()"
+      style="padding:14px 28px;background:linear-gradient(135deg,#f5a623,#e65100);
+      border:none;border-radius:14px;color:white;font-family:Fredoka One,cursive;
+      font-size:1rem;cursor:pointer">
+      ✅ Super!
+    </button>`;
+
+  document.body.appendChild(overlay);
+  sfxLevelUp();
+
+  // Auto-sluit na 8 seconden
+  setTimeout(() => overlay?.remove(), 8000);
+}
+
+// Evolutie voortgang melding — toon wanneer bijna klaar
+function getPokemonEvoProgress(playerIdx) {
+  const p = state.players[playerIdx];
+  if (!p) return [];
+  const owned = state.ownedAvatarItems[playerIdx] || [];
+  const levelOnPlanet = (p.level || 0) % 50;
+  const hints = [];
+
+  owned.forEach(id => {
+    const pk = POKEMON_CARDS.find(c => c.id === id);
+    if (!pk || !pk.evo_to) return;
+    const alreadyEvolved = owned.includes(pk.evo_to);
+    if (alreadyEvolved) return;
+    if (!pk.evo_level) return;
+    const needed = pk.evo_level - levelOnPlanet;
+    if (needed > 0 && needed <= 5) {
+      const nextPk = POKEMON_CARDS.find(c => c.id === pk.evo_to);
+      hints.push({ pk, nextPk, needed });
+    }
+  });
+
+  return hints;
+}
+
+// Check evolution na elke level-up (hook in completeChallenge)
+function checkEvoAfterLevelUp(playerIdx) {
+  checkPokemonEvolution(playerIdx);
+  // Toon voortgangsmelding
+  const hints = getPokemonEvoProgress(playerIdx);
+  if (hints.length > 0) {
+    const h = hints[0];
+    setTimeout(() => {
+      showToast(
+        h.needed === 1
+          ? h.pk.emoji + ' ' + h.pk.name + ' evolueert bij de VOLGENDE oefening! 🌟'
+          : h.pk.emoji + ' ' + h.pk.name + ' evolueert nog ' + h.needed + ' oefeningen! 💪',
+        false
+      );
+    }, 2000);
+  }
+}
+
+// Beschikbare pokemon voor huidige level (welke kan je vinden/kopen)
+function getAvailablePokemon(playerIdx) {
+  const p = state.players[playerIdx];
+  const playerLevel = (p?.level || 0);
+  return POKEMON_CARDS.filter(pk => pk.unlock <= playerLevel);
+}
+
+// Pokemon die je nog niet hebt maar wel kunt kopen
+function getNewPokemonAvailable(playerIdx) {
+  const owned = state.ownedAvatarItems[playerIdx] || [];
+  const available = getAvailablePokemon(playerIdx);
+  return available.filter(pk => !owned.includes(pk.id));
+}
+
 
 function showSplashScreen() {
   const splash = document.createElement('div');
