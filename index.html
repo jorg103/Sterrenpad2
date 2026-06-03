@@ -3557,6 +3557,15 @@ function closeReward() {
 
   // Check pokemon evolutie na level up
   checkEvoAfterLevelUp(state.currentPlayer);
+
+  // Toon surf bonusspel na voltooien van een wereld (level 4 = boss/examen)
+  if (currentLevelIdx === 4) {
+    setTimeout(() => {
+      showSurfGame(currentWorldIdx, true);
+    }, 800);
+    return;
+  }
+
   navigate('map');
 }
 
@@ -5927,6 +5936,16 @@ function renderParentReport() {
   setTimeout(() => renderPendingApprovals(), 100);
 
   // ===== GEZINSHULP =====
+  html += `<button onclick="showSurfGame(null, false)"
+    style="width:100%;padding:14px;background:linear-gradient(135deg,#006994,#0099cc);
+    color:white;border:none;border-radius:16px;font-family:Fredoka One,cursive;
+    font-size:1rem;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:1.5rem">🏄</span>
+    <div style="text-align:left">
+      <div>Surf Bonusspel</div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.7);font-family:Nunito,sans-serif">Surfen · Munten · Pokémon</div>
+    </div>
+  </button>`;
   html += `<button onclick="showKindGezondheid()"
     style="width:100%;padding:14px;background:linear-gradient(135deg,#1565c0,#42a5f5);
     color:white;border:none;border-radius:16px;font-family:Fredoka One,cursive;
@@ -12078,6 +12097,551 @@ function getNewPokemonAvailable(playerIdx) {
   const owned = state.ownedAvatarItems[playerIdx] || [];
   const available = getAvailablePokemon(playerIdx);
   return available.filter(pk => !owned.includes(pk.id));
+}
+
+
+
+// ===== 🏄 SURF BONUSSPEL =====
+
+const SURF_THEMES = {
+  aarde:     { bg:'#006994', wave:'#0099cc', foam:'#88ddff', sky:'#87CEEB', skyBot:'#b0e0ff', name:'Oceaan' },
+  mercurius: { bg:'#c8860a', wave:'#e6a020', foam:'#ffcc66', sky:'#d4a050', skyBot:'#f0c070', name:'Lava Rivier' },
+  mars:      { bg:'#8B2500', wave:'#cc4400', foam:'#ff7744', sky:'#cc5533', skyBot:'#e87755', name:'Mars Kanalen' },
+  venus:     { bg:'#4a9900', wave:'#66bb00', foam:'#aaee44', sky:'#557700', skyBot:'#88bb22', name:'Woud Stroom' },
+  jupiter:   { bg:'#8844aa', wave:'#aa66cc', foam:'#ddaaff', sky:'#663388', skyBot:'#9955bb', name:'Storm Wervel' },
+  saturnus:  { bg:'#bb8833', wave:'#ddaa55', foam:'#ffdd99', sky:'#997722', skyBot:'#ccaa44', name:'Ring Rivier' },
+  uranus:    { bg:'#007799', wave:'#00aacc', foam:'#66ddff', sky:'#005577', skyBot:'#0099bb', name:'Ijzig Kanaal' },
+  neptunus:  { bg:'#002288', wave:'#0044cc', foam:'#4488ff', sky:'#001166', skyBot:'#0033aa', name:'Diep Oceaan' },
+};
+
+const SURF_FLOATIES = [
+  { id:'flamingo',   emoji:'🦩', name:'Flamingo',      width:60, height:50 },
+  { id:'duck',       emoji:'🦆', name:'Gele Eend',     width:55, height:45 },
+  { id:'unicorn',    emoji:'🦄', name:'Eenhoorn',      width:65, height:55 },
+  { id:'donut',      emoji:'🍩', name:'Luchtband',     width:55, height:40 },
+  { id:'crab',       emoji:'🦀', name:'Krab Boot',     width:58, height:45 },
+  { id:'shark',      emoji:'🦈', name:'Haai Surfboard',width:70, height:40 },
+];
+
+let _surfGame = null;
+
+function showSurfGame(worldIdx, autoStart) {
+  // Sluit bestaand spel
+  document.getElementById('surf-overlay')?.remove();
+  if (_surfGame) { _surfGame.stop(); _surfGame = null; }
+
+  const p = getPlayer();
+  const planetIdx = getCurrentPlanet();
+  const planetNames = ['aarde','mercurius','mars','venus','jupiter','saturnus','uranus','neptunus'];
+  const planetKey = planetNames[Math.min(planetIdx, 7)];
+  const theme = SURF_THEMES[planetKey] || SURF_THEMES.aarde;
+
+  // Kies floatie op basis van uitgeruste huisdier of random
+  const equippedPet = p.equipped?.pet;
+  const petItem = equippedPet ? AVATAR_ITEMS.find(x=>x.id===equippedPet) : null;
+  const floatieIdx = (worldIdx || 0) % SURF_FLOATIES.length;
+  const floatie = SURF_FLOATIES[floatieIdx];
+
+  // Pokémon meerijder — eerste in bezit
+  const owned = state.ownedAvatarItems[state.currentPlayer] || [];
+  const ownedPk = POKEMON_CARDS.filter(pk => owned.includes(pk.id));
+  const ridePk = ownedPk.length > 0 ? ownedPk[Math.floor(Math.random()*Math.min(ownedPk.length,5))] : null;
+
+  // Check of al gespeeld vandaag (voor coin limiet)
+  const todayKey = 'surf_played_' + (worldIdx||0) + '_' + new Date().toDateString();
+  const alreadyPlayed = localStorage.getItem(todayKey);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'surf-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:3000;background:#0a0a1a;overflow:hidden;touch-action:none';
+
+  overlay.innerHTML = `
+    <canvas id="surf-canvas" style="display:block;width:100%;height:100%;touch-action:none"></canvas>
+    <div id="surf-hud" style="position:absolute;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none">
+      <div style="font-family:Fredoka One,cursive;color:white;font-size:1.1rem;text-shadow:0 2px 8px rgba(0,0,0,0.8)">
+        🏄 <span id="surf-score">0</span> punten
+      </div>
+      <div style="font-family:Fredoka One,cursive;color:#f5a623;font-size:1rem;text-shadow:0 2px 8px rgba(0,0,0,0.8)">
+        🪙 <span id="surf-coins">0</span>
+      </div>
+      <button id="surf-close" style="background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.3);border-radius:10px;padding:6px 12px;color:white;font-family:Fredoka One,cursive;font-size:0.85rem;cursor:pointer;pointer-events:all">✕ Stop</button>
+    </div>
+    <div id="surf-start-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;background:rgba(0,0,0,0.6)">
+      <div style="font-size:4rem;margin-bottom:8px">${floatie.emoji}</div>
+      <div style="font-family:Fredoka One,cursive;font-size:1.8rem;color:#f5a623;margin-bottom:6px">Surf Bonusspel!</div>
+      <div style="font-family:Fredoka One,cursive;color:white;font-size:1rem;margin-bottom:4px">${theme.name} op ${floatie.name}</div>
+      ${ridePk ? `<div style="font-size:1.2rem;margin-bottom:8px">${ridePk.emoji} ${ridePk.name} rijdt mee!</div>` : ''}
+      <div style="background:rgba(0,0,0,0.4);border-radius:14px;padding:12px 16px;margin-bottom:16px;max-width:300px">
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.8);line-height:1.6">
+          👈 Tik links of 👉 rechts om te sturen<br>
+          🪙 Pak munten · 🥚 Raak eieren voor Pokémon<br>
+          💥 Ontwijkt rotsen en golven!
+        </div>
+      </div>
+      ${alreadyPlayed ? '<div style="font-size:0.78rem;color:#f5a623;margin-bottom:8px">⚠️ Al gespeeld vandaag — geen extra coins, wel lekker surfen!</div>' : ''}
+      <button id="surf-start-btn" style="padding:14px 32px;background:linear-gradient(135deg,#f5a623,#e65100);border:none;border-radius:16px;color:white;font-family:Fredoka One,cursive;font-size:1.1rem;cursor:pointer">
+        🏄 Start!
+      </button>
+    </div>
+    <div id="surf-end-screen" style="position:absolute;top:0;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;background:rgba(0,0,0,0.75)">
+      <div id="surf-end-emoji" style="font-size:4rem;margin-bottom:8px">🏆</div>
+      <div style="font-family:Fredoka One,cursive;font-size:1.6rem;color:#f5a623;margin-bottom:8px" id="surf-end-title">Super gesurft!</div>
+      <div id="surf-end-stats" style="background:rgba(0,0,0,0.4);border-radius:14px;padding:14px 20px;margin-bottom:16px;min-width:240px"></div>
+      <div id="surf-pk-reward" style="display:none;background:linear-gradient(135deg,#1a1a3e,#0f3060);border-radius:14px;padding:14px;margin-bottom:12px;border:2px solid #f5a623"></div>
+      <div style="display:flex;gap:8px">
+        <button onclick="restartSurfGame()" style="padding:12px 20px;background:linear-gradient(135deg,#1565c0,#42a5f5);border:none;border-radius:12px;color:white;font-family:Fredoka One,cursive;font-size:0.95rem;cursor:pointer">🔄 Nog een keer</button>
+        <button onclick="closeSurfGame()" style="padding:12px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:12px;color:white;font-family:Fredoka One,cursive;font-size:0.95rem;cursor:pointer">🏠 Klaar</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Event listeners
+  document.getElementById('surf-close').onclick = closeSurfGame;
+  document.getElementById('surf-start-btn').onclick = () => {
+    document.getElementById('surf-start-screen').style.display = 'none';
+    startSurfGame(theme, floatie, ridePk, p, alreadyPlayed, worldIdx, todayKey);
+  };
+
+  if (autoStart) {
+    setTimeout(() => {
+      document.getElementById('surf-start-screen').style.display = 'none';
+      startSurfGame(theme, floatie, ridePk, p, alreadyPlayed, worldIdx, todayKey);
+    }, 100);
+  }
+}
+
+function startSurfGame(theme, floatie, ridePk, player, alreadyPlayed, worldIdx, todayKey) {
+  const canvas = document.getElementById('surf-canvas');
+  if (!canvas) return;
+
+  // Resize canvas to actual pixels
+  canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const scale = window.devicePixelRatio;
+
+  // Game state
+  const game = {
+    running: true,
+    score: 0,
+    coins: 0,
+    eggs: 0,
+    distance: 0,
+    speed: 3,
+    frame: 0,
+    waveOffset: 0,
+    player: {
+      x: W/2, y: H * 0.65,
+      vx: 0, vy: 0,
+      w: floatie.width * scale, h: floatie.height * scale,
+      bobOffset: 0, bobDir: 1,
+      lane: 1, // 0=left, 1=center, 2=right
+      targetX: W/2,
+      moving: false,
+    },
+    objects: [],
+    particles: [],
+    bgWaves: [],
+    lastObj: 0,
+    animId: null,
+    touchStartX: 0,
+  };
+
+  // Init background waves
+  for (let i=0; i<8; i++) {
+    game.bgWaves.push({ x: Math.random()*W, y: H*0.5 + Math.random()*H*0.4, r: 20+Math.random()*40, alpha: 0.1+Math.random()*0.2, speed: 1+Math.random()*2 });
+  }
+
+  const LANES = [W*0.2, W*0.5, W*0.8];
+
+  function spawnObject() {
+    const r = Math.random();
+    let type, emoji, value=0, w=40*scale, h=40*scale, danger=false;
+
+    if (r < 0.3) {
+      type='coin'; emoji='🪙'; value=1; w=32*scale; h=32*scale;
+    } else if (r < 0.55) {
+      type='bigcoin'; emoji='💰'; value=3; w=38*scale; h=38*scale;
+    } else if (r < 0.68) {
+      type='egg'; emoji='🥚'; value=0; w=36*scale; h=42*scale;
+    } else if (r < 0.78) {
+      type='star'; emoji='⭐'; value=2; w=34*scale; h=34*scale;
+    } else if (r < 0.88) {
+      type='rock'; emoji='🪨'; danger=true; w=50*scale; h=44*scale;
+    } else if (r < 0.95) {
+      type='wave'; emoji='🌊'; danger=true; w=60*scale; h=40*scale;
+    } else {
+      type='barrel'; emoji='🛢️'; danger=true; w=42*scale; h=48*scale;
+    }
+
+    const lane = Math.floor(Math.random()*3);
+    game.objects.push({
+      type, emoji, value, danger,
+      x: LANES[lane], y: -60*scale,
+      w, h, lane,
+      vx: (Math.random()-0.5)*0.5*scale,
+      alive: true,
+    });
+  }
+
+  function addParticles(x, y, color, count=8) {
+    for (let i=0; i<count; i++) {
+      const angle = (Math.PI*2/count)*i + Math.random()*0.5;
+      const speed = (2+Math.random()*3)*scale;
+      game.particles.push({
+        x, y,
+        vx: Math.cos(angle)*speed,
+        vy: Math.sin(angle)*speed,
+        color,
+        alpha: 1, size: (3+Math.random()*4)*scale,
+        life: 30,
+      });
+    }
+  }
+
+  function drawSky(ctx) {
+    const grad = ctx.createLinearGradient(0,0,0,H*0.55);
+    grad.addColorStop(0, theme.sky);
+    grad.addColorStop(1, theme.skyBot);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H*0.55);
+
+    // Clouds
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    const cx = (game.frame*0.3)%W;
+    [[cx,H*0.08,60,20],[cx+W*0.4,H*0.15,80,25],[(cx+W*0.7)%W,H*0.05,50,18]].forEach(([x,y,rw,rh])=>{
+      ctx.beginPath(); ctx.ellipse(x,y,rw,rh,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x-rw*0.4,y+4,rw*0.6,rh*0.7,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x+rw*0.4,y+4,rw*0.6,rh*0.7,0,0,Math.PI*2); ctx.fill();
+    });
+  }
+
+  function drawWater(ctx) {
+    // Water gradient
+    const wg = ctx.createLinearGradient(0, H*0.45, 0, H);
+    wg.addColorStop(0, theme.wave);
+    wg.addColorStop(1, theme.bg);
+    ctx.fillStyle = wg;
+    ctx.fillRect(0, H*0.45, W, H*0.55);
+
+    // Animated wave lines
+    ctx.strokeStyle = theme.foam;
+    ctx.lineWidth = 2*scale;
+    ctx.globalAlpha = 0.5;
+    for (let i=0; i<5; i++) {
+      const y = H*0.48 + i*H*0.08 + Math.sin(game.waveOffset + i*0.8)*10*scale;
+      ctx.beginPath();
+      for (let x=0; x<=W; x+=20*scale) {
+        const wy = y + Math.sin((x/W)*Math.PI*4 + game.waveOffset + i)*8*scale;
+        x===0 ? ctx.moveTo(x,wy) : ctx.lineTo(x,wy);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Foam bubbles
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    game.bgWaves.forEach(bw => {
+      ctx.beginPath(); ctx.arc(bw.x, bw.y, bw.r, 0, Math.PI*2);
+      ctx.globalAlpha = bw.alpha; ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPlayerFloatie(ctx) {
+    const pl = game.player;
+    const bobY = Math.sin(game.frame*0.08)*6*scale;
+    const tilt  = (pl.targetX - pl.x) * 0.008;
+
+    ctx.save();
+    ctx.translate(pl.x, pl.y + bobY);
+    ctx.rotate(tilt);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(0, pl.h*0.45, pl.w*0.55, 10*scale, 0, 0, Math.PI*2); ctx.fill();
+
+    // Floatie emoji
+    ctx.font = `${pl.w*0.9}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(floatie.emoji, 0, 6*scale);
+
+    // Avatar op floatie
+    ctx.font = `${pl.w*0.55}px serif`;
+    ctx.fillText(player.avatar || '🧒', 0, -pl.h*0.35);
+
+    // Pokémon meerijder
+    if (ridePk) {
+      ctx.font = `${pl.w*0.4}px serif`;
+      ctx.fillText(ridePk.emoji, pl.w*0.6, -pl.h*0.1);
+    }
+
+    ctx.restore();
+  }
+
+  function drawObject(ctx, obj) {
+    ctx.font = `${obj.w*0.85}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const bob = Math.sin(game.frame*0.1 + obj.lane)*5*scale;
+    ctx.fillText(obj.emoji, obj.x, obj.y + bob);
+
+    // Glow voor munten
+    if (obj.type==='coin'||obj.type==='bigcoin'||obj.type==='egg'||obj.type==='star') {
+      ctx.strokeStyle = obj.type==='egg' ? '#f5a623' : '#fff';
+      ctx.lineWidth = 2*scale; ctx.globalAlpha = 0.3;
+      ctx.beginPath(); ctx.arc(obj.x, obj.y+bob, obj.w*0.6, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawHUD(ctx) {
+    // Distance bar
+    const barW = W*0.6, barH = 8*scale;
+    const barX = W*0.2, barY = 14*scale;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW, barH, 4*scale); ctx.fill();
+    const prog = Math.min(game.distance/2000, 1);
+    const grad = ctx.createLinearGradient(barX,0,barX+barW,0);
+    grad.addColorStop(0,'#57c785'); grad.addColorStop(1,'#f5a623');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(barX, barY, barW*prog, barH, 4*scale); ctx.fill();
+
+    // Finish flag
+    ctx.font = `${16*scale}px serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('🏁', barX+barW+12*scale, barY+barH/2+4*scale);
+  }
+
+  function checkCollision(pl, obj) {
+    const dx = Math.abs(pl.x - obj.x);
+    const dy = Math.abs((pl.y) - obj.y);
+    const bobY = Math.sin(game.frame*0.08)*6*scale;
+    const dy2 = Math.abs((pl.y+bobY) - obj.y);
+    return dx < (pl.w+obj.w)*0.35 && Math.min(dy,dy2) < (pl.h+obj.h)*0.35;
+  }
+
+  function endGame() {
+    game.running = false;
+    cancelAnimationFrame(game.animId);
+
+    // Bereken coins
+    const totalCoins = game.coins;
+    const earnedCoins = alreadyPlayed ? 0 : totalCoins;
+
+    if (!alreadyPlayed && earnedCoins > 0) {
+      const p2 = getPlayer();
+      if (p2) { p2.coins = (p2.coins||0) + earnedCoins; updateCoinDisplay(); saveState(); }
+      localStorage.setItem(todayKey, '1');
+    }
+
+    // Pokémon ei beloning?
+    let pkReward = null;
+    if (!alreadyPlayed && game.eggs > 0) {
+      const chance = Math.min(0.15 + game.eggs*0.1, 0.6);
+      if (Math.random() < chance) {
+        const owned = state.ownedAvatarItems[state.currentPlayer] || [];
+        const playerLevel = getPlayer()?.level || 0;
+        const available = POKEMON_CARDS.filter(pk=>pk.unlock<=playerLevel&&!owned.includes(pk.id));
+        if (available.length > 0) {
+          pkReward = available[Math.floor(Math.random()*Math.min(available.length,10))];
+          if (!state.ownedAvatarItems[state.currentPlayer]) state.ownedAvatarItems[state.currentPlayer]=[];
+          state.ownedAvatarItems[state.currentPlayer].push(pkReward.id);
+          saveState();
+        }
+      }
+    }
+
+    // Toon eindscherm
+    const endScreen = document.getElementById('surf-end-screen');
+    const endStats = document.getElementById('surf-end-stats');
+    const pkDiv = document.getElementById('surf-pk-reward');
+    const endTitle = document.getElementById('surf-end-title');
+    const endEmoji = document.getElementById('surf-end-emoji');
+
+    const dist = Math.floor(game.distance);
+    if (dist > 1500) { endEmoji.textContent='🏆'; endTitle.textContent='Geweldig gesurft!'; }
+    else if (dist > 800) { endEmoji.textContent='🌟'; endTitle.textContent='Super gedaan!'; }
+    else { endEmoji.textContent='🏄'; endTitle.textContent='Goed begin!'; }
+
+    endStats.innerHTML = `
+      <div style="font-family:Fredoka One,cursive;color:rgba(255,255,255,0.6);font-size:0.8rem;margin-bottom:8px">Resultaten</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center">
+        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px">
+          <div style="font-size:1.4rem">📏</div>
+          <div style="font-family:Fredoka One,cursive;color:#42a5f5;font-size:1rem">${dist}m</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Afstand</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px">
+          <div style="font-size:1.4rem">🪙</div>
+          <div style="font-family:Fredoka One,cursive;color:#f5a623;font-size:1rem">${earnedCoins>0?'+'+earnedCoins:'(al gespeeld)'}</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Coins</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px">
+          <div style="font-size:1.4rem">🏆</div>
+          <div style="font-family:Fredoka One,cursive;color:#57c785;font-size:1rem">${game.score}</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Score</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:10px;padding:8px">
+          <div style="font-size:1.4rem">🥚</div>
+          <div style="font-family:Fredoka One,cursive;color:#ce93d8;font-size:1rem">${game.eggs}</div>
+          <div style="font-size:0.7rem;color:rgba(255,255,255,0.5)">Eieren</div>
+        </div>
+      </div>`;
+
+    if (pkReward) {
+      pkDiv.style.display = 'block';
+      const r = POKEMON_RARITY[pkReward.rarity];
+      pkDiv.innerHTML = `
+        <div style="font-family:Fredoka One,cursive;color:#f5a623;font-size:0.9rem;margin-bottom:6px">🥚 Pokémon gevonden!</div>
+        <div style="font-size:2.5rem;margin-bottom:4px">${pkReward.emoji}</div>
+        <div style="font-family:Fredoka One,cursive;color:white;font-size:1rem">${pkReward.name}</div>
+        <div style="font-size:0.78rem;color:${r.color}">${r.label} ${'⭐'.repeat(r.stars)}</div>
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:4px">Toegevoegd aan je Pokédex!</div>`;
+      sfxLevelUp();
+    } else {
+      sfxCorrect();
+    }
+
+    endScreen.style.display = 'flex';
+  }
+
+  // Touch/click controls
+  const overlay = document.getElementById('surf-overlay');
+  overlay.addEventListener('touchstart', e => {
+    game.touchStartX = e.touches[0].clientX;
+  }, {passive:true});
+  overlay.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - game.touchStartX;
+    if (Math.abs(dx) > 20) {
+      moveSurfer(dx > 0 ? 1 : -1);
+    }
+  }, {passive:true});
+  overlay.addEventListener('click', e => {
+    if (e.target.id === 'surf-close') return;
+    const midX = overlay.offsetWidth / 2;
+    moveSurfer(e.clientX > midX ? 1 : -1);
+  });
+
+  function moveSurfer(dir) {
+    if (!game.running) return;
+    const pl = game.player;
+    const newLane = Math.max(0, Math.min(2, pl.lane + dir));
+    if (newLane !== pl.lane) {
+      pl.lane = newLane;
+      pl.targetX = LANES[newLane];
+      sfxClick();
+    }
+  }
+
+  // Main game loop
+  function gameLoop() {
+    if (!game.running) return;
+    ctx.clearRect(0, 0, W, H);
+
+    game.frame++;
+    game.waveOffset += 0.04;
+    game.distance += game.speed * 0.5;
+    game.speed = 3 + Math.floor(game.distance/500)*0.5;
+
+    // BG waves move
+    game.bgWaves.forEach(bw => {
+      bw.x -= bw.speed*scale*0.5;
+      if (bw.x < -bw.r*2) bw.x = W + bw.r;
+    });
+
+    // Draw
+    drawSky(ctx);
+    drawWater(ctx);
+    drawHUD(ctx);
+
+    // Smooth player movement
+    const pl = game.player;
+    pl.x += (pl.targetX - pl.x) * 0.12;
+
+    // Spawn objects
+    game.lastObj++;
+    const spawnRate = Math.max(40, 80 - Math.floor(game.distance/200)*3);
+    if (game.lastObj > spawnRate) {
+      spawnObject();
+      game.lastObj = 0;
+    }
+
+    // Update & draw objects
+    const bobY = Math.sin(game.frame*0.08)*6*scale;
+    game.objects = game.objects.filter(obj => {
+      obj.y += game.speed * scale;
+      obj.x += obj.vx;
+      if (!obj.alive || obj.y > H+80*scale) return false;
+
+      if (checkCollision(pl, obj)) {
+        obj.alive = false;
+        if (obj.danger) {
+          // Hit! Flash screen
+          ctx.fillStyle = 'rgba(255,0,0,0.3)';
+          ctx.fillRect(0,0,W,H);
+          addParticles(obj.x, obj.y, '#ff4444', 10);
+          game.speed = Math.max(3, game.speed - 1);
+          sfxWrong();
+        } else {
+          addParticles(obj.x, obj.y, obj.type==='egg'?'#ce93d8':'#f5a623', 8);
+          game.coins += obj.value;
+          game.score += obj.value * 10;
+          if (obj.type==='egg') game.eggs++;
+          if (obj.type==='star') { game.score += 20; }
+          sfxCorrect();
+          // Update HUD
+          document.getElementById('surf-score').textContent = game.score;
+          document.getElementById('surf-coins').textContent = game.coins;
+        }
+        return false;
+      }
+
+      drawObject(ctx, obj);
+      return true;
+    });
+
+    // Draw player ON TOP of objects
+    drawPlayerFloatie(ctx);
+
+    // Particles
+    game.particles = game.particles.filter(pt => {
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.2*scale;
+      pt.alpha -= 0.04; pt.life--;
+      if (pt.alpha <= 0 || pt.life <= 0) return false;
+      ctx.globalAlpha = pt.alpha;
+      ctx.fillStyle = pt.color;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+      return true;
+    });
+
+    // Check finish
+    if (game.distance >= 2000) {
+      endGame();
+      return;
+    }
+
+    game.animId = requestAnimationFrame(gameLoop);
+  }
+
+  _surfGame = { stop: () => { game.running=false; cancelAnimationFrame(game.animId); } };
+  gameLoop();
+}
+
+function restartSurfGame() {
+  const overlay = document.getElementById('surf-overlay');
+  if (!overlay) return;
+  if (_surfGame) { _surfGame.stop(); _surfGame = null; }
+  overlay.remove();
+  showSurfGame(null, false);
+}
+
+function closeSurfGame() {
+  document.getElementById('surf-overlay')?.remove();
+  if (_surfGame) { _surfGame.stop(); _surfGame = null; }
+  navigate('home');
 }
 
 
